@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { AppShell } from "@/components/AppShell";
-import { HomeView } from "@/components/HomeView";
+import { AppShell } from "@/components/layout/AppShell";
+import { HomeView } from "@/components/views/HomeView";
 import { getCurrentUser, getPrimaryAccount } from "@/lib/api/auth";
 
 /**
@@ -12,10 +12,10 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
-  if (!user) redirect("/");
+  if (!user) redirect("/login");
 
   const account = await getPrimaryAccount(user.id);
-  if (!account) redirect("/api/auth/google/start");
+  if (!account) redirect("/connect");
 
   return (
     <AppShell>

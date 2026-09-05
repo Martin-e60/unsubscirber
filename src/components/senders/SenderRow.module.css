@@ -1,0 +1,121 @@
+.row {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  border-block-end: var(--border-width) solid var(--color-border);
+  transition: background-color var(--duration-fast) var(--ease);
+}
+
+.row:last-child {
+  border-block-end: none;
+}
+
+.row:hover {
+  background: var(--color-surface-sunken);
+}
+
+.row[data-busy] {
+  opacity: 0.55;
+}
+
+.identity {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+}
+
+.name {
+  font-weight: var(--weight-semibold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detail {
+  color: var(--color-text-subtle);
+  font-size: var(--text-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.125rem;
+  white-space: nowrap;
+}
+
+.rate {
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.unit {
+  color: var(--color-text-subtle);
+  font-weight: var(--weight-normal);
+}
+
+.date {
+  color: var(--color-text-subtle);
+  font-size: var(--text-sm);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  justify-content: flex-end;
+}
+
+.manualLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding-inline: var(--space-2);
+  color: var(--color-warning-text);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  text-decoration: none;
+}
+
+@media (max-width: 64rem) {
+  .row {
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    row-gap: var(--space-3);
+  }
+
+  .actions {
+    grid-column: 3 / -1;
+  }
+}
+
+@media (max-width: 44rem) {
+  /* Checkbox, avatar and name on the first line; the numbers and the buttons
+     each get a full-width line of their own so nothing has to truncate. */
+  .row {
+    grid-template-columns: auto auto minmax(0, 1fr);
+    gap: var(--space-3);
+  }
+
+  .identity {
+    grid-column: 3;
+  }
+
+  .meta {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    align-items: baseline;
+    gap: var(--space-3);
+  }
+
+  .actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}

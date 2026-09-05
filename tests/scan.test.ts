@@ -1,7 +1,6 @@
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 
 /**
@@ -15,8 +14,8 @@ import path from "node:path";
  * pins down.
  */
 
-const dbFile = path.join(os.tmpdir(), `unsub-test-${Date.now()}.db`);
-process.env.DATABASE_URL = `file:${dbFile}`;
+// Transactions use separate connections; keep the in-memory database shared.
+process.env.DATABASE_URL = "file::memory:?cache=shared";
 process.env.ENCRYPTION_KEY = Buffer.alloc(32, 7).toString("base64");
 process.env.SESSION_SECRET = Buffer.alloc(32, 9).toString("base64");
 
@@ -29,23 +28,21 @@ type Mod = {
 };
 let mod: Mod;
 let account: import("../src/db/schema").MailAccount;
+let keeper: import("@libsql/client").Client;
 
 before(async () => {
   const { createClient } = await import("@libsql/client");
-  const client = createClient({ url: `file:${dbFile}` });
+  keeper = createClient({ url: process.env.DATABASE_URL! });
+  const dbModule = await import("../src/db");
+  const client = dbModule.db.$client;
 
-  const migration = fs.readFileSync(
-    path.join(
-      "drizzle",
-      fs.readdirSync("drizzle").find((f) => f.endsWith(".sql"))!,
-    ),
-    "utf8",
-  );
-  for (const statement of migration.split("--> statement-breakpoint")) {
-    if (statement.trim()) await client.execute(statement);
+  for (const file of fs.readdirSync("drizzle").filter((f) => f.endsWith(".sql")).sort()) {
+    const migration = fs.readFileSync(path.join("drizzle", file), "utf8");
+    for (const statement of migration.split("--> statement-breakpoint")) {
+      if (statement.trim()) await client.execute(statement);
+    }
   }
 
-  const dbModule = await import("../src/db");
   const schema = await import("../src/db/schema");
 
   mod = {
@@ -75,7 +72,8 @@ before(async () => {
 });
 
 after(() => {
-  fs.rmSync(dbFile, { force: true });
+  mod?.db.$client.close();
+  keeper?.close();
 });
 
 /** A mailbox that returns whatever pages the test hands it. */
@@ -355,4 +353,148 @@ test("a sender with no unsubscribe method at all fails cleanly", async () => {
 
   assert.equal(outcome.status, "FAILED");
   assert.match(outcome.detail, /no unsubscribe method/i);
+});
+
+function subscription(id: string, address: string) {
+  return { id, from: address, date: new Date("2026-03-01"),
+    listUnsubscribe: "<mailto:leave@example.com>" };
+}
+
+async function senderAt(address: string, accountId = account.id) {
+  const { and, eq } = await import("drizzle-orm");
+  return (await mod.db.select().from(mod.schema.senders).where(and(
+    eq(mod.schema.senders.mailAccountId, accountId),
+    eq(mod.schema.senders.address, address),
+  )))[0];
+}
+
+test("rescans count unique IDs and repair legacy totals without changing decisions", async () => {
+  const address = "rescan@example.com";
+  await mod.db.insert(mod.schema.senders).values({
+    mailAccountId: account.id, address, messageCount: 200, status: "UNSUBSCRIBED",
+  });
+  for (const ids of [["r1", "r2"], ["r1", "r2"], ["r2", "r3"]]) {
+    const scan = await mod.scanEngine.startScan(account, 365);
+    const mailbox = fakeMailbox([{ messages: ids.map((id) => subscription(id, address)), nextPageToken: null }]);
+    const result = await mod.scanEngine.runScanStep(account, scan, mailbox.provider);
+    assert.equal(result.status, "DONE");
+    assert.equal((await senderAt(address)).messageCount, ids.includes("r3") ? 3 : 2);
+    assert.equal((await senderAt(address)).status, "UNSUBSCRIBED");
+  }
+});
+
+test("duplicate IDs within and across pages never inflate a sender's count", async () => {
+  const address = "duplicates@example.com";
+  const message = subscription("duplicate-1", address);
+  const mailbox = fakeMailbox([
+    { messages: [message, message], nextPageToken: "second" },
+    { messages: [message, subscription("duplicate-2", address)], nextPageToken: null },
+  ]);
+  const scan = await mod.scanEngine.startScan(account, 365);
+  await mod.scanEngine.runScanStep(account, scan, mailbox.provider);
+  const { eq } = await import("drizzle-orm");
+  const [reloaded] = await mod.db.select().from(mod.schema.scans).where(eq(mod.schema.scans.id, scan.id));
+  assert.equal((await mod.scanEngine.runScanStep(account, reloaded, mailbox.provider)).status, "DONE");
+  assert.equal((await senderAt(address)).messageCount, 2);
+});
+
+test("retrying a stale finished page returns saved progress without fetching again", async () => {
+  const scan = await mod.scanEngine.startScan(account, 365);
+  const mailbox = fakeMailbox([{ messages: [subscription("retry-1", "retry@example.com")], nextPageToken: null }]);
+  const first = await mod.scanEngine.runScanStep(account, scan, mailbox.provider);
+  mailbox.provider.listSubscriptionMessages = async () => { throw new Error("Must not fetch again"); };
+  assert.deepEqual(await mod.scanEngine.runScanStep(account, scan, mailbox.provider), first);
+  assert.equal((await senderAt("retry@example.com")).messageCount, 1);
+});
+
+test("a cancelled in-flight scan cannot add senders or overwrite cancellation", async () => {
+  const scan = await mod.scanEngine.startScan(account, 365);
+  const mailbox = fakeMailbox([{ messages: [subscription("cancel-1", "cancel@example.com")], nextPageToken: null }]);
+  const original = mailbox.provider.listSubscriptionMessages;
+  mailbox.provider.listSubscriptionMessages = async (options) => {
+    await mod.scanEngine.startScan(account, 90);
+    return original(options);
+  };
+  const result = await mod.scanEngine.runScanStep(account, scan, mailbox.provider);
+  assert.equal(result.status, "CANCELLED");
+  assert.equal(result.processedMessages, 0);
+  assert.equal(await senderAt("cancel@example.com"), undefined);
+});
+
+test("a late failed request cannot overwrite a page another request committed", async () => {
+  const scan = await mod.scanEngine.startScan(account, 365);
+  const fast = fakeMailbox([{ messages: [subscription("late-1", "late@example.com")], nextPageToken: "next" }]);
+  const slow = fakeMailbox([]);
+  slow.provider.listSubscriptionMessages = async () => {
+    await mod.scanEngine.runScanStep(account, scan, fast.provider);
+    throw new Error("Late network failure");
+  };
+  const result = await mod.scanEngine.runScanStep(account, scan, slow.provider);
+  assert.equal(result.status, "RUNNING");
+  assert.equal(result.processedMessages, 1);
+  assert.equal(result.error, null);
+});
+
+test("a database failure rolls back sender counts, message IDs and the page cursor", async () => {
+  await mod.db.$client.execute(`CREATE TRIGGER fail_scan_message BEFORE INSERT ON scanned_messages
+    WHEN NEW.message_id = 'rollback-1' BEGIN SELECT RAISE(ABORT, 'injected failure'); END`);
+  try {
+    const scan = await mod.scanEngine.startScan(account, 365);
+    const mailbox = fakeMailbox([{ messages: [subscription("rollback-1", "rollback@example.com")], nextPageToken: "next" }]);
+    const result = await mod.scanEngine.runScanStep(account, scan, mailbox.provider);
+    assert.equal(result.status, "ERROR");
+    assert.equal(result.processedMessages, 0);
+    assert.equal(await senderAt("rollback@example.com"), undefined);
+    const { eq } = await import("drizzle-orm");
+    const [saved] = await mod.db.select().from(mod.schema.scans).where(eq(mod.schema.scans.id, scan.id));
+    assert.equal(saved.pageToken, null);
+    assert.equal((await mod.db.select().from(mod.schema.scannedMessages)
+      .where(eq(mod.schema.scannedMessages.messageId, "rollback-1"))).length, 0);
+  } finally {
+    await mod.db.$client.execute("DROP TRIGGER fail_scan_message");
+  }
+});
+
+test("the same provider message ID in another mailbox is counted independently", async () => {
+  const [other] = await mod.db.insert(mod.schema.mailAccounts).values({
+    userId: account.userId, email: "other@example.com", accessTokenEnc: "x", expiresAt: 0, scope: "test",
+  }).returning();
+  for (const selected of [account, other]) {
+    const scan = await mod.scanEngine.startScan(selected, 365);
+    const mailbox = fakeMailbox([{ messages: [subscription("shared-id", "shared@example.com")], nextPageToken: null }]);
+    assert.equal((await mod.scanEngine.runScanStep(selected, scan, mailbox.provider)).status, "DONE");
+    assert.equal((await senderAt("shared@example.com", selected.id)).messageCount, 1);
+  }
+  const wrongAccountScan = await mod.scanEngine.startScan(other, 365);
+  await assert.rejects(mod.scanEngine.runScanStep(account, wrongAccountScan, fakeMailbox([]).provider), /Scan not found/);
+});
+
+test("simultaneous requests for one page commit one result", async () => {
+  const scan = await mod.scanEngine.startScan(account, 365);
+  const mailbox = fakeMailbox([{ messages: [subscription("parallel-1", "parallel@example.com")], nextPageToken: null }]);
+  const page = await mailbox.provider.listSubscriptionMessages({ lookbackDays: 365, pageToken: null, pageSize: 100 });
+  mailbox.provider.listSubscriptionMessages = async () => page;
+  const results = await Promise.all([
+    mod.scanEngine.runScanStep(account, scan, mailbox.provider),
+    mod.scanEngine.runScanStep(account, scan, mailbox.provider),
+  ]);
+  assert.ok(results.some((result) => result.status === "DONE"));
+  assert.ok(results.every((result) => result.status !== "ERROR"));
+  assert.equal((await senderAt("parallel@example.com")).messageCount, 1);
+  const { eq } = await import("drizzle-orm");
+  const [saved] = await mod.db.select().from(mod.schema.scans).where(eq(mod.schema.scans.id, scan.id));
+  assert.equal(saved.processedMessages, 1);
+  assert.equal(saved.status, "DONE");
+});
+
+test("simultaneous scan starts leave only one running scan for the mailbox", async () => {
+  await Promise.all([
+    mod.scanEngine.startScan(account, 90),
+    mod.scanEngine.startScan(account, 365),
+  ]);
+  const { and, eq } = await import("drizzle-orm");
+  const running = await mod.db.select().from(mod.schema.scans).where(and(
+    eq(mod.schema.scans.mailAccountId, account.id), eq(mod.schema.scans.status, "RUNNING"),
+  ));
+  assert.equal(running.length, 1);
 });

@@ -33,6 +33,8 @@ export type GoogleTokens = {
 export type GoogleUserInfo = {
   sub: string;
   email: string;
+  email_verified?: boolean;
+  hd?: string;
   name?: string;
   picture?: string;
 };

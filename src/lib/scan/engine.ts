@@ -1,7 +1,9 @@
 import "server-only";
-import { and, eq, sql, count } from "drizzle-orm";
+import { setTimeout as delay } from "node:timers/promises";
+import { and, eq, sql, count, isNull } from "drizzle-orm";
 import { db } from "@/db";
-import { scans, senders, type MailAccount, type Scan } from "@/db/schema";
+import { scans, senders, scannedMessages, type MailAccount, type Scan } from "@/db/schema";
+import { HttpError } from "@/lib/api/respond";
 import {
   getProviderForAccount,
   looksLikeSubscription,
@@ -22,7 +24,7 @@ import { SCAN_PAGE_SIZE, SCAN_STATUS } from "@/lib/constants";
  *   - the progress bar reflects real work, not a guess
  *   - closing the tab pauses the scan instead of losing it; reopening resumes
  *
- * `scans.pageToken` is the entire resume state.
+ * The cursor and page counters are saved atomically with the sender changes.
  */
 
 export type ScanProgress = {
@@ -43,22 +45,24 @@ export async function startScan(
   account: MailAccount,
   lookbackDays: number,
 ): Promise<Scan> {
-  await db
-    .update(scans)
-    .set({ status: SCAN_STATUS.CANCELLED, finishedAt: new Date() })
-    .where(
-      and(
-        eq(scans.mailAccountId, account.id),
-        eq(scans.status, SCAN_STATUS.RUNNING),
-      ),
-    );
+  return withDatabaseRetry(() => db.transaction(async (tx) => {
+    await tx
+      .update(scans)
+      .set({ status: SCAN_STATUS.CANCELLED, finishedAt: new Date() })
+      .where(
+        and(
+          eq(scans.mailAccountId, account.id),
+          eq(scans.status, SCAN_STATUS.RUNNING),
+        ),
+      );
 
-  const [scan] = await db
-    .insert(scans)
-    .values({ mailAccountId: account.id, lookbackDays })
-    .returning();
+    const [scan] = await tx
+      .insert(scans)
+      .values({ mailAccountId: account.id, lookbackDays })
+      .returning();
 
-  return scan;
+    return scan;
+  }));
 }
 
 /**
@@ -73,7 +77,13 @@ export async function runScanStep(
   /** Injectable for tests; in production the account decides the provider. */
   mailProvider?: MailProvider,
 ): Promise<ScanProgress> {
-  if (scan.status !== SCAN_STATUS.RUNNING) return toProgress(scan);
+  const current = await loadScan(account.id, scan.id);
+  if (current.status !== SCAN_STATUS.RUNNING ||
+      current.pageToken !== scan.pageToken ||
+      current.processedMessages !== scan.processedMessages) {
+    return toProgress(current);
+  }
+  scan = current;
 
   try {
     const provider = mailProvider ?? (await getProviderForAccount(account));
@@ -86,49 +96,108 @@ export async function runScanStep(
 
     // Keep only messages that really look like bulk mail. The provider query
     // is a coarse net; the headers are the real test.
-    const subscriptions = page.messages.filter(looksLikeSubscription);
+    const messages = [...new Map(page.messages.map((message) => [message.id, message])).values()];
+    const subscriptions = messages.filter(looksLikeSubscription);
     const grouped = groupBySender(subscriptions);
-
-    for (const entry of grouped) {
-      await upsertSender(account.id, entry);
+    const finished = !page.nextPageToken;
+    if (!finished && page.nextPageToken === scan.pageToken) {
+      throw new Error("The mailbox returned the same page cursor. Please start a new scan.");
     }
 
-    const [{ value: senderCount }] = await db
-      .select({ value: count() })
-      .from(senders)
-      .where(eq(senders.mailAccountId, account.id));
+    // The cursor and all sender changes commit together. A competing request
+    // can only commit if this exact page is still current and not cancelled.
+    return await withDatabaseRetry(() => db.transaction(async (tx) => {
+      const [claimed] = await tx
+        .update(scans)
+        .set({
+          pageToken: page.nextPageToken,
+          processedMessages: scan.processedMessages + messages.length,
+          matchedMessages: scan.matchedMessages + subscriptions.length,
+          totalEstimate: Math.max(scan.totalEstimate, page.totalEstimate),
+          status: finished ? SCAN_STATUS.DONE : SCAN_STATUS.RUNNING,
+          finishedAt: finished ? new Date() : null,
+        })
+        .where(currentPage(account.id, scan))
+        .returning();
 
-    const finished = !page.nextPageToken;
+      if (!claimed) return toProgress(await loadScan(account.id, scan.id, tx));
 
-    const [updated] = await db
-      .update(scans)
-      .set({
-        pageToken: page.nextPageToken,
-        processedMessages: scan.processedMessages + page.messages.length,
-        matchedMessages: scan.matchedMessages + subscriptions.length,
-        foundSenders: senderCount,
-        totalEstimate: Math.max(scan.totalEstimate, page.totalEstimate),
-        status: finished ? SCAN_STATUS.DONE : SCAN_STATUS.RUNNING,
-        finishedAt: finished ? new Date() : null,
-      })
-      .where(eq(scans.id, scan.id))
-      .returning();
+      for (const entry of grouped) {
+        const senderId = await upsertSender(tx, account.id, entry);
+        await tx.insert(scannedMessages).values(entry.messageIds.map((messageId) => ({
+          mailAccountId: account.id, messageId, senderId,
+        }))).onConflictDoNothing();
+        // Rebuild from unique IDs, also repairing inflated legacy counts when
+        // this sender is encountered after upgrading.
+        await tx.update(senders).set({
+          messageCount: sql`(select count(*) from ${scannedMessages}
+            where ${scannedMessages.senderId} = ${senderId})`,
+        }).where(eq(senders.id, senderId));
+      }
 
-    return toProgress(updated);
+      const [{ value: senderCount }] = await tx.select({ value: count() })
+        .from(senders).where(eq(senders.mailAccountId, account.id));
+      const [updated] = await tx.update(scans).set({ foundSenders: senderCount })
+        .where(eq(scans.id, scan.id)).returning();
+      return toProgress(updated);
+    }));
   } catch (error) {
+    if (isDatabaseBusy(error)) {
+      throw new HttpError("The scan is busy. Please try again shortly.", 503);
+    }
     const message = error instanceof Error ? error.message : String(error);
 
-    const [failed] = await db
+    const [failed] = await withDatabaseRetry(() => db
       .update(scans)
       .set({
         status: SCAN_STATUS.ERROR,
         error: message.slice(0, 500),
         finishedAt: new Date(),
       })
-      .where(eq(scans.id, scan.id))
-      .returning();
+      .where(currentPage(account.id, scan))
+      .returning());
 
-    return toProgress(failed);
+    return toProgress(failed ?? await loadScan(account.id, scan.id));
+  }
+}
+
+type ScanTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+function currentPage(mailAccountId: string, scan: Scan) {
+  return and(
+    eq(scans.id, scan.id), eq(scans.mailAccountId, mailAccountId),
+    eq(scans.status, SCAN_STATUS.RUNNING),
+    eq(scans.processedMessages, scan.processedMessages),
+    scan.pageToken === null ? isNull(scans.pageToken) : eq(scans.pageToken, scan.pageToken),
+  );
+}
+
+async function loadScan(mailAccountId: string, scanId: string, query: typeof db | ScanTransaction = db) {
+  const [scan] = await withDatabaseRetry(() => query.select().from(scans)
+    .where(and(eq(scans.id, scanId), eq(scans.mailAccountId, mailAccountId))).limit(1));
+  if (!scan) throw new HttpError("Scan not found.", 404);
+  return scan;
+}
+
+function isDatabaseBusy(error: unknown): boolean {
+  let cause = error;
+  for (let depth = 0; depth < 8 && cause && typeof cause === "object"; depth++) {
+    const detail = cause as { code?: unknown; cause?: unknown };
+    if (typeof detail.code === "string" && /^SQLITE_(BUSY|LOCKED)(_|$)/.test(detail.code)) return true;
+    cause = detail.cause;
+  }
+  return false;
+}
+
+/** Only retry database work; mailbox calls remain outside the transaction. */
+async function withDatabaseRetry<T>(operation: () => PromiseLike<T>): Promise<T> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      if (!isDatabaseBusy(error) || attempt >= 4) throw error;
+      await delay(25 * 2 ** attempt);
+    }
   }
 }
 
@@ -163,7 +232,7 @@ export function toProgress(scan: Scan): ScanProgress {
 type SenderDraft = {
   address: string;
   name: string | null;
-  messageCount: number;
+  messageIds: string[];
   firstSeenAt: Date;
   lastSeenAt: Date;
   sampleSubject: string | null;
@@ -196,7 +265,7 @@ function groupBySender(messages: MessageHeaders[]): SenderDraft[] {
       drafts.set(address, {
         address,
         name,
-        messageCount: 1,
+        messageIds: [message.id],
         firstSeenAt: date,
         lastSeenAt: date,
         sampleSubject: message.subject,
@@ -208,7 +277,7 @@ function groupBySender(messages: MessageHeaders[]): SenderDraft[] {
       continue;
     }
 
-    existing.messageCount += 1;
+    existing.messageIds.push(message.id);
     if (date < existing.firstSeenAt) existing.firstSeenAt = date;
     if (date >= existing.lastSeenAt) {
       existing.lastSeenAt = date;
@@ -228,18 +297,18 @@ function groupBySender(messages: MessageHeaders[]): SenderDraft[] {
  * Inserts a sender, or merges into the existing row if we have seen it before.
  *
  * Two rules matter here:
- *   - counts accumulate across pages and across scans
+ *   - unique message IDs determine counts across pages and across scans
  *   - a decision the user already made (KEPT, UNSUBSCRIBED) is never reset by
  *     a later scan; only counts and metadata are refreshed
  */
-async function upsertSender(mailAccountId: string, draft: SenderDraft): Promise<void> {
-  await db
+async function upsertSender(tx: ScanTransaction, mailAccountId: string, draft: SenderDraft): Promise<string> {
+  const [sender] = await tx
     .insert(senders)
     .values({
       mailAccountId,
       address: draft.address,
       name: draft.name,
-      messageCount: draft.messageCount,
+      messageCount: 0,
       firstSeenAt: draft.firstSeenAt,
       lastSeenAt: draft.lastSeenAt,
       sampleSubject: draft.sampleSubject,
@@ -251,7 +320,6 @@ async function upsertSender(mailAccountId: string, draft: SenderDraft): Promise<
     .onConflictDoUpdate({
       target: [senders.mailAccountId, senders.address],
       set: {
-        messageCount: sql`${senders.messageCount} + excluded.message_count`,
         firstSeenAt: sql`min(${senders.firstSeenAt}, excluded.first_seen_at)`,
         lastSeenAt: sql`max(${senders.lastSeenAt}, excluded.last_seen_at)`,
         name: sql`coalesce(${senders.name}, excluded.name)`,
@@ -266,5 +334,6 @@ async function upsertSender(mailAccountId: string, draft: SenderDraft): Promise<
         oneClick: sql`${senders.oneClick} or excluded.one_click`,
         updatedAt: new Date(),
       },
-    });
+    }).returning({ id: senders.id });
+  return sender.id;
 }

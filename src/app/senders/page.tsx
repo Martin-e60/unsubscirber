@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
-import { AppShell } from "@/components/AppShell";
-import { PageHeader } from "@/components/PageHeader";
-import { SenderWorkspace } from "@/components/SenderWorkspace";
+import { AppShell } from "@/components/layout/AppShell";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { SenderWorkspace } from "@/components/senders/SenderWorkspace";
 import { getCurrentUser, getPrimaryAccount } from "@/lib/api/auth";
 
 /** Every sender we have ever seen, whatever its status. */
@@ -14,8 +14,8 @@ export default async function SendersPage({
   searchParams: Promise<{ search?: string }>;
 }) {
   const user = await getCurrentUser();
-  if (!user) redirect("/");
-  if (!(await getPrimaryAccount(user.id))) redirect("/api/auth/google/start");
+  if (!user) redirect("/login");
+  if (!(await getPrimaryAccount(user.id))) redirect("/connect");
 
   const { search } = await searchParams;
 

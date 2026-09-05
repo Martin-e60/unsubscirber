@@ -4,7 +4,7 @@ import { z } from "zod";
 import { db } from "@/db";
 import { senders } from "@/db/schema";
 import { requireAccount, requireUser } from "@/lib/api/auth";
-import { HttpError, json, route } from "@/lib/api/respond";
+import { HttpError, json, readJson, route } from "@/lib/api/respond";
 import { unsubscribeSender } from "@/lib/unsubscribe/engine";
 import type { UnsubscribeResultDto } from "@/lib/api/types";
 
@@ -26,7 +26,7 @@ export const POST = route(async (request: NextRequest) => {
   const user = await requireUser();
   const account = await requireAccount(user.id);
 
-  const body = bodySchema.parse(await request.json());
+  const body = bodySchema.parse(await readJson(request));
 
   const [sender] = await db
     .select()

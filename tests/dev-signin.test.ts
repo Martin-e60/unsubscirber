@@ -1,7 +1,6 @@
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 
 /**
@@ -12,8 +11,7 @@ import path from "node:path";
  * authentication bypass on a deployed instance, so it gets a test of its own.
  */
 
-const dbFile = path.join(os.tmpdir(), `tidely-dev-${Date.now()}.db`);
-process.env.DATABASE_URL = `file:${dbFile}`;
+process.env.DATABASE_URL = "file::memory:";
 process.env.ENCRYPTION_KEY = Buffer.alloc(32, 5).toString("base64");
 process.env.SESSION_SECRET = Buffer.alloc(32, 6).toString("base64");
 
@@ -27,24 +25,22 @@ function setNodeEnv(value: string): void {
 }
 
 before(async () => {
-  const { createClient } = await import("@libsql/client");
-  const client = createClient({ url: `file:${dbFile}` });
+  ({ db } = await import("../src/db"));
+  const client = db.$client;
 
-  const migration = fs.readFileSync(
-    path.join("drizzle", fs.readdirSync("drizzle").find((f) => f.endsWith(".sql"))!),
-    "utf8",
-  );
-  for (const statement of migration.split("--> statement-breakpoint")) {
-    if (statement.trim()) await client.execute(statement);
+  for (const file of fs.readdirSync("drizzle").filter((f) => f.endsWith(".sql")).sort()) {
+    const migration = fs.readFileSync(path.join("drizzle", file), "utf8");
+    for (const statement of migration.split("--> statement-breakpoint")) {
+      if (statement.trim()) await client.execute(statement);
+    }
   }
 
   ({ GET } = await import("../src/app/api/auth/dev/route"));
-  ({ db } = await import("../src/db"));
   schema = await import("../src/db/schema");
 });
 
 after(() => {
-  fs.rmSync(dbFile, { force: true });
+  db?.$client.close();
 });
 
 test("the dev sign-in is a 404 in production", async () => {

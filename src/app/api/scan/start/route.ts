@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 import { requireAccount, requireUser } from "@/lib/api/auth";
-import { json, route } from "@/lib/api/respond";
+import { json, readJson, route } from "@/lib/api/respond";
 import { startScan, toProgress } from "@/lib/scan/engine";
 import type { ScanProgressDto } from "@/lib/api/types";
 
@@ -17,7 +17,7 @@ export const POST = route(async (request: NextRequest) => {
   const user = await requireUser();
   const account = await requireAccount(user.id);
 
-  const body = bodySchema.parse(await request.json().catch(() => ({})));
+  const body = bodySchema.parse(await readJson(request, { allowEmpty: true }));
   const scan = await startScan(account, body.lookbackDays);
 
   return json<ScanProgressDto>(toProgress(scan));

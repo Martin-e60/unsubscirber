@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { ArrowRight, Play, Check } from "lucide-react";
-import { Logo } from "@/components/Logo";
+import { Logo } from "@/components/layout/Logo";
 import { getCurrentUser } from "@/lib/api/auth";
 import styles from "./page.module.css";
 
@@ -10,8 +10,7 @@ import styles from "./page.module.css";
  * A server component: it checks the session before rendering, so a signed-in
  * user never sees a flash of the landing page before being redirected.
  *
- * The only thing this page must keep, however it is restyled, is the link to
- * /api/auth/google/start — that is what begins the Google login.
+ * Login and registration have dedicated routes supporting Google and passwords.
  */
 
 const PROMISES = [
@@ -23,7 +22,7 @@ const PROMISES = [
 const STEPS = [
   {
     title: "Connect your inbox",
-    body: "Sign in with Google. Tidely reads message headers only — never the contents of your email.",
+    body: "Connect Gmail with your permission. Tidely scans message headers to find mailing lists.",
   },
   {
     title: "See who's really writing",
@@ -53,7 +52,7 @@ export default async function HomePage({
     <div className={styles.page}>
       <header className={styles.nav}>
         <Logo />
-        <a className={styles.navLink} href="/api/auth/google/start">
+        <a className={styles.navLink} href="/login">
           Sign in
         </a>
       </header>
@@ -75,7 +74,7 @@ export default async function HomePage({
             {error ? <p className={styles.error}>{error}</p> : null}
 
             <div className={styles.actions}>
-              <a className={styles.cta} href="/api/auth/google/start">
+              <a className={styles.cta} href="/register">
                 Get Started Free
                 <ArrowRight size={18} strokeWidth={2} aria-hidden />
               </a>
@@ -149,7 +148,7 @@ export default async function HomePage({
             <br />
             for a brighter you.
           </p>
-          <a className={styles.bannerCta} href="/api/auth/google/start">
+          <a className={styles.bannerCta} href="/register">
             Get Started Free
             <ArrowRight size={18} strokeWidth={2} aria-hidden />
           </a>
@@ -159,8 +158,8 @@ export default async function HomePage({
       <footer className={styles.footer}>
         <Logo />
         <p className={styles.footerNote}>
-          Tidely reads message headers to work out who is emailing you. It never
-          reads the contents of your messages, and you can disconnect at any time.
+          Tidely scans message headers. An unsubscribe attempt may read an
+          individual message to find its unsubscribe link. You can disconnect at any time.
         </p>
       </footer>
     </div>

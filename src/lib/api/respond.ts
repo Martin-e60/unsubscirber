@@ -1,5 +1,6 @@
 import "server-only";
 import { NextResponse } from "next/server";
+import { ZodError } from "zod";
 
 /**
  * Small helpers so every route handler returns the same shapes and no route
@@ -24,6 +25,21 @@ export class HttpError extends Error {
   }
 }
 
+/** Reject broken JSON before a handler can change data or contact a mailbox. */
+export async function readJson(
+  request: Request,
+  options: { allowEmpty?: boolean } = {},
+): Promise<unknown> {
+  const text = await request.text();
+  if (options.allowEmpty && !text.trim()) return {};
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new HttpError("Request body must contain valid JSON.", 400);
+  }
+}
+
 /**
  * Wraps a route handler so thrown errors become clean JSON responses.
  *
@@ -40,6 +56,9 @@ export function route<Args extends unknown[]>(
     } catch (error) {
       if (error instanceof HttpError) {
         return apiError(error.message, error.status);
+      }
+      if (error instanceof ZodError) {
+        return apiError("Invalid request parameters.", 400);
       }
       console.error("[api] unhandled error:", error);
       return apiError("Something went wrong on the server.", 500);

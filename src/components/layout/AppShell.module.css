@@ -1,0 +1,26 @@
+.shell {
+  display: flex;
+  min-block-size: 100dvh;
+  background: var(--color-bg);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-inline-size: 0;
+}
+
+.main {
+  flex: 1 1 auto;
+  inline-size: 100%;
+  max-inline-size: var(--layout-max-width);
+  padding: var(--space-2) var(--layout-gutter) var(--space-16);
+}
+
+@media (max-width: 44rem) {
+  /* Room for the bottom tab bar. */
+  .main {
+    padding-block-end: var(--space-20);
+  }
+}

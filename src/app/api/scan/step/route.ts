@@ -4,7 +4,7 @@ import { z } from "zod";
 import { db } from "@/db";
 import { scans } from "@/db/schema";
 import { requireAccount, requireUser } from "@/lib/api/auth";
-import { HttpError, json, route } from "@/lib/api/respond";
+import { HttpError, json, readJson, route } from "@/lib/api/respond";
 import { runScanStep, toProgress } from "@/lib/scan/engine";
 import type { ScanProgressDto } from "@/lib/api/types";
 
@@ -23,7 +23,7 @@ export const POST = route(async (request: NextRequest) => {
   const user = await requireUser();
   const account = await requireAccount(user.id);
 
-  const body = bodySchema.parse(await request.json().catch(() => ({})));
+  const body = bodySchema.parse(await readJson(request, { allowEmpty: true }));
 
   const [scan] = body.scanId
     ? await db

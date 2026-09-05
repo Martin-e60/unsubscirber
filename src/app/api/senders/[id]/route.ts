@@ -4,7 +4,7 @@ import { z } from "zod";
 import { db } from "@/db";
 import { senders } from "@/db/schema";
 import { requireAccount, requireUser } from "@/lib/api/auth";
-import { HttpError, json, route } from "@/lib/api/respond";
+import { HttpError, json, readJson, route } from "@/lib/api/respond";
 import { toSenderDto } from "@/lib/api/senders";
 import { SENDER_STATUS } from "@/lib/constants";
 
@@ -29,7 +29,7 @@ export const PATCH = route(
     const account = await requireAccount(user.id);
     const { id } = await context.params;
 
-    const body = bodySchema.parse(await request.json());
+    const body = bodySchema.parse(await readJson(request));
 
     const [updated] = await db
       .update(senders)

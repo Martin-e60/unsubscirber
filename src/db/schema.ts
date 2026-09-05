@@ -5,6 +5,7 @@ import {
   integer,
   index,
   uniqueIndex,
+  primaryKey,
 } from "drizzle-orm/sqlite-core";
 
 /**
@@ -41,7 +42,16 @@ export const users = sqliteTable("users", {
   email: text("email").notNull().unique(),
   name: text("name"),
   image: text("image"),
+  passwordHash: text("password_hash"),
+  googleSub: text("google_sub").unique(),
   createdAt: createdAt(),
+});
+
+/** Persistent counters for password authentication; keys contain hashed emails. */
+export const authAttempts = sqliteTable("auth_attempts", {
+  key: text("key").primaryKey(),
+  attempts: integer("attempts").notNull(),
+  expiresAt: integer("expires_at").notNull(),
 });
 
 /**
@@ -164,11 +174,25 @@ export const senders = sqliteTable(
 );
 
 /**
- * Audit trail: one row per unsubscribe attempt, including failures.
- *
- * This is what the history screen reads, and it is what makes a failed
- * unsubscribe debuggable instead of mysterious.
+ * Unique subscription message IDs per mailbox. No message bodies are stored.
+ * Records survive rescans and disappear when the mailbox/sender is deleted.
  */
+export const scannedMessages = sqliteTable(
+  "scanned_messages",
+  {
+    mailAccountId: text("mail_account_id").notNull()
+      .references(() => mailAccounts.id, { onDelete: "cascade" }),
+    messageId: text("message_id").notNull(),
+    senderId: text("sender_id").notNull()
+      .references(() => senders.id, { onDelete: "cascade" }),
+  },
+  (t) => [
+    primaryKey({ columns: [t.mailAccountId, t.messageId] }),
+    index("scanned_messages_sender_idx").on(t.senderId),
+  ],
+);
+
+/** Audit trail of successful, failed, and manual unsubscribe attempts. */
 export const unsubscribeAttempts = sqliteTable(
   "unsubscribe_attempts",
   {

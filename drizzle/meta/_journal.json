@@ -8,6 +8,20 @@
       "when": 1788625260912,
       "tag": "0000_certain_impossible_man",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1788642526892,
+      "tag": "0001_tan_firedrake",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1788643450639,
+      "tag": "0002_needy_supernaut",
+      "breakpoints": true
     }
   ]
 }

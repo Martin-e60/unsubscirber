@@ -1,7 +1,6 @@
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 
 /**
@@ -11,8 +10,7 @@ import path from "node:path";
  * a health score that is off by ten. These pin down what each figure means.
  */
 
-const dbFile = path.join(os.tmpdir(), `tidely-stats-${Date.now()}.db`);
-process.env.DATABASE_URL = `file:${dbFile}`;
+process.env.DATABASE_URL = "file::memory:";
 process.env.ENCRYPTION_KEY = Buffer.alloc(32, 3).toString("base64");
 process.env.SESSION_SECRET = Buffer.alloc(32, 4).toString("base64");
 
@@ -25,18 +23,16 @@ let toSenderDto: typeof import("../src/lib/api/senders")["toSenderDto"];
 let accountId: string;
 
 before(async () => {
-  const { createClient } = await import("@libsql/client");
-  const client = createClient({ url: `file:${dbFile}` });
+  ({ db } = await import("../src/db"));
+  const client = db.$client;
 
-  const migration = fs.readFileSync(
-    path.join("drizzle", fs.readdirSync("drizzle").find((f) => f.endsWith(".sql"))!),
-    "utf8",
-  );
-  for (const statement of migration.split("--> statement-breakpoint")) {
-    if (statement.trim()) await client.execute(statement);
+  for (const file of fs.readdirSync("drizzle").filter((f) => f.endsWith(".sql")).sort()) {
+    const migration = fs.readFileSync(path.join("drizzle", file), "utf8");
+    for (const statement of migration.split("--> statement-breakpoint")) {
+      if (statement.trim()) await client.execute(statement);
+    }
   }
 
-  ({ db } = await import("../src/db"));
   schema = await import("../src/db/schema");
   ({ computeStats } = await import("../src/lib/api/stats"));
   ({ toSenderDto } = await import("../src/lib/api/senders"));
@@ -97,7 +93,7 @@ before(async () => {
 });
 
 after(() => {
-  fs.rmSync(dbFile, { force: true });
+  db?.$client.close();
 });
 
 test("inbox health is the share of volume that has been decided", async () => {
@@ -206,7 +202,7 @@ test("emails per month is measured over the span actually seen", async () => {
 });
 
 test("formatDuration reads the way the design writes it", async () => {
-  const { formatDuration } = await import("../src/components/senderStatus");
+  const { formatDuration } = await import("../src/components/senders/senderStatus");
 
   assert.equal(formatDuration(13_320), "3h 42m");
   assert.equal(formatDuration(3_600), "1h");

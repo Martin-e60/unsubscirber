@@ -1,0 +1,107 @@
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.tabs {
+  display: flex;
+  gap: var(--space-1);
+  overflow-x: auto;
+  padding-block-end: var(--space-1);
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  block-size: var(--control-height-sm);
+  padding-inline: var(--space-3);
+  border: none;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease);
+}
+
+.tab:hover {
+  background: var(--color-surface);
+}
+
+.tab[data-active] {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-hover);
+}
+
+.count {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+}
+
+.controls {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.searchWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-inline-size: 0;
+}
+
+.searchIcon {
+  position: absolute;
+  inset-inline-start: var(--space-4);
+  color: var(--color-text-subtle);
+  pointer-events: none;
+}
+
+.search {
+  inline-size: 100%;
+  block-size: var(--control-height);
+  padding-inline: var(--space-10) var(--space-4);
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-full);
+}
+
+.search::placeholder {
+  color: var(--color-text-subtle);
+}
+
+.search:focus,
+.select:focus {
+  border-color: var(--color-primary);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
+}
+
+.select {
+  block-size: var(--control-height);
+  padding-inline: var(--space-3);
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: var(--control-height);
+  padding-inline: var(--space-2);
+}
+
+.selected {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  margin-inline-end: auto;
+}
