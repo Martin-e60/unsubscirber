@@ -1,0 +1,30 @@
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  margin-block-end: var(--space-1);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-base);
+  line-height: var(--leading-relaxed);
+}
+
+.icon {
+  flex-shrink: 0;
+  margin-block-start: 0.125rem;
+}
+
+.info {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-hover);
+}
+
+.warning {
+  background: var(--color-warning-soft);
+  color: var(--color-warning-text);
+}
+
+.success {
+  background: var(--color-success-soft);
+  color: var(--color-success-text);
+}

@@ -1,0 +1,28 @@
+.summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.parts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin-inline-end: auto;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+}
+
+.success {
+  color: var(--color-success-text);
+}
+.warning {
+  color: var(--color-warning-text);
+}
+.danger {
+  color: var(--color-danger-text);
+}

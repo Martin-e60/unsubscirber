@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Next.js build output
+.next/
+out/
+build/
+
+# Secrets — never commit these. .env holds your Google credentials and the
+# keys that encrypt stored OAuth tokens.
+.env
+.env.local
+.env.*.local
+
+# Local database. Contains real sender data once you scan a mailbox.
+local.db
+local.db-journal
+*.db
+*.db-journal
+
+# TypeScript
+next-env.d.ts
+*.tsbuildinfo
+
+# Logs and OS noise
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
