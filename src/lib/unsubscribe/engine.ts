@@ -1,5 +1,5 @@
 import "server-only";
-import { eq } from "drizzle-orm";
+import { and, eq, notInArray } from "drizzle-orm";
 import { db } from "@/db";
 import {
   senders,
@@ -58,16 +58,32 @@ type AttemptResult = {
   manualUrl?: string;
 };
 
+/**
+ * Statuses an unsubscribe must never start from.
+ *
+ * UNSUBSCRIBING means another request is already working on this sender;
+ * UNSUBSCRIBED means the job is done. Starting again from either would send a
+ * second unsubscribe email from the user's own mailbox. Every other status —
+ * ACTIVE, FAILED, MANUAL, KEPT, ROLLED_UP — is a legitimate retry.
+ */
+const NOT_CLAIMABLE = [
+  SENDER_STATUS.UNSUBSCRIBING,
+  SENDER_STATUS.UNSUBSCRIBED,
+];
+
 export async function unsubscribeSender(
   account: MailAccount,
   sender: Sender,
   /** Injectable for tests; in production the account decides the provider. */
   mailProvider?: MailProvider,
 ): Promise<UnsubscribeOutcome> {
-  await db
-    .update(senders)
-    .set({ status: SENDER_STATUS.UNSUBSCRIBING, updatedAt: new Date() })
-    .where(eq(senders.id, sender.id));
+  // Claim the sender before doing anything. Two requests can arrive at once —
+  // a double click, or a row that is also part of a bulk selection — and
+  // checking the status and then writing it would let both through. A single
+  // conditional UPDATE is atomic, so exactly one of them can win.
+  if (!(await claimForUnsubscribe(sender.id))) {
+    return await alreadyHandled(sender.id);
+  }
 
   const attempts: AttemptResult[] = [];
 
@@ -294,5 +310,52 @@ async function finish(
     method: result.method,
     manualUrl: result.manualUrl ?? null,
     detail: result.detail,
+  };
+}
+
+/**
+ * Marks the sender as in progress, but only if nobody else already has.
+ *
+ * Returns true when this call is the one that claimed it.
+ */
+async function claimForUnsubscribe(senderId: string): Promise<boolean> {
+  const claimed = await db
+    .update(senders)
+    .set({ status: SENDER_STATUS.UNSUBSCRIBING, updatedAt: new Date() })
+    .where(
+      and(
+        eq(senders.id, senderId),
+        notInArray(senders.status, NOT_CLAIMABLE),
+      ),
+    )
+    .returning({ id: senders.id });
+
+  return claimed.length === 1;
+}
+
+/**
+ * What to report when the claim was lost.
+ *
+ * Reads the sender back rather than guessing, so the caller sees the real
+ * current state: still running, or already finished by the request that won.
+ */
+async function alreadyHandled(senderId: string): Promise<UnsubscribeOutcome> {
+  const [current] = await db
+    .select()
+    .from(senders)
+    .where(eq(senders.id, senderId))
+    .limit(1);
+
+  const status = current?.status ?? SENDER_STATUS.UNSUBSCRIBING;
+
+  return {
+    senderId,
+    status,
+    method: null,
+    manualUrl: null,
+    detail:
+      status === SENDER_STATUS.UNSUBSCRIBED
+        ? "Already unsubscribed from this sender."
+        : "An unsubscribe is already running for this sender.",
   };
 }

@@ -498,3 +498,70 @@ test("simultaneous scan starts leave only one running scan for the mailbox", asy
   ));
   assert.equal(running.length, 1);
 });
+
+test("two unsubscribes at once email the sender only once", async () => {
+  const { eq } = await import("drizzle-orm");
+  const mailbox = fakeMailbox([]);
+
+  const [sender] = await mod.db
+    .insert(mod.schema.senders)
+    .values({
+      mailAccountId: account.id,
+      address: "race@example.com",
+      name: "Race List",
+      messageCount: 3,
+      unsubscribeMailto: "leave@race.example.com",
+    })
+    .returning();
+
+  // What a double click looks like, or a row that is also part of a bulk
+  // selection: two requests for the same sender, in flight together.
+  const outcomes = await Promise.all([
+    mod.unsubEngine.unsubscribeSender(account, sender, mailbox.provider),
+    mod.unsubEngine.unsubscribeSender(account, sender, mailbox.provider),
+  ]);
+
+  assert.equal(
+    mailbox.sent.length,
+    1,
+    "the sender must receive one unsubscribe email, not two",
+  );
+
+  const attempts = await mod.db
+    .select()
+    .from(mod.schema.unsubscribeAttempts)
+    .where(eq(mod.schema.unsubscribeAttempts.senderId, sender.id));
+
+  assert.equal(attempts.length, 1, "one attempt recorded, not two");
+
+  // One call did the work; the other reported what was already happening.
+  assert.equal(outcomes.filter((o) => o.method === "MAILTO").length, 1);
+  assert.equal(outcomes.filter((o) => o.method === null).length, 1);
+});
+
+test("unsubscribing again from a finished sender sends nothing", async () => {
+  const mailbox = fakeMailbox([]);
+
+  const [sender] = await mod.db
+    .insert(mod.schema.senders)
+    .values({
+      mailAccountId: account.id,
+      address: "done@example.com",
+      name: "Done List",
+      messageCount: 2,
+      unsubscribeMailto: "leave@done.example.com",
+      status: "UNSUBSCRIBED",
+      decidedAt: new Date(),
+    })
+    .returning();
+
+  const outcome = await mod.unsubEngine.unsubscribeSender(
+    account,
+    sender,
+    mailbox.provider,
+  );
+
+  assert.equal(mailbox.sent.length, 0, "a finished sender is never emailed again");
+  assert.equal(outcome.status, "UNSUBSCRIBED");
+  assert.match(outcome.detail, /already unsubscribed/i);
+});
