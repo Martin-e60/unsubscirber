@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { AppShell } from "@/components/layout/AppShell";
-import { Logo } from "@/components/layout/Logo";
+import { PublicHeader } from "@/components/layout/PublicHeader";
 import { PricingView } from "@/components/views/PricingView";
 import { getCurrentUser, getPrimaryAccount } from "@/lib/api/auth";
 import styles from "./page.module.css";
@@ -16,15 +15,7 @@ export default async function PricingPage() {
 
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
-        <Link href="/" className={styles.logo} aria-label="Tidely home"><Logo /></Link>
-        <nav className={styles.nav} aria-label="Main">
-          <Link href="/">Home</Link>
-          <Link href={user ? "/connect" : "/login"}>
-            {user ? "Connect inbox" : "Sign in"}
-          </Link>
-        </nav>
-      </header>
+      <div className={styles.header}><PublicHeader signedIn={Boolean(user)} /></div>
       <main><PricingView /></main>
     </div>
   );

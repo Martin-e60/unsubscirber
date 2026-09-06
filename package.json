@@ -8,6 +8,7 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "db:push": "drizzle-kit push",
+    "db:migrate": "tsx --tsconfig tsconfig.test.json scripts/migrate.mts",
     "db:studio": "drizzle-kit studio",
     "test": "tsx --tsconfig tsconfig.test.json --test tests/*.test.ts",
     "db:seed": "tsx --tsconfig tsconfig.test.json scripts/seed.mts"

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { ArrowRight, Play, Check } from "lucide-react";
 import { Logo } from "@/components/layout/Logo";
+import { PublicHeader } from "@/components/layout/PublicHeader";
 import { getCurrentUser } from "@/lib/api/auth";
 import styles from "./page.module.css";
 
@@ -50,13 +51,7 @@ export default async function HomePage({
 
   return (
     <div className={styles.page}>
-      <header className={styles.nav}>
-        <Logo />
-        <nav className={styles.navLinks} aria-label="Main">
-          <a className={styles.navLink} href="/pricing">Pricing</a>
-          <a className={styles.navLink} href="/login">Sign in</a>
-        </nav>
-      </header>
+      <div className={styles.nav}><PublicHeader /></div>
 
       <main>
         <section className={styles.hero}>

@@ -1,0 +1,33 @@
+.page {
+  max-inline-size: var(--layout-max-width);
+  margin-inline: auto;
+  padding: var(--space-6) var(--layout-gutter) var(--space-12);
+}
+
+.content {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-5);
+  max-inline-size: 44rem;
+  margin-block-start: var(--space-12);
+}
+
+.content h1 {
+  font-size: var(--text-3xl);
+}
+
+.content p {
+  color: var(--color-text-muted);
+  line-height: 1.7;
+}
+
+.description {
+  font-size: var(--text-lg);
+}
+
+.cta {
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-primary-soft);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+}
