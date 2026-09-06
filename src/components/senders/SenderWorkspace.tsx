@@ -24,6 +24,7 @@ export function SenderWorkspace({
   initialStatus,
   initialSearch = "",
   showTabs = true,
+  tabs,
   showScan = false,
   emptyTitle,
   emptyDescription,
@@ -31,6 +32,7 @@ export function SenderWorkspace({
   initialStatus: SenderFilter;
   initialSearch?: string;
   showTabs?: boolean;
+  tabs?: SenderFilter[];
   showScan?: boolean;
   emptyTitle: string;
   emptyDescription?: string;
@@ -85,6 +87,7 @@ export function SenderWorkspace({
 
       <ResultSummary
         unsubscribed={unsubscribe.summary.unsubscribed}
+        requested={unsubscribe.summary.requested}
         manual={unsubscribe.summary.manual}
         failed={unsubscribe.summary.failed}
         onDismiss={unsubscribe.reset}
@@ -95,6 +98,7 @@ export function SenderWorkspace({
         counts={senders.counts}
         onStatusChange={senders.setStatus}
         showTabs={showTabs}
+        tabs={tabs}
         search={senders.search}
         onSearchChange={senders.setSearch}
         sort={senders.sort}

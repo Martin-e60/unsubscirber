@@ -18,6 +18,8 @@ export const SENDER_STATUS = {
   ROLLED_UP: "ROLLED_UP",
   /** An unsubscribe request is in flight. */
   UNSUBSCRIBING: "UNSUBSCRIBING",
+  /** Email request sent; removal by the mailing list is not confirmed. */
+  REQUESTED: "REQUESTED",
   /** Unsubscribe completed successfully. */
   UNSUBSCRIBED: "UNSUBSCRIBED",
   /** Every available method failed. */
@@ -27,6 +29,13 @@ export const SENDER_STATUS = {
 } as const;
 
 export type SenderStatus = (typeof SENDER_STATUS)[keyof typeof SENDER_STATUS];
+
+/** These states must not be reset by Keep/Undo or send another request. */
+export const PROTECTED_UNSUBSCRIBE_STATUSES: SenderStatus[] = [
+  SENDER_STATUS.UNSUBSCRIBING,
+  SENDER_STATUS.REQUESTED,
+  SENDER_STATUS.UNSUBSCRIBED,
+];
 
 export const SCAN_STATUS = {
   RUNNING: "RUNNING",
@@ -52,6 +61,7 @@ export type UnsubscribeMethod =
   (typeof UNSUBSCRIBE_METHOD)[keyof typeof UNSUBSCRIBE_METHOD];
 
 export const ATTEMPT_STATUS = {
+  SENT: "SENT",
   SUCCESS: "SUCCESS",
   FAILED: "FAILED",
   MANUAL_REQUIRED: "MANUAL_REQUIRED",

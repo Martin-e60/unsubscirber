@@ -290,7 +290,7 @@ test("starting a scan cancels the one already running", async () => {
   assert.equal(second.status, "RUNNING");
 });
 
-test("unsubscribing by mailto sends the email and records the attempt", async () => {
+test("mailto records an unconfirmed request and blocks stale retries", async () => {
   const { eq } = await import("drizzle-orm");
   const mailbox = fakeMailbox([]);
 
@@ -302,16 +302,21 @@ test("unsubscribing by mailto sends the email and records the attempt", async ()
       name: "Example List",
       messageCount: 5,
       unsubscribeMailto: "leave@example.com",
+      sampleMessageId: "request-sample",
     })
     .returning();
 
+  let bodyReads = 0;
+  mailbox.provider.getMessageHtml = async () => { bodyReads++; return null; };
   const outcome = await mod.unsubEngine.unsubscribeSender(
     account,
     sender,
     mailbox.provider,
   );
 
-  assert.equal(outcome.status, "UNSUBSCRIBED");
+  assert.equal(outcome.status, "REQUESTED");
+  assert.match(outcome.detail, /not confirmed/i);
+  assert.equal(bodyReads, 0, "a sent request must not fall through to another method");
   assert.equal(outcome.method, "MAILTO");
   assert.equal(mailbox.sent.length, 1);
   assert.equal(mailbox.sent[0].to, "leave@example.com");
@@ -320,7 +325,7 @@ test("unsubscribing by mailto sends the email and records the attempt", async ()
     .select()
     .from(mod.schema.senders)
     .where(eq(mod.schema.senders.id, sender.id));
-  assert.equal(updated.status, "UNSUBSCRIBED");
+  assert.equal(updated.status, "REQUESTED");
   assert.ok(updated.decidedAt, "the decision is timestamped");
 
   const attempts = await mod.db
@@ -329,8 +334,79 @@ test("unsubscribing by mailto sends the email and records the attempt", async ()
     .where(eq(mod.schema.unsubscribeAttempts.senderId, sender.id));
 
   assert.equal(attempts.length, 1);
-  assert.equal(attempts[0].status, "SUCCESS");
+  assert.equal(attempts[0].status, "SENT");
   assert.equal(attempts[0].method, "MAILTO");
+
+  // Deliberately pass the old ACTIVE object, as a stale browser request would.
+  const repeated = await mod.unsubEngine.unsubscribeSender(account, sender, mailbox.provider);
+  assert.equal(repeated.status, "REQUESTED");
+  assert.equal(repeated.method, null);
+  assert.match(repeated.detail, /already been sent/i);
+  assert.equal(mailbox.sent.length, 1);
+
+  const { listSenders, countByStatus, toSenderDto } = await import("../src/lib/api/senders");
+  const requests = await listSenders({ mailAccountId: account.id, status: "REQUESTED" });
+  assert.ok(requests.rows.some((row) => row.id === sender.id));
+  assert.equal(toSenderDto(updated).canUnsubscribe, false);
+  assert.equal((await countByStatus(account.id)).REQUESTED, requests.total);
+  const confirmed = await listSenders({ mailAccountId: account.id, status: "UNSUBSCRIBED" });
+  assert.ok(confirmed.rows.every((row) => row.id !== sender.id));
+});
+
+test("a rejected unsubscribe email is failed, not recorded as sent", async () => {
+  const { eq } = await import("drizzle-orm");
+  const mailbox = fakeMailbox([]);
+  mailbox.provider.sendMail = async () => { throw new Error("Provider rejected request"); };
+  const [sender] = await mod.db.insert(mod.schema.senders).values({
+    mailAccountId: account.id, address: "send-failure@example.com",
+    unsubscribeMailto: "leave@example.com",
+  }).returning();
+  const result = await mod.unsubEngine.unsubscribeSender(account, sender, mailbox.provider);
+  assert.equal(result.status, "FAILED");
+  const [attempt] = await mod.db.select().from(mod.schema.unsubscribeAttempts)
+    .where(eq(mod.schema.unsubscribeAttempts.senderId, sender.id));
+  assert.equal(attempt.status, "FAILED");
+});
+
+test("manual choices cannot reset protected unsubscribe states or cross accounts", async () => {
+  const { changeSenderStatus, toSenderDto } = await import("../src/lib/api/senders");
+  const { eq } = await import("drizzle-orm");
+  for (const status of ["UNSUBSCRIBING", "REQUESTED", "UNSUBSCRIBED"] as const) {
+    const [sender] = await mod.db.insert(mod.schema.senders).values({
+      mailAccountId: account.id, address: `protected-${status}@example.com`,
+      unsubscribeMailto: "leave@example.com", status,
+    }).returning();
+    assert.equal(toSenderDto(sender).canUnsubscribe, false);
+    for (const choice of ["ACTIVE", "KEPT", "ROLLED_UP"] as const) {
+      await assert.rejects(changeSenderStatus(account.id, sender.id, choice), { status: 409 });
+    }
+    await assert.rejects(changeSenderStatus("different-account", sender.id, "ACTIVE"), { status: 404 });
+    const [saved] = await mod.db.select().from(mod.schema.senders).where(eq(mod.schema.senders.id, sender.id));
+    assert.equal(saved.status, status);
+  }
+  const [active] = await mod.db.insert(mod.schema.senders).values({
+    mailAccountId: account.id, address: "normal-choice@example.com",
+  }).returning();
+  assert.equal((await changeSenderStatus(account.id, active.id, "KEPT")).status, "KEPT");
+  assert.equal((await changeSenderStatus(account.id, active.id, "ACTIVE")).status, "ACTIVE");
+  const [restored] = await mod.db.select().from(mod.schema.senders).where(eq(mod.schema.senders.id, active.id));
+  assert.equal(restored.decidedAt, null);
+});
+
+test("rescanning a requested sender does not confirm removal or enable another send", async () => {
+  const address = "pending-rescan@example.com";
+  await mod.db.insert(mod.schema.senders).values({
+    mailAccountId: account.id, address, status: "REQUESTED", decidedAt: new Date(),
+    unsubscribeMailto: "leave@example.com",
+  });
+  const scan = await mod.scanEngine.startScan(account, 365);
+  const mailbox = fakeMailbox([{ messages: [subscription("pending-1", address)], nextPageToken: null }]);
+  await mod.scanEngine.runScanStep(account, scan, mailbox.provider);
+  const saved = await senderAt(address);
+  assert.equal(saved.status, "REQUESTED");
+  assert.equal(saved.messageCount, 1);
+  assert.equal((await mod.unsubEngine.unsubscribeSender(account, saved, mailbox.provider)).status, "REQUESTED");
+  assert.equal(mailbox.sent.length, 0);
 });
 
 test("a sender with no unsubscribe method at all fails cleanly", async () => {

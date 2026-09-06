@@ -201,6 +201,22 @@ test("emails per month is measured over the span actually seen", async () => {
   assert.equal(unknown.perMonth, 5);
 });
 
+test("requests sent count as decisions but never as time saved", async () => {
+  const [user] = await db.insert(schema.users).values({ email: "requested-stats@example.com" }).returning();
+  const [account] = await db.insert(schema.mailAccounts).values({
+    userId: user.id, email: user.email, accessTokenEnc: "x", expiresAt: 0, scope: "test",
+  }).returning();
+  await db.insert(schema.senders).values({
+    mailAccountId: account.id, address: "unconfirmed@example.com", messageCount: 100,
+    status: "REQUESTED", decidedAt: new Date(),
+  });
+  const stats = await computeStats(account.id);
+  assert.equal(stats.handledThisMonth, 1);
+  assert.equal(stats.emailsHandled, 100);
+  assert.equal(stats.timeSavedSeconds, 0);
+  assert.equal(stats.timeSavedRecentSeconds, 0);
+});
+
 test("formatDuration reads the way the design writes it", async () => {
   const { formatDuration } = await import("../src/components/senders/senderStatus");
 

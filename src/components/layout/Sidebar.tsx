@@ -9,6 +9,7 @@ import {
   Layers,
   MailX,
   Settings,
+  CreditCard,
   type LucideIcon,
 } from "lucide-react";
 import { Logo } from "@/components/layout/Logo";
@@ -30,6 +31,7 @@ const NAV: NavItem[] = [
   { href: "/senders", label: "Senders", icon: Users },
   { href: "/rollups", label: "Rollups", icon: Layers },
   { href: "/unsubscribed", label: "Unsubscribed", icon: MailX },
+  { href: "/pricing", label: "Pricing", icon: CreditCard },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
@@ -51,6 +53,8 @@ export function Sidebar({ inboxHealth }: { inboxHealth: number | null }) {
             href={href}
             className={styles.item}
             data-active={pathname === href || undefined}
+            aria-current={pathname === href ? "page" : undefined}
+            aria-label={label}
           >
             <Icon className={styles.icon} size={18} strokeWidth={1.75} aria-hidden />
             <span className={styles.label}>{label}</span>

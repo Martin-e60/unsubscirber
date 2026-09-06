@@ -13,6 +13,7 @@ import { safeFetch } from "./safe-fetch";
 import { pageConfirmsUnsubscribe } from "./confirmation";
 import {
   ATTEMPT_STATUS,
+  PROTECTED_UNSUBSCRIBE_STATUSES,
   SENDER_STATUS,
   UNSUBSCRIBE_METHOD,
   type AttemptStatus,
@@ -34,7 +35,7 @@ import {
  *                             cannot click, so we read the response and only
  *                             claim success when the page says so.
  *   3. MAILTO                 send the unsubscribe email from your address.
- *                             Slower to take effect but definite.
+ *                             Records a sent request, not confirmed removal.
  *   4. BODY_LINK              no headers at all: scrape a link out of the last
  *                             message and treat it like HTTP.
  *
@@ -57,19 +58,6 @@ type AttemptResult = {
   detail: string;
   manualUrl?: string;
 };
-
-/**
- * Statuses an unsubscribe must never start from.
- *
- * UNSUBSCRIBING means another request is already working on this sender;
- * UNSUBSCRIBED means the job is done. Starting again from either would send a
- * second unsubscribe email from the user's own mailbox. Every other status —
- * ACTIVE, FAILED, MANUAL, KEPT, ROLLED_UP — is a legitimate retry.
- */
-const NOT_CLAIMABLE = [
-  SENDER_STATUS.UNSUBSCRIBING,
-  SENDER_STATUS.UNSUBSCRIBED,
-];
 
 export async function unsubscribeSender(
   account: MailAccount,
@@ -97,6 +85,9 @@ export async function unsubscribeSender(
 
       if (result.status === ATTEMPT_STATUS.SUCCESS) {
         return await finish(sender.id, SENDER_STATUS.UNSUBSCRIBED, result);
+      }
+      if (result.status === ATTEMPT_STATUS.SENT) {
+        return await finish(sender.id, SENDER_STATUS.REQUESTED, result);
       }
     }
   } catch (error) {
@@ -271,8 +262,8 @@ async function sendMailto(
     });
     return {
       method: UNSUBSCRIBE_METHOD.MAILTO,
-      status: ATTEMPT_STATUS.SUCCESS,
-      detail: `Unsubscribe email sent to ${to}.`,
+      status: ATTEMPT_STATUS.SENT,
+      detail: `Unsubscribe email sent to ${to}. Removal is not confirmed; this list may still send emails.`,
     };
   } catch (error) {
     return {
@@ -325,7 +316,7 @@ async function claimForUnsubscribe(senderId: string): Promise<boolean> {
     .where(
       and(
         eq(senders.id, senderId),
-        notInArray(senders.status, NOT_CLAIMABLE),
+        notInArray(senders.status, PROTECTED_UNSUBSCRIBE_STATUSES),
       ),
     )
     .returning({ id: senders.id });
@@ -356,6 +347,8 @@ async function alreadyHandled(senderId: string): Promise<UnsubscribeOutcome> {
     detail:
       status === SENDER_STATUS.UNSUBSCRIBED
         ? "Already unsubscribed from this sender."
-        : "An unsubscribe is already running for this sender.",
+        : status === SENDER_STATUS.REQUESTED
+          ? "An unsubscribe email has already been sent. Removal is not confirmed."
+          : "An unsubscribe is already running for this sender.",
   };
 }

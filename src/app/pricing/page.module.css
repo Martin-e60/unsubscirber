@@ -1,0 +1,27 @@
+.page {
+  max-inline-size: var(--layout-max-width);
+  margin-inline: auto;
+  padding: var(--space-6) var(--layout-gutter) var(--space-12);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-block-end: var(--space-12);
+}
+
+.logo {
+  text-decoration: none;
+}
+
+.nav {
+  display: flex;
+  gap: var(--space-4);
+  font-size: var(--text-sm);
+}
+
+.nav a {
+  color: var(--color-text-muted);
+}

@@ -52,9 +52,10 @@ export default async function HomePage({
     <div className={styles.page}>
       <header className={styles.nav}>
         <Logo />
-        <a className={styles.navLink} href="/login">
-          Sign in
-        </a>
+        <nav className={styles.navLinks} aria-label="Main">
+          <a className={styles.navLink} href="/pricing">Pricing</a>
+          <a className={styles.navLink} href="/login">Sign in</a>
+        </nav>
       </header>
 
       <main>

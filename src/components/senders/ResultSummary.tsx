@@ -7,16 +7,18 @@ import styles from "./ResultSummary.module.css";
 
 export function ResultSummary({
   unsubscribed,
+  requested,
   manual,
   failed,
   onDismiss,
 }: {
   unsubscribed: number;
+  requested: number;
   manual: number;
   failed: number;
   onDismiss: () => void;
 }) {
-  if (unsubscribed + manual + failed === 0) return null;
+  if (unsubscribed + requested + manual + failed === 0) return null;
 
   return (
     <div className={styles.summary} role="status">
@@ -32,6 +34,11 @@ export function ResultSummary({
           </span>
         ) : null}
         {failed > 0 ? <span className={styles.danger}>{failed} failed</span> : null}
+        {requested > 0 ? (
+          <span className={styles.warning}>
+            {requested} {requested === 1 ? "request" : "requests"} sent — removal not confirmed
+          </span>
+        ) : null}
       </div>
 
       <Button variant="ghost" size="sm" onClick={onDismiss}>

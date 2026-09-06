@@ -18,6 +18,7 @@ const RECENT_WINDOW_DAYS = 30;
 
 /** Statuses that mean the user has made a decision about a sender. */
 const DECIDED = [
+  SENDER_STATUS.REQUESTED,
   SENDER_STATUS.KEPT,
   SENDER_STATUS.ROLLED_UP,
   SENDER_STATUS.UNSUBSCRIBED,
@@ -96,7 +97,7 @@ export async function computeStats(mailAccountId: string): Promise<StatsDto> {
 
   /**
    * Inbox health is the share of your subscription volume you have made a
-   * decision about — kept, rolled up or unsubscribed. An untouched mailbox
+   * decision about — kept, rolled up, requested removal or unsubscribed. An untouched mailbox
    * scores low; one where every newsletter has been triaged scores 100.
    * A mailbox with no subscriptions at all is, correctly, already healthy.
    */

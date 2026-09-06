@@ -25,6 +25,12 @@
   padding-block: var(--space-6);
 }
 
+.navLinks {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+}
+
 .navLink {
   color: var(--color-text-muted);
   font-weight: var(--weight-medium);

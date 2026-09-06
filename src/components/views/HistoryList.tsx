@@ -70,16 +70,20 @@ export function HistoryList() {
                   tone={
                     item.status === ATTEMPT_STATUS.SUCCESS
                       ? "success"
-                      : item.status === ATTEMPT_STATUS.MANUAL_REQUIRED
-                        ? "warning"
-                        : "danger"
+                      : item.status === ATTEMPT_STATUS.SENT
+                        ? "info"
+                        : item.status === ATTEMPT_STATUS.MANUAL_REQUIRED
+                          ? "warning"
+                          : "danger"
                   }
                 >
                   {item.status === ATTEMPT_STATUS.SUCCESS
                     ? "Done"
-                    : item.status === ATTEMPT_STATUS.MANUAL_REQUIRED
-                      ? "Needs a click"
-                      : "Failed"}
+                    : item.status === ATTEMPT_STATUS.SENT
+                      ? "Request sent"
+                      : item.status === ATTEMPT_STATUS.MANUAL_REQUIRED
+                        ? "Needs a click"
+                        : "Failed"}
                 </Badge>
 
                 <time className={styles.time} dateTime={item.createdAt}>

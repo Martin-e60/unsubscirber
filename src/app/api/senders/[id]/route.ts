@@ -1,11 +1,8 @@
 import type { NextRequest } from "next/server";
-import { and, eq } from "drizzle-orm";
 import { z } from "zod";
-import { db } from "@/db";
-import { senders } from "@/db/schema";
 import { requireAccount, requireUser } from "@/lib/api/auth";
-import { HttpError, json, readJson, route } from "@/lib/api/respond";
-import { toSenderDto } from "@/lib/api/senders";
+import { json, readJson, route } from "@/lib/api/respond";
+import { changeSenderStatus } from "@/lib/api/senders";
 import { SENDER_STATUS } from "@/lib/constants";
 
 /**
@@ -31,20 +28,6 @@ export const PATCH = route(
 
     const body = bodySchema.parse(await readJson(request));
 
-    const [updated] = await db
-      .update(senders)
-      .set({
-        status: body.status,
-        // Returning a sender to ACTIVE clears the decision timestamp, so the
-        // stats only ever count choices that currently stand.
-        decidedAt: body.status === SENDER_STATUS.ACTIVE ? null : new Date(),
-        updatedAt: new Date(),
-      })
-      .where(and(eq(senders.id, id), eq(senders.mailAccountId, account.id)))
-      .returning();
-
-    if (!updated) throw new HttpError("Sender not found.", 404);
-
-    return json(toSenderDto(updated));
+    return json(await changeSenderStatus(account.id, id, body.status));
   },
 );

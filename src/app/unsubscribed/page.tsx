@@ -17,13 +17,13 @@ export default async function UnsubscribedPage() {
     <AppShell>
       <PageHeader
         title="Unsubscribed"
-        subtitle="Lists you have left, and every attempt we made getting you out."
+        subtitle="Confirmed removals, requests sent, and attempts that need your attention."
       />
       <SenderWorkspace
         initialStatus={SENDER_STATUS.UNSUBSCRIBED}
-        showTabs={false}
-        emptyTitle="Nothing unsubscribed yet"
-        emptyDescription="Once you leave a list it shows up here."
+        tabs={[SENDER_STATUS.UNSUBSCRIBED, SENDER_STATUS.REQUESTED, SENDER_STATUS.MANUAL, SENDER_STATUS.FAILED]}
+        emptyTitle="No senders match this view"
+        emptyDescription="Email requests appear under Requests sent. Sending a request does not confirm removal from the list."
       />
       <HistoryList />
     </AppShell>

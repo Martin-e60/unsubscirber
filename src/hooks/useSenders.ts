@@ -26,6 +26,7 @@ const emptyCounts: SenderCountsDto = {
   ROLLED_UP: 0,
   UNSUBSCRIBING: 0,
   UNSUBSCRIBED: 0,
+  REQUESTED: 0,
   FAILED: 0,
   MANUAL: 0,
 };
@@ -127,12 +128,12 @@ export function useSenders(options: UseSendersOptions = {}) {
         });
         setCounts((c) => ({ ...c, ACTIVE: Math.max(0, c.ACTIVE - 1), KEPT: c.KEPT + 1 }));
       } catch (cause) {
-        // Roll the optimistic update back if the server disagreed.
-        patchSender(id, { status: SENDER_STATUS.ACTIVE });
+        // Another tab may have sent an unsubscribe; reload its real status.
+        await refresh();
         setError(cause instanceof Error ? cause.message : "Could not keep sender");
       }
     },
-    [patchSender],
+    [patchSender, refresh],
   );
 
   /** "Roll up" — bundle this sender into a digest instead of unsubscribing. */
@@ -149,11 +150,11 @@ export function useSenders(options: UseSendersOptions = {}) {
           ROLLED_UP: c.ROLLED_UP + 1,
         }));
       } catch (cause) {
-        patchSender(id, { status: SENDER_STATUS.ACTIVE });
+        await refresh();
         setError(cause instanceof Error ? cause.message : "Could not roll up sender");
       }
     },
-    [patchSender],
+    [patchSender, refresh],
   );
 
   /** Undo a "keep", putting the sender back in the active list. */
@@ -166,11 +167,11 @@ export function useSenders(options: UseSendersOptions = {}) {
         });
         setCounts((c) => ({ ...c, KEPT: Math.max(0, c.KEPT - 1), ACTIVE: c.ACTIVE + 1 }));
       } catch (cause) {
-        patchSender(id, { status: SENDER_STATUS.KEPT });
+        await refresh();
         setError(cause instanceof Error ? cause.message : "Could not restore sender");
       }
     },
-    [patchSender],
+    [patchSender, refresh],
   );
 
   return {

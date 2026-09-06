@@ -1,8 +1,9 @@
 import "server-only";
-import { and, desc, asc, eq, inArray, like, or, sql, count } from "drizzle-orm";
+import { and, desc, asc, eq, inArray, notInArray, like, or, sql, count } from "drizzle-orm";
 import { db } from "@/db";
 import { senders, unsubscribeAttempts, type Sender } from "@/db/schema";
-import { ATTEMPT_STATUS, SENDER_STATUS, type SenderStatus } from "@/lib/constants";
+import { ATTEMPT_STATUS, PROTECTED_UNSUBSCRIBE_STATUSES, SENDER_STATUS, type SenderStatus } from "@/lib/constants";
+import { HttpError } from "./respond";
 import type { SenderCountsDto, SenderDto, SenderSort } from "./types";
 
 /**
@@ -122,11 +123,30 @@ export function toSenderDto(sender: Sender, manualUrl: string | null = null): Se
     sampleSubject: sender.sampleSubject,
     status: sender.status,
     canOneClick: sender.oneClick && Boolean(sender.unsubscribeHttp),
-    canUnsubscribe: Boolean(
+    canUnsubscribe: !PROTECTED_UNSUBSCRIBE_STATUSES.includes(sender.status) && Boolean(
       sender.unsubscribeHttp ?? sender.unsubscribeMailto ?? sender.sampleMessageId,
     ),
     manualUrl,
   };
+}
+
+/** A manual choice cannot reset an in-flight or already sent unsubscribe. */
+export async function changeSenderStatus(
+  mailAccountId: string,
+  id: string,
+  status: typeof SENDER_STATUS.ACTIVE | typeof SENDER_STATUS.KEPT | typeof SENDER_STATUS.ROLLED_UP,
+): Promise<SenderDto> {
+  const ownedSender = and(eq(senders.id, id), eq(senders.mailAccountId, mailAccountId));
+  const [updated] = await db.update(senders).set({
+    status,
+    decidedAt: status === SENDER_STATUS.ACTIVE ? null : new Date(),
+    updatedAt: new Date(),
+  }).where(and(ownedSender, notInArray(senders.status, PROTECTED_UNSUBSCRIBE_STATUSES))).returning();
+
+  if (updated) return toSenderDto(updated);
+  const [existing] = await db.select({ id: senders.id }).from(senders).where(ownedSender).limit(1);
+  if (!existing) throw new HttpError("Sender not found.", 404);
+  throw new HttpError("This unsubscribe is already in progress or has been sent. Refresh the list to see its status.", 409);
 }
 
 /**

@@ -16,6 +16,7 @@ const TABS: (SenderStatus | "ALL")[] = [
   SENDER_STATUS.MANUAL,
   SENDER_STATUS.ROLLED_UP,
   SENDER_STATUS.UNSUBSCRIBED,
+  SENDER_STATUS.REQUESTED,
   SENDER_STATUS.KEPT,
   SENDER_STATUS.FAILED,
   "ALL",
@@ -26,6 +27,7 @@ export function SenderToolbar({
   counts,
   onStatusChange,
   showTabs = true,
+  tabs = TABS,
   search,
   onSearchChange,
   sort,
@@ -42,6 +44,7 @@ export function SenderToolbar({
   counts: SenderCountsDto;
   onStatusChange: (next: SenderStatus | "ALL") => void;
   showTabs?: boolean;
+  tabs?: (SenderStatus | "ALL")[];
   search: string;
   onSearchChange: (next: string) => void;
   sort: SenderSort;
@@ -58,7 +61,7 @@ export function SenderToolbar({
     <div className={styles.toolbar}>
       {showTabs ? (
         <div className={styles.tabs} role="tablist" aria-label="Filter subscriptions">
-          {TABS.map((tab) => {
+          {tabs.map((tab) => {
             const count = tab === "ALL" ? undefined : counts[tab];
             return (
               <button

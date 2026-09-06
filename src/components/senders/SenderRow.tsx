@@ -59,7 +59,9 @@ export function SenderRow({
       <div className={styles.identity}>
         <span className={styles.name}>{label}</span>
         <span className={styles.detail}>
-          {sender.sampleSubject ?? sender.address}
+          {sender.status === SENDER_STATUS.REQUESTED
+            ? "Email request sent. Removal is not confirmed; emails may still arrive."
+            : sender.sampleSubject ?? sender.address}
         </span>
       </div>
 
@@ -96,7 +98,7 @@ export function SenderRow({
               </Button>
             )}
           </>
-        ) : sender.status === SENDER_STATUS.UNSUBSCRIBING ? (
+        ) : sender.status === SENDER_STATUS.UNSUBSCRIBING || sender.status === SENDER_STATUS.REQUESTED ? (
           <Badge tone="info">{STATUS_LABEL[sender.status]}</Badge>
         ) : (
           <>

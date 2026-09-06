@@ -14,6 +14,7 @@ export const STATUS_LABEL: Record<SenderStatus, string> = {
   [SENDER_STATUS.ROLLED_UP]: "Rolled up",
   [SENDER_STATUS.UNSUBSCRIBING]: "Working…",
   [SENDER_STATUS.UNSUBSCRIBED]: "Unsubscribed",
+  [SENDER_STATUS.REQUESTED]: "Request sent",
   [SENDER_STATUS.FAILED]: "Failed",
   [SENDER_STATUS.MANUAL]: "Needs a click",
 };
@@ -24,6 +25,7 @@ export const STATUS_TONE: Record<SenderStatus, BadgeTone> = {
   [SENDER_STATUS.ROLLED_UP]: "info",
   [SENDER_STATUS.UNSUBSCRIBING]: "info",
   [SENDER_STATUS.UNSUBSCRIBED]: "success",
+  [SENDER_STATUS.REQUESTED]: "info",
   [SENDER_STATUS.FAILED]: "danger",
   [SENDER_STATUS.MANUAL]: "warning",
 };
@@ -36,6 +38,7 @@ export const FILTER_LABEL: Record<SenderStatus | "ALL", string> = {
   [SENDER_STATUS.ROLLED_UP]: "Rollups",
   [SENDER_STATUS.UNSUBSCRIBING]: "In progress",
   [SENDER_STATUS.UNSUBSCRIBED]: "Unsubscribed",
+  [SENDER_STATUS.REQUESTED]: "Requests sent",
   [SENDER_STATUS.FAILED]: "Failed",
   [SENDER_STATUS.MANUAL]: "Needs a click",
 };

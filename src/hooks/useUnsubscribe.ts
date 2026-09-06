@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { api } from "@/lib/api/client";
-import { SENDER_STATUS } from "@/lib/constants";
+import { PROTECTED_UNSUBSCRIBE_STATUSES, SENDER_STATUS } from "@/lib/constants";
 import type { SenderDto, UnsubscribeResultDto } from "@/lib/api/types";
 
 /**
@@ -53,6 +53,9 @@ export function useUnsubscribe(options: {
           onResult.current(senderId, {
             status: result.status,
             manualUrl: result.manualUrl,
+            ...(PROTECTED_UNSUBSCRIBE_STATUSES.includes(result.status)
+              ? { canUnsubscribe: false }
+              : {}),
           });
         } catch (cause) {
           const failure: UnsubscribeResultDto = {
@@ -81,6 +84,7 @@ export function useUnsubscribe(options: {
   }, []);
 
   const summary = {
+    requested: results.filter((r) => r.status === SENDER_STATUS.REQUESTED).length,
     unsubscribed: results.filter((r) => r.status === SENDER_STATUS.UNSUBSCRIBED).length,
     manual: results.filter((r) => r.status === SENDER_STATUS.MANUAL).length,
     failed: results.filter((r) => r.status === SENDER_STATUS.FAILED).length,
