@@ -20,6 +20,25 @@ import { getCurrentUser } from "@/lib/api/auth";
 
 export const dynamic = "force-dynamic";
 
+// Use fixed diagnostic labels: raw errors can include SQL parameters or tokens.
+function failureReason(cause: unknown): string {
+  let current = cause;
+  for (let depth = 0; depth < 5 && current instanceof Error; depth++) {
+    if (current instanceof GoogleAccountError) return current.code;
+    for (const key of ["SESSION_SECRET", "ENCRYPTION_KEY", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"]) {
+      if (current.message.startsWith(`Missing required environment variable ${key}.`)) return `missing_${key}`;
+      if (current.message.startsWith(`${key} must be 32 bytes`)) return `invalid_${key}`;
+    }
+    for (const code of ["invalid_client", "invalid_grant", "redirect_uri_mismatch", "unauthorized_client"]) {
+      if (current.message.startsWith(`Google rejected the authorisation code: ${code}`)) return code;
+    }
+    if (current.message.includes("no such table:")) return "database_table_missing";
+    if (current.message.includes("no such column:")) return "database_column_missing";
+    current = current.cause;
+  }
+  return "unexpected_error";
+}
+
 export const GET = route(async (request: NextRequest) => {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
@@ -33,14 +52,18 @@ export const GET = route(async (request: NextRequest) => {
   const currentUser = await getCurrentUser();
   if ((currentUser?.id ?? null) !== context.userId) return authFailure("login", "expired");
 
+  let stage = "exchange_google_code";
   try {
   const tokens = await exchangeCodeForTokens(code);
+  stage = "fetch_google_profile";
   const profile = await fetchUserInfo(tokens.accessToken);
 
+  stage = "resolve_user";
   const email = profile.email.toLowerCase();
 
   const user = await resolveGoogleUser(profile, context.mode === "connect" ? context.userId : null);
 
+  stage = "encrypt_and_store_mailbox";
   // Store the mailbox. Re-connecting an existing mailbox refreshes its tokens
   // rather than creating a duplicate.
   await db
@@ -69,12 +92,18 @@ export const GET = route(async (request: NextRequest) => {
       },
     });
 
+  stage = "create_session";
   await setSessionCookie(await createSession(user.id));
 
+  stage = "redirect_to_dashboard";
   const response = NextResponse.redirect(`${env.appUrl}/dashboard`);
   response.cookies.delete("oauth_state");
   return response;
   } catch (cause) {
+    console.error("[auth/google/callback] sign-in failed", {
+      stage,
+      reason: failureReason(cause),
+    });
     return authFailure(context.mode, cause instanceof GoogleAccountError ? cause.code : "failed");
   }
 });
