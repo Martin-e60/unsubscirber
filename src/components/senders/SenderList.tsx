@@ -15,7 +15,6 @@ export function SenderList({
   onToggle,
   onUnsubscribe,
   onKeep,
-  onRollUp,
   onRestore,
 }: {
   senders: SenderDto[];
@@ -27,7 +26,6 @@ export function SenderList({
   onToggle: (id: string) => void;
   onUnsubscribe: (id: string) => void;
   onKeep: (id: string) => void;
-  onRollUp: (id: string) => void;
   onRestore: (id: string) => void;
 }) {
   if (loading && senders.length === 0) {
@@ -63,7 +61,6 @@ export function SenderList({
             onToggle={() => onToggle(sender.id)}
             onUnsubscribe={() => onUnsubscribe(sender.id)}
             onKeep={() => onKeep(sender.id)}
-            onRollUp={() => onRollUp(sender.id)}
             onRestore={() => onRestore(sender.id)}
           />
         ))}

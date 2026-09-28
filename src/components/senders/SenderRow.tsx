@@ -25,7 +25,6 @@ export function SenderRow({
   onToggle,
   onUnsubscribe,
   onKeep,
-  onRollUp,
   onRestore,
 }: {
   sender: SenderDto;
@@ -34,7 +33,6 @@ export function SenderRow({
   onToggle: () => void;
   onUnsubscribe: () => void;
   onKeep: () => void;
-  onRollUp: () => void;
   onRestore: () => void;
 }) {
   const decided =
@@ -105,15 +103,17 @@ export function SenderRow({
             <Button variant="softSuccess" size="sm" onClick={onKeep} disabled={busy}>
               Keep
             </Button>
-            <Button variant="softPrimary" size="sm" onClick={onRollUp} disabled={busy}>
-              Roll up
-            </Button>
             <Button
               variant="softDanger"
               size="sm"
               loading={busy}
               disabled={!sender.canUnsubscribe}
               onClick={onUnsubscribe}
+              title={
+                sender.canUnsubscribe
+                  ? undefined
+                  : "This sender publishes no unsubscribe method we can use."
+              }
             >
               Unsubscribe
             </Button>

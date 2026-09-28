@@ -1,4 +1,5 @@
-// Replaced in the Tidely redesign — the sidebar layout now lives in
-// AppShell.tsx, the Home screen in HomeView.tsx, and the attempt history in
-// HistoryList.tsx. Nothing imports this file any more; safe to delete.
-export {};
+// Superseded by src/components/views/HomeView.tsx in the Tidely component
+// reorganisation. The live copy is the one under a subfolder — that is what
+// every import resolves to. This file was left behind as a duplicate and had
+// started to drift, which is worse than not existing: it still typechecked,
+// so it looked maintained. Nothing imports it any more; safe to delete.

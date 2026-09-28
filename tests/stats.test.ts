@@ -114,13 +114,24 @@ test("this month counts only decisions inside the last 30 days", async () => {
   assert.equal(stats.handledThisMonth, 2);
 });
 
-test("time saved counts only mail that stops arriving one by one", async () => {
+test("time saved counts only mail that actually stopped arriving", async () => {
   const stats = await computeStats(accountId);
 
-  // 30 unsubscribed + 10 rolled up = 40 emails, at 5 seconds each.
-  // A KEPT sender still arrives, so it saves nothing.
-  assert.equal(stats.timeSavedSeconds, 40 * 5);
-  assert.equal(stats.timeSavedRecentSeconds, 40 * 5);
+  // 30 unsubscribed emails, at 5 seconds each.
+  // A KEPT sender still arrives, so it saves nothing. Neither does a ROLLED_UP
+  // one: marking a sender for a digest that is not built changes nothing about
+  // how its mail arrives, so it must not be reported as time saved.
+  assert.equal(stats.timeSavedSeconds, 30 * 5);
+  assert.equal(stats.timeSavedRecentSeconds, 30 * 5);
+});
+
+test("a rolled-up sender counts as decided but never as silenced", async () => {
+  const stats = await computeStats(accountId);
+
+  // The rolled-up sender's 10 emails are inside emailsHandled (a decision was
+  // made) but outside timeSaved (the mail still arrives).
+  assert.equal(stats.emailsHandled, 60);
+  assert.equal(stats.timeSavedSeconds, 30 * 5);
 });
 
 test("the handled delta compares this month against the one before", async () => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { api } from "@/lib/api/client";
+import { useApi } from "@/lib/api/context";
 import { SENDER_STATUS, type SenderStatus } from "@/lib/constants";
 import type {
   SenderCountsDto,
@@ -41,6 +41,7 @@ export type UseSendersOptions = {
 };
 
 export function useSenders(options: UseSendersOptions = {}) {
+  const api = useApi();
   const { initialStatus = SENDER_STATUS.ACTIVE, initialSearch = "", limit } = options;
   const [senders, setSenders] = useState<SenderDto[]>([]);
   const [counts, setCounts] = useState<SenderCountsDto>(emptyCounts);
@@ -72,7 +73,7 @@ export function useSenders(options: UseSendersOptions = {}) {
     } finally {
       setLoading(false);
     }
-  }, [status, sort, debouncedSearch, limit]);
+  }, [api, status, sort, debouncedSearch, limit]);
 
   useEffect(() => {
     void refresh();
@@ -133,7 +134,7 @@ export function useSenders(options: UseSendersOptions = {}) {
         setError(cause instanceof Error ? cause.message : "Could not keep sender");
       }
     },
-    [patchSender, refresh],
+    [api, patchSender, refresh],
   );
 
   /** "Roll up" — bundle this sender into a digest instead of unsubscribing. */
@@ -154,7 +155,7 @@ export function useSenders(options: UseSendersOptions = {}) {
         setError(cause instanceof Error ? cause.message : "Could not roll up sender");
       }
     },
-    [patchSender, refresh],
+    [api, patchSender, refresh],
   );
 
   /** Undo a "keep", putting the sender back in the active list. */
@@ -171,7 +172,7 @@ export function useSenders(options: UseSendersOptions = {}) {
         setError(cause instanceof Error ? cause.message : "Could not restore sender");
       }
     },
-    [patchSender, refresh],
+    [api, patchSender, refresh],
   );
 
   return {

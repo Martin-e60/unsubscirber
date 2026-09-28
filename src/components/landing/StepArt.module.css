@@ -1,0 +1,296 @@
+.tile {
+  display: grid;
+  place-items: center;
+  block-size: 11.5rem;
+  border-radius: var(--lp-radius-tile);
+  overflow: hidden;
+  /* On a phone the tile shrinks beside the text; sizing its contents in
+     container units (cqi) keeps every drawing in proportion to the tile
+     itself rather than to a guessed breakpoint. */
+  container-type: inline-size;
+}
+
+.pink {
+  background: var(--lp-soft);
+}
+
+.muted {
+  background: var(--lp-line);
+}
+
+/* --- 01 Connect: mail → Tidely ------------------------------------------ */
+
+.connect {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.mailBox,
+.brandBox {
+  display: grid;
+  place-items: center;
+  inline-size: 4.5rem;
+  block-size: 4.5rem;
+  border-radius: 14px;
+}
+
+.mailBox {
+  background: var(--lp-panel);
+  color: var(--lp-accent);
+}
+
+.brandBox {
+  background: var(--lp-accent);
+  color: var(--lp-on-accent);
+  font-family: var(--lp-serif);
+  font-size: 2.25rem;
+  font-style: italic;
+  line-height: 1;
+}
+
+.arrow {
+  color: var(--lp-accent);
+  transition: transform 420ms var(--lp-ease) calc(var(--reveal-delay, 0ms) + 180ms);
+}
+
+.brandBox {
+  transition: transform 420ms var(--lp-ease) calc(var(--reveal-delay, 0ms) + 300ms);
+}
+
+[data-reveal="pending"] .arrow {
+  transform: translateX(-10px);
+}
+
+[data-reveal="pending"] .brandBox {
+  transform: scale(0.88);
+}
+
+/* --- 02 Find: loose rows settle into a list ------------------------------ */
+
+.stack {
+  display: grid;
+  gap: 0.625rem;
+  inline-size: min(19rem, 78%);
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  block-size: 2rem;
+  padding-inline: 0.75rem;
+  border-radius: 8px;
+  background: var(--lp-panel);
+  transition: transform 460ms var(--lp-ease);
+}
+
+/* The settled pose keeps the slight stagger of a real, just-sorted list. */
+.bar[data-bar="0"] {
+  transform: translateX(-0.5rem);
+  transition-delay: calc(var(--reveal-delay, 0ms) + 120ms);
+}
+
+.bar[data-bar="1"] {
+  transform: translateX(0.875rem);
+  transition-delay: calc(var(--reveal-delay, 0ms) + 200ms);
+}
+
+.bar[data-bar="2"] {
+  transform: translateX(0);
+  transition-delay: calc(var(--reveal-delay, 0ms) + 280ms);
+}
+
+[data-reveal="pending"] .bar[data-bar="0"] {
+  transform: translateX(-2.5rem);
+}
+
+[data-reveal="pending"] .bar[data-bar="1"] {
+  transform: translateX(3rem);
+}
+
+[data-reveal="pending"] .bar[data-bar="2"] {
+  transform: translateX(-1.75rem);
+}
+
+.dot {
+  flex-shrink: 0;
+  inline-size: 0.625rem;
+  block-size: 0.625rem;
+  border-radius: 3px;
+  background: var(--lp-accent);
+}
+
+.line {
+  flex: 1 1 auto;
+  max-inline-size: 13rem;
+  block-size: 0.3125rem;
+  border-radius: 999px;
+  background: var(--lp-line);
+}
+
+/* --- 03 Choose: keep one, leave one -------------------------------------- */
+
+.card {
+  display: grid;
+  inline-size: min(21rem, 80%);
+  padding: 0.25rem 1.25rem;
+  border-radius: 12px;
+  background: var(--lp-panel);
+  font-size: var(--lp-size-small);
+}
+
+.cardRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-block: 0.75rem;
+  color: var(--lp-text);
+}
+
+.cardRow + .cardRow {
+  border-block-start: 1px solid var(--lp-line);
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--lp-accent);
+  transition:
+    opacity 320ms var(--lp-ease),
+    transform 320ms var(--lp-ease);
+}
+
+.status[data-status="keep"] {
+  transition-delay: calc(var(--reveal-delay, 0ms) + 220ms);
+}
+
+.status[data-status="leave"] {
+  transition-delay: calc(var(--reveal-delay, 0ms) + 380ms);
+}
+
+[data-reveal="pending"] .status {
+  opacity: 0;
+  transform: translateX(6px);
+}
+
+/* --- Smaller screens: the tile sits beside the text, so it shrinks -------
+   Everything below is in cqi — hundredths of the tile's own width — so the
+   drawings fit the same way at 104px as they do at 136px. */
+
+@media (max-width: 52rem) {
+  .tile {
+    block-size: auto;
+    aspect-ratio: 1 / 0.82;
+  }
+
+  .connect {
+    gap: 5cqi;
+  }
+
+  .mailBox,
+  .brandBox {
+    inline-size: 30cqi;
+    block-size: 30cqi;
+    border-radius: 8cqi;
+  }
+
+  .mailBox svg {
+    inline-size: 14cqi;
+    block-size: 14cqi;
+  }
+
+  .brandBox {
+    font-size: 17cqi;
+  }
+
+  .arrow {
+    inline-size: 10cqi;
+    block-size: 10cqi;
+  }
+
+  .stack {
+    gap: 4cqi;
+    inline-size: 72cqi;
+  }
+
+  .bar {
+    block-size: 13cqi;
+    gap: 4cqi;
+    padding-inline: 4cqi;
+    border-radius: 4cqi;
+  }
+
+  .bar[data-bar="0"] {
+    transform: translateX(-4cqi);
+  }
+
+  .bar[data-bar="1"] {
+    transform: translateX(6cqi);
+  }
+
+  .bar[data-bar="2"] {
+    transform: translateX(0);
+  }
+
+  [data-reveal="pending"] .bar[data-bar="0"] {
+    transform: translateX(-16cqi);
+  }
+
+  [data-reveal="pending"] .bar[data-bar="1"] {
+    transform: translateX(18cqi);
+  }
+
+  [data-reveal="pending"] .bar[data-bar="2"] {
+    transform: translateX(-12cqi);
+  }
+
+  .dot {
+    inline-size: 5cqi;
+    block-size: 5cqi;
+    border-radius: 1.5cqi;
+  }
+
+  .line {
+    block-size: 2.5cqi;
+  }
+
+  .card {
+    inline-size: 82cqi;
+    padding: 0 6cqi;
+    border-radius: 7cqi;
+    font-size: 9.5cqi;
+  }
+
+  .cardRow {
+    gap: 3cqi;
+    padding-block: 5cqi;
+  }
+
+  .status {
+    gap: 1.5cqi;
+  }
+
+  .status svg {
+    inline-size: 8cqi;
+    block-size: 8cqi;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arrow,
+  .brandBox,
+  .bar,
+  .status {
+    transition: none;
+  }
+
+  [data-reveal="pending"] .arrow,
+  [data-reveal="pending"] .brandBox,
+  [data-reveal="pending"] .status {
+    opacity: 1;
+    transform: none;
+  }
+}

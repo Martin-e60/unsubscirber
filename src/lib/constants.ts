@@ -11,9 +11,11 @@ export const SENDER_STATUS = {
   /** User chose to keep receiving this. Hidden from the main list. */
   KEPT: "KEPT",
   /**
-   * User wants this bundled into a periodic digest instead of arriving one
-   * message at a time. The sender is marked; sending the digest itself is not
-   * built yet — see README, "Not built yet".
+   * Legacy. Rollups marked a sender for a digest that was never built, so the
+   * feature is no longer offered anywhere in the app. The status is kept — and
+   * kept out of the "mail that stopped arriving" figures — because existing
+   * accounts still have senders marked this way, and they can be restored to
+   * the list from Settings.
    */
   ROLLED_UP: "ROLLED_UP",
   /** An unsubscribe request is in flight. */
@@ -89,6 +91,15 @@ export const QUICK_CLEANUP_SIZE = 8;
 
 /** Lookback options offered in the UI, in days. */
 export const LOOKBACK_OPTIONS = [30, 90, 180, 365, 1095] as const;
+
+/**
+ * How far back a first scan looks.
+ *
+ * A month, not a year: a first scan should finish while the person is still
+ * watching, and one month of mail already shows who the worst offenders are.
+ * Anyone who wants their whole history widens the window and scans again.
+ */
+export const DEFAULT_LOOKBACK_DAYS = 30;
 
 /**
  * The account used by `npm run db:seed` and by the development-only sign-in.

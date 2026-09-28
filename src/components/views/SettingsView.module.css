@@ -100,3 +100,13 @@
   gap: var(--space-2);
   justify-content: flex-end;
 }
+
+.scopes strong {
+  color: var(--color-text);
+  font-weight: var(--weight-semibold);
+}
+
+.footnote a {
+  color: var(--color-primary-hover);
+  font-weight: var(--weight-medium);
+}

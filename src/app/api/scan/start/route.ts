@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 import { requireAccount, requireUser } from "@/lib/api/auth";
+import { DEFAULT_LOOKBACK_DAYS } from "@/lib/constants";
 import { json, readJson, route } from "@/lib/api/respond";
 import { startScan, toProgress } from "@/lib/scan/engine";
 import type { ScanProgressDto } from "@/lib/api/types";
@@ -10,7 +11,12 @@ import type { ScanProgressDto } from "@/lib/api/types";
 export const dynamic = "force-dynamic";
 
 const bodySchema = z.object({
-  lookbackDays: z.coerce.number().int().min(1).max(3650).default(365),
+  lookbackDays: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(3650)
+    .default(DEFAULT_LOOKBACK_DAYS),
 });
 
 export const POST = route(async (request: NextRequest) => {

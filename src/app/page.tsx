@@ -1,37 +1,60 @@
+import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, Play, Check } from "lucide-react";
-import { Logo } from "@/components/layout/Logo";
-import { PublicHeader } from "@/components/layout/PublicHeader";
-import { getCurrentUser } from "@/lib/api/auth";
+import { ArrowUpRight } from "lucide-react";
+// The serif italic used for a few short phrases in the large headings.
+// Imported here rather than in the root layout, so only this page loads it.
+import "@fontsource-variable/newsreader/wght-italic.css";
+import { LandingNav } from "@/components/landing/LandingNav";
+import { HeroPreview } from "@/components/landing/HeroPreview";
+import { Reveal } from "@/components/landing/Reveal";
+import { ConnectArt, FindArt, ChooseArt } from "@/components/landing/StepArt";
+import { Outcomes } from "@/components/landing/Outcomes";
+import { AccessDetails } from "@/components/landing/AccessDetails";
+import { LandingFooter } from "@/components/landing/LandingFooter";
+import theme from "@/components/landing/theme.module.css";
+import { readSession } from "@/lib/session";
+import { authErrorMessage } from "@/lib/auth-flow";
+import { SITE_DESCRIPTION } from "@/lib/site";
 import styles from "./page.module.css";
 
 /**
- * The sign-in screen.
+ * The landing page.
  *
- * A server component: it checks the session before rendering, so a signed-in
- * user never sees a flash of the landing page before being redirected.
+ * Four questions, answered in order: what Tidely does (the hero), how it
+ * works (three steps), how much control you keep and what you will be told
+ * (choice and the four outcomes), and how to try it (the closing band).
  *
- * Login and registration have dedicated routes supporting Google and passwords.
+ * Everything visual is scoped to this page through the landing tokens in
+ * src/components/landing/theme.module.css. The signed-in app and the other
+ * public pages keep their own styles.
+ *
+ * A server component: the session cookie is read first, so a signed-in visitor
+ * goes straight to the dashboard without a flash of this page. Only the cookie
+ * is read — not the database — so the page renders even if the database is
+ * unreachable.
  */
 
-const PROMISES = [
-  "Connect your inbox",
-  "Get smart suggestions",
-  "Take back your time",
-];
+export const metadata: Metadata = {
+  title: "Tidely — find your email subscriptions and unsubscribe",
+  description: SITE_DESCRIPTION,
+};
 
 const STEPS = [
   {
-    title: "Connect your inbox",
-    body: "Connect Gmail with your permission. Tidely scans message headers to find mailing lists.",
+    art: ConnectArt,
+    title: "Connect your Gmail.",
+    body: "Review the access Google asks you to approve. Disconnect whenever you want.",
   },
   {
-    title: "See who's really writing",
-    body: "Every newsletter and mailing list, grouped by sender, with how often each one arrives.",
+    art: FindArt,
+    title: "Find your subscriptions.",
+    body: "Scan the last 30 days. See your mailing lists grouped by sender.",
   },
   {
-    title: "Keep, roll up, or leave",
-    body: "Unsubscribe in bulk. Tidely uses the sender's own unsubscribe link and tells you honestly when one needs a click.",
+    art: ChooseArt,
+    title: "Keep what you love.",
+    body: "Choose the senders to leave. See the outcome of every unsubscribe attempt.",
   },
 ];
 
@@ -40,124 +63,140 @@ export default async function HomePage({
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
-  const user = await getCurrentUser();
-  if (user) redirect("/dashboard");
+  if (await readSession()) redirect("/dashboard");
 
-  const { error } = await searchParams;
-
-  // Rendered on the server, so in a production build this branch never even
-  // reaches the browser.
-  const showDevSignIn = process.env.NODE_ENV !== "production";
+  // Google sign-in failures land back here with ?error=… — keep showing them.
+  const error = authErrorMessage((await searchParams).error);
 
   return (
-    <div className={styles.page}>
-      <div className={styles.nav}><PublicHeader /></div>
+    <div className={theme.theme}>
+      <LandingNav />
 
       <main>
-        <section className={styles.hero}>
+        {/* --- Hero -------------------------------------------------------- */}
+        <section className={`${theme.container} ${styles.hero}`}>
           <div className={styles.heroCopy}>
-            <p className={styles.eyebrow}>Less noise. A brighter you.</p>
-            <h1 className={styles.title}>
-              A tidier inbox,
+            <p className={theme.eyebrow}>A little less inbox noise</p>
+            <h1 className={styles.heroTitle}>
+              Your inbox.
               <br />
-              effortlessly.
+              Minus <span className={theme.serif}>the junk.</span>
             </h1>
-            <p className={styles.lede}>
-              Find, organize and remove the emails you don&rsquo;t need — so you
-              can focus on what matters.
+            <p className={styles.heroLede}>
+              Find your Gmail subscriptions. Keep the ones you love. Unsubscribe
+              from the rest.
             </p>
 
-            {error ? <p className={styles.error}>{error}</p> : null}
-
-            <div className={styles.actions}>
-              <a className={styles.cta} href="/register">
-                Get Started Free
-                <ArrowRight size={18} strokeWidth={2} aria-hidden />
-              </a>
-              <a className={styles.secondary} href="#how-it-works">
-                <span className={styles.playIcon}>
-                  <Play size={12} strokeWidth={2} fill="currentColor" aria-hidden />
-                </span>
-                See how it works
-              </a>
+            <div className={styles.heroAction}>
+              <Link href="/demo" className={styles.primary}>
+                Try the demo
+                <ArrowUpRight size={20} strokeWidth={2} aria-hidden />
+              </Link>
+              <p className={styles.note}>Sample data. No account needed.</p>
             </div>
 
-            {showDevSignIn ? (
-              <p className={styles.devSignIn}>
-                <a href="/api/auth/dev">Skip sign-in and use demo data</a>
-                <span> — development only, no Google account needed.</span>
+            {error ? (
+              <p className={styles.error} role="alert">
+                {error}
               </p>
             ) : null}
-
-            <ul className={styles.promises}>
-              {PROMISES.map((promise) => (
-                <li key={promise}>
-                  <Check size={14} strokeWidth={2.5} aria-hidden />
-                  {promise}
-                </li>
-              ))}
-            </ul>
           </div>
 
-          <div className={styles.preview} aria-hidden="true">
-            <div className={styles.previewCard}>
-              <div className={styles.previewHeader}>
-                <span className={styles.previewTitle}>Quick cleanup</span>
-                <span className={styles.previewCount}>8 senders</span>
-              </div>
+          <div className={styles.heroVisual}>
+            <HeroPreview />
+          </div>
+        </section>
 
-              {[
-                { name: "AliExpress", rate: "31 / month", tint: styles.tintCoral },
-                { name: "LinkedIn", rate: "24 / month", tint: styles.tintPurple },
-                { name: "Notion", rate: "12 / month", tint: styles.tintMint },
-              ].map((row) => (
-                <div key={row.name} className={styles.previewRow}>
-                  <span className={`${styles.previewAvatar} ${row.tint}`}>
-                    {row.name[0]}
-                  </span>
-                  <span className={styles.previewName}>
-                    {row.name}
-                    <span className={styles.previewRate}>{row.rate}</span>
-                  </span>
-                  <span className={styles.pillKeep}>Keep</span>
-                  <span className={styles.pillRoll}>Roll up</span>
-                  <span className={styles.pillUnsub}>Unsubscribe</span>
-                </div>
-              ))}
+        {/* --- How it works ------------------------------------------------ */}
+        <section
+          className={`${theme.container} ${styles.section}`}
+          id="how-it-works"
+          aria-labelledby="how-title"
+        >
+          <Reveal className={styles.sectionHead}>
+            <div>
+              <p className={theme.eyebrow}>How it works</p>
+              <h2 className={styles.sectionTitle} id="how-title">
+                A few small steps.
+                <br />
+                <span className={theme.serif}>A little more calm.</span>
+              </h2>
             </div>
-          </div>
+            <p className={styles.sectionAside}>
+              From a busy inbox to a clear list of subscriptions. You decide what
+              stays.
+            </p>
+          </Reveal>
+
+          <ol className={styles.steps}>
+            {STEPS.map(({ art: Art, title, body }, index) => (
+              <Reveal as="li" key={title} delay={index * 110} className={styles.step}>
+                <Art />
+                <div className={styles.stepText}>
+                  <h3 className={styles.stepTitle}>
+                    <span className={styles.stepNumber} aria-hidden="true">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    {title}
+                  </h3>
+                  <p className={styles.stepBody}>{body}</p>
+                </div>
+              </Reveal>
+            ))}
+          </ol>
         </section>
 
-        <section className={styles.steps} id="how-it-works">
-          {STEPS.map((step, index) => (
-            <article key={step.title} className={styles.step}>
-              <span className={styles.stepNumber}>{index + 1}</span>
-              <h2 className={styles.stepTitle}>{step.title}</h2>
-              <p className={styles.stepBody}>{step.body}</p>
-            </article>
-          ))}
+        {/* --- Choice and outcomes ----------------------------------------- */}
+        <section
+          className={`${theme.container} ${styles.section} ${styles.choice}`}
+          aria-labelledby="choice-title"
+        >
+          <Reveal className={styles.choiceCopy}>
+            <p className={theme.eyebrow}>Your inbox. Your choice.</p>
+            <h2 className={styles.sectionTitle} id="choice-title">
+              You choose.
+              <br />
+              We keep it <span className={theme.serif}>clear.</span>
+            </h2>
+            <p className={styles.choiceLede}>
+              Pick the subscriptions you want to leave. Tidely shows what
+              happened — including requests that still need a click, or
+              didn’t work.
+            </p>
+            <AccessDetails />
+          </Reveal>
+
+          <Reveal className={styles.outcomes} delay={120}>
+            <p className={styles.outcomesLabel} id="outcomes-label">
+              Four outcomes. No guessing.
+            </p>
+            <Outcomes />
+          </Reveal>
         </section>
 
-        <section className={styles.banner}>
-          <p className={styles.bannerTitle}>
-            A cleaner inbox
-            <br />
-            for a brighter you.
-          </p>
-          <a className={styles.bannerCta} href="/register">
-            Get Started Free
-            <ArrowRight size={18} strokeWidth={2} aria-hidden />
-          </a>
+        {/* --- Try it ------------------------------------------------------ */}
+        <section className={theme.container} aria-labelledby="try-title">
+          <Reveal className={styles.band}>
+            <div>
+              <p className={styles.bandEyebrow}>Start with a preview</p>
+              <h2 className={styles.bandTitle} id="try-title">
+                Your next email could be
+                <br />
+                <span className={styles.bandSerif}>one you actually want.</span>
+              </h2>
+            </div>
+            <div className={styles.bandAction}>
+              <Link href="/demo" className={styles.cream}>
+                Try the demo
+                <ArrowUpRight size={18} strokeWidth={2} aria-hidden />
+              </Link>
+              <p className={styles.bandNote}>Sample data. No account needed.</p>
+            </div>
+          </Reveal>
         </section>
       </main>
 
-      <footer className={styles.footer}>
-        <Logo />
-        <p className={styles.footerNote}>
-          Tidely scans message headers. An unsubscribe attempt may read an
-          individual message to find its unsubscribe link. You can disconnect at any time.
-        </p>
-      </footer>
+      <LandingFooter />
     </div>
   );
 }

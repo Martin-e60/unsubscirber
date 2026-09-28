@@ -54,3 +54,17 @@
   color: var(--color-primary);
   text-decoration-color: var(--color-primary);
 }
+
+.prose code {
+  padding: 0.1em 0.35em;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-sunken);
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  overflow-wrap: anywhere;
+}
+
+.prose .muted {
+  color: var(--color-text-subtle);
+  font-size: var(--text-sm);
+}

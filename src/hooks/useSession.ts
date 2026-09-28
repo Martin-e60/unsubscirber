@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { api } from "@/lib/api/client";
+import { useApi } from "@/lib/api/context";
 import type { SessionDto } from "@/lib/api/types";
 
 /**
@@ -10,6 +10,7 @@ import type { SessionDto } from "@/lib/api/types";
  * Every page that needs the user calls this. It holds no UI concerns at all.
  */
 export function useSession() {
+  const api = useApi();
   const [session, setSession] = useState<SessionDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -23,7 +24,7 @@ export function useSession() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [api]);
 
   useEffect(() => {
     void refresh();
@@ -32,7 +33,7 @@ export function useSession() {
   const signOut = useCallback(async () => {
     await api.post("/api/auth/logout");
     window.location.href = "/";
-  }, []);
+  }, [api]);
 
   return {
     session,

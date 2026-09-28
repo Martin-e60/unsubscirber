@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Avatar } from "@/components/ui/Avatar";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { api } from "@/lib/api/client";
+import { useApi } from "@/lib/api/context";
 import { ATTEMPT_STATUS } from "@/lib/constants";
 import type { HistoryItemDto } from "@/lib/api/types";
 import styles from "./HistoryList.module.css";
@@ -22,6 +22,7 @@ const METHOD_LABEL: Record<string, string> = {
 };
 
 export function HistoryList() {
+  const api = useApi();
   const [items, setItems] = useState<HistoryItemDto[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -35,7 +36,7 @@ export function HistoryList() {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [api]);
 
   return (
     <section className={styles.section}>

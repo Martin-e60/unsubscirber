@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
@@ -14,7 +15,6 @@ import styles from "./SenderToolbar.module.css";
 const TABS: (SenderStatus | "ALL")[] = [
   SENDER_STATUS.ACTIVE,
   SENDER_STATUS.MANUAL,
-  SENDER_STATUS.ROLLED_UP,
   SENDER_STATUS.UNSUBSCRIBED,
   SENDER_STATUS.REQUESTED,
   SENDER_STATUS.KEPT,
@@ -37,8 +37,8 @@ export function SenderToolbar({
   onToggleAll,
   onUnsubscribeSelected,
   onKeepSelected,
-  onRollUpSelected,
   working,
+  demo = false,
 }: {
   status: SenderStatus | "ALL";
   counts: SenderCountsDto;
@@ -54,9 +54,22 @@ export function SenderToolbar({
   onToggleAll: () => void;
   onUnsubscribeSelected: () => void;
   onKeepSelected: () => void;
-  onRollUpSelected: () => void;
   working: boolean;
+  /** Softens the warning wording where nothing is actually sent. */
+  demo?: boolean;
 }) {
+  /**
+   * Unsubscribing in bulk is the one action here that cannot be taken back, so
+   * it asks first. The confirmation states what will happen rather than just
+   * saying "are you sure", and it resets whenever the selection changes so a
+   * pending confirm can never apply to a different set of senders.
+   */
+  const [confirming, setConfirming] = useState(false);
+
+  useEffect(() => {
+    setConfirming(false);
+  }, [selectedCount, status, search]);
+
   return (
     <div className={styles.toolbar}>
       {showTabs ? (
@@ -120,33 +133,59 @@ export function SenderToolbar({
         />
 
         {selectedCount > 0 ? (
-          <>
-            <span className={styles.selected}>{selectedCount} selected</span>
-            <Button
-              variant="softSuccess"
-              size="sm"
-              onClick={onKeepSelected}
-              disabled={working}
-            >
-              Keep
-            </Button>
-            <Button
-              variant="softPrimary"
-              size="sm"
-              onClick={onRollUpSelected}
-              disabled={working}
-            >
-              Roll up
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              loading={working}
-              onClick={onUnsubscribeSelected}
-            >
-              Unsubscribe {selectedCount}
-            </Button>
-          </>
+          confirming ? (
+            <div className={styles.confirm} role="group" aria-label="Confirm unsubscribe">
+              <p className={styles.confirmText}>
+                {demo ? (
+                  <>
+                    Unsubscribe {selectedCount}{" "}
+                    {selectedCount === 1 ? "sender" : "senders"}? In the demo
+                    nothing is sent — the outcomes are simulated.
+                  </>
+                ) : (
+                  <>
+                    Unsubscribe {selectedCount}{" "}
+                    {selectedCount === 1 ? "sender" : "senders"}? This sends real
+                    requests on your behalf and cannot be undone.
+                  </>
+                )}
+              </p>
+              <Button variant="ghost" size="sm" onClick={() => setConfirming(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                loading={working}
+                onClick={() => {
+                  setConfirming(false);
+                  onUnsubscribeSelected();
+                }}
+              >
+                Yes, unsubscribe {selectedCount}
+              </Button>
+            </div>
+          ) : (
+            <>
+              <span className={styles.selected}>{selectedCount} selected</span>
+              <Button
+                variant="softSuccess"
+                size="sm"
+                onClick={onKeepSelected}
+                disabled={working}
+              >
+                Keep
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                disabled={working}
+                onClick={() => setConfirming(true)}
+              >
+                Unsubscribe {selectedCount}
+              </Button>
+            </>
+          )
         ) : null}
       </div>
     </div>

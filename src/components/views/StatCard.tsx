@@ -12,12 +12,15 @@ export function StatCard({
   value,
   label,
   delta,
+  hint,
   icon: Icon,
   tone = "primary",
 }: {
   value: string;
   label: string;
   delta?: string;
+  /** Says what the number means, or that it is an estimate. */
+  hint?: string;
   icon: LucideIcon;
   tone?: "primary" | "success" | "danger";
 }) {
@@ -31,6 +34,7 @@ export function StatCard({
       </div>
 
       <p className={styles.label}>{label}</p>
+      {hint ? <p className={styles.hint}>{hint}</p> : null}
       {delta ? <p className={styles.delta}>↑ {delta}</p> : null}
     </article>
   );

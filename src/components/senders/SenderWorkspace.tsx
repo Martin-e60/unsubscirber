@@ -15,9 +15,9 @@ import styles from "./SenderWorkspace.module.css";
 /**
  * The subscription list screen.
  *
- * Cleanup, Senders, Rollups and Unsubscribed are all this component with
- * different starting filters — one implementation to fix, one to restyle,
- * rather than four that drift apart.
+ * Cleanup, Senders, Unsubscribed and the demo's equivalents are all this
+ * component with different starting filters — one implementation to fix, one to
+ * restyle, rather than several that drift apart.
  */
 
 export function SenderWorkspace({
@@ -37,7 +37,7 @@ export function SenderWorkspace({
   emptyTitle: string;
   emptyDescription?: string;
 }) {
-  const { refreshStats } = useApp();
+  const { refreshStats, demo } = useApp();
   const senders = useSenders({ initialStatus, initialSearch });
 
   const scan = useScan({
@@ -108,8 +108,8 @@ export function SenderWorkspace({
         onToggleAll={senders.toggleAll}
         onUnsubscribeSelected={() => void runUnsubscribe([...senders.selected])}
         onKeepSelected={() => void applyToSelection(senders.keepSender)}
-        onRollUpSelected={() => void applyToSelection(senders.rollUpSender)}
         working={unsubscribe.running}
+        demo={demo}
       />
 
       {senders.error ? <p className={styles.error}>{senders.error}</p> : null}
@@ -124,7 +124,6 @@ export function SenderWorkspace({
         onToggle={senders.toggle}
         onUnsubscribe={(id) => void runUnsubscribe([id])}
         onKeep={(id) => void senders.keepSender(id).then(refreshStats)}
-        onRollUp={(id) => void senders.rollUpSender(id).then(refreshStats)}
         onRestore={(id) => void senders.restoreSender(id).then(refreshStats)}
       />
     </div>

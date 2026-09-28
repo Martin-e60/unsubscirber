@@ -140,3 +140,8 @@
     inline-size: 100%;
   }
 }
+
+.healthHint {
+  font-weight: var(--weight-normal);
+  color: var(--color-text-muted);
+}

@@ -6,13 +6,12 @@ import {
   Home,
   Sparkles,
   Users,
-  Layers,
   MailX,
   Settings,
-  CreditCard,
   type LucideIcon,
 } from "lucide-react";
 import { Logo } from "@/components/layout/Logo";
+import { DEMO_NAV, NAV, navHref, type NavId, type NavItem } from "@/lib/navigation";
 import styles from "./Sidebar.module.css";
 
 /**
@@ -23,48 +22,62 @@ import styles from "./Sidebar.module.css";
  * stylesheet — this component just renders links.
  */
 
-type NavItem = { href: string; label: string; icon: LucideIcon };
+const ICONS: Record<NavId, LucideIcon> = {
+  home: Home,
+  cleanup: Sparkles,
+  senders: Users,
+  unsubscribed: MailX,
+  settings: Settings,
+};
 
-const NAV: NavItem[] = [
-  { href: "/dashboard", label: "Home", icon: Home },
-  { href: "/cleanup", label: "Cleanup", icon: Sparkles },
-  { href: "/senders", label: "Senders", icon: Users },
-  { href: "/rollups", label: "Rollups", icon: Layers },
-  { href: "/unsubscribed", label: "Unsubscribed", icon: MailX },
-  { href: "/pricing", label: "Pricing", icon: CreditCard },
-  { href: "/settings", label: "Settings", icon: Settings },
-];
+/** Re-exported so callers do not need two imports to render a sidebar. */
+export { NAV, DEMO_NAV };
 
-export function Sidebar({ inboxHealth }: { inboxHealth: number | null }) {
+export function Sidebar({
+  inboxHealth,
+  basePath = "",
+  items = NAV,
+}: {
+  inboxHealth: number | null;
+  basePath?: string;
+  items?: NavItem[];
+}) {
   const pathname = usePathname();
 
   return (
     <aside className={styles.sidebar}>
       <div className={styles.brand}>
-        <Link href="/dashboard" className={styles.brandLink}>
+        <Link href={navHref(NAV[0], basePath)} className={styles.brandLink}>
           <Logo />
         </Link>
       </div>
 
       <nav className={styles.nav} aria-label="Main">
-        {NAV.map(({ href, label, icon: Icon }) => (
+        {items.map((item) => {
+          const Icon = ICONS[item.id];
+          const target = navHref(item, basePath);
+          const active = pathname === target;
+          return (
           <Link
-            key={href}
-            href={href}
+            key={item.id}
+            href={target}
             className={styles.item}
-            data-active={pathname === href || undefined}
-            aria-current={pathname === href ? "page" : undefined}
-            aria-label={label}
+            data-active={active || undefined}
+            aria-current={active ? "page" : undefined}
+            aria-label={item.label}
           >
             <Icon className={styles.icon} size={18} strokeWidth={1.75} aria-hidden />
-            <span className={styles.label}>{label}</span>
+            <span className={styles.label}>{item.label}</span>
           </Link>
-        ))}
+          );
+        })}
       </nav>
 
       {inboxHealth !== null ? (
         <div className={styles.health}>
-          <p className={styles.healthLabel}>Inbox Health</p>
+          <p className={styles.healthLabel}>
+            Inbox Health <span className={styles.healthHint}>(estimate)</span>
+          </p>
           <p className={styles.healthScore}>
             {inboxHealth}
             <span className={styles.healthMax}> / 100</span>

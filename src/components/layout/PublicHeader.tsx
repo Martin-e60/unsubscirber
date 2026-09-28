@@ -51,13 +51,13 @@ export function PublicHeader({ signedIn = false }: { signedIn?: boolean }) {
           </div>
         </details>
         <Link href="/#how-it-works">How it works</Link>
-        <Link href="/pricing">Pricing</Link>
+        <Link href="/demo">Try the demo</Link>
         {signedIn ? (
-          <Link href="/connect" className={styles.cta}>Connect inbox</Link>
+          <Link href="/connect" className={styles.cta}>Connect Gmail</Link>
         ) : (
           <>
             <Link href="/login">Sign in</Link>
-            <Link href="/register" className={styles.cta}>Get started</Link>
+            <Link href="/register" className={styles.cta}>Connect Gmail</Link>
           </>
         )}
       </nav>

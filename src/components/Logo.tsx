@@ -1,22 +1,5 @@
-import styles from "./Logo.module.css";
-
-/**
- * The wordmark: "Tidely" in text colour, with the full stop in brand purple.
- *
- * `mark` renders the square app-icon version used in tight spaces.
- */
-export function Logo({ variant = "wordmark" }: { variant?: "wordmark" | "mark" }) {
-  if (variant === "mark") {
-    return (
-      <span className={styles.mark} aria-label="Tidely">
-        T<span className={styles.markDot}>.</span>
-      </span>
-    );
-  }
-
-  return (
-    <span className={styles.wordmark}>
-      Tidely<span className={styles.dot}>.</span>
-    </span>
-  );
-}
+// Superseded by src/components/layout/Logo.tsx in the Tidely component
+// reorganisation. The live copy is the one under a subfolder — that is what
+// every import resolves to. This file was left behind as a duplicate and had
+// started to drift, which is worse than not existing: it still typechecked,
+// so it looked maintained. Nothing imports it any more; safe to delete.

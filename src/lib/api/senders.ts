@@ -3,6 +3,7 @@ import { and, desc, asc, eq, inArray, notInArray, like, or, sql, count } from "d
 import { db } from "@/db";
 import { senders, unsubscribeAttempts, type Sender } from "@/db/schema";
 import { ATTEMPT_STATUS, PROTECTED_UNSUBSCRIBE_STATUSES, SENDER_STATUS, type SenderStatus } from "@/lib/constants";
+import { emailsPerMonth } from "@/lib/senders/derive";
 import { HttpError } from "./respond";
 import type { SenderCountsDto, SenderDto, SenderSort } from "./types";
 
@@ -147,20 +148,4 @@ export async function changeSenderStatus(
   const [existing] = await db.select({ id: senders.id }).from(senders).where(ownedSender).limit(1);
   if (!existing) throw new HttpError("Sender not found.", 404);
   throw new HttpError("This unsubscribe is already in progress or has been sent. Refresh the list to see its status.", 409);
-}
-
-/**
- * How often this sender writes, per month.
- *
- * Measured over the span we have actually seen rather than a fixed window, so
- * a sender first seen three weeks ago is not reported as if it had been quiet
- * for a year. Anything shorter than a month counts as one month.
- */
-function emailsPerMonth(sender: Sender): number {
-  const first = sender.firstSeenAt?.getTime();
-  const last = sender.lastSeenAt?.getTime();
-  if (!first || !last) return sender.messageCount;
-
-  const months = Math.max(1, (last - first) / (30 * 86_400_000));
-  return Math.max(1, Math.round(sender.messageCount / months));
 }

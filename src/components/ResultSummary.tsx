@@ -1,42 +1,5 @@
-"use client";
-
-import { Button } from "./ui/Button";
-import styles from "./ResultSummary.module.css";
-
-/** The "here's what happened" bar shown after a batch of unsubscribes. */
-
-export function ResultSummary({
-  unsubscribed,
-  manual,
-  failed,
-  onDismiss,
-}: {
-  unsubscribed: number;
-  manual: number;
-  failed: number;
-  onDismiss: () => void;
-}) {
-  if (unsubscribed + manual + failed === 0) return null;
-
-  return (
-    <div className={styles.summary} role="status">
-      <div className={styles.parts}>
-        {unsubscribed > 0 ? (
-          <span className={styles.success}>
-            {unsubscribed} unsubscribed
-          </span>
-        ) : null}
-        {manual > 0 ? (
-          <span className={styles.warning}>
-            {manual} need one more click
-          </span>
-        ) : null}
-        {failed > 0 ? <span className={styles.danger}>{failed} failed</span> : null}
-      </div>
-
-      <Button variant="ghost" size="sm" onClick={onDismiss}>
-        Dismiss
-      </Button>
-    </div>
-  );
-}
+// Superseded by src/components/senders/ResultSummary.tsx in the Tidely component
+// reorganisation. The live copy is the one under a subfolder — that is what
+// every import resolves to. This file was left behind as a duplicate and had
+// started to drift, which is worse than not existing: it still typechecked,
+// so it looked maintained. Nothing imports it any more; safe to delete.

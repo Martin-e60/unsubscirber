@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api } from "@/lib/api/client";
+import { useApi } from "@/lib/api/context";
 import type { ScanProgressDto } from "@/lib/api/types";
 
 /**
@@ -15,6 +15,7 @@ import type { ScanProgressDto } from "@/lib/api/types";
  * the next page load.
  */
 export function useScan(options: { onFinished?: () => void } = {}) {
+  const api = useApi();
   const [progress, setProgress] = useState<ScanProgressDto | null>(null);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +46,7 @@ export function useScan(options: { onFinished?: () => void } = {}) {
       setRunning(false);
       onFinished.current?.();
     }
-  }, []);
+  }, [api]);
 
   const start = useCallback(
     async (lookbackDays: number) => {
@@ -61,7 +62,7 @@ export function useScan(options: { onFinished?: () => void } = {}) {
         setRunning(false);
       }
     },
-    [runLoop],
+    [api, runLoop],
   );
 
   const cancel = useCallback(() => {
@@ -87,7 +88,7 @@ export function useScan(options: { onFinished?: () => void } = {}) {
       active = false;
       cancelled.current = true;
     };
-  }, [runLoop]);
+  }, [api, runLoop]);
 
   return { progress, running, error, start, cancel };
 }

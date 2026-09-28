@@ -1,19 +1,5 @@
-"use client";
-import { useState } from "react";
-import styles from "./AuthPage.module.css";
-
-export function SignOutButton() {
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState(false);
-  return <div className={styles.switch}>
-    <button className={styles.textButton} disabled={pending} onClick={async () => {
-      setPending(true); setError(false);
-      try {
-        const response = await fetch("/api/auth/logout", { method: "POST" });
-        if (!response.ok) throw new Error();
-        window.location.assign("/login");
-      } catch { setError(true); setPending(false); }
-    }}>{pending ? "Signing out…" : "Sign out"}</button>
-    {error && <p role="alert">Could not sign out. Please try again.</p>}
-  </div>;
-}
+// Superseded by src/components/auth/SignOutButton.tsx in the Tidely component
+// reorganisation. The live copy is the one under a subfolder — that is what
+// every import resolves to. This file was left behind as a duplicate and had
+// started to drift, which is worse than not existing: it still typechecked,
+// so it looked maintained. Nothing imports it any more; safe to delete.

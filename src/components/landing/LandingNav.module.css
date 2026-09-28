@@ -1,0 +1,116 @@
+.bar {
+  border-block-end: 1px solid var(--lp-line);
+}
+
+.inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-block-size: 4.75rem;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  color: var(--lp-text);
+  text-decoration: none;
+  border-radius: var(--lp-radius-button);
+}
+
+.mark {
+  display: grid;
+  place-items: center;
+  inline-size: 2.5rem;
+  block-size: 2.5rem;
+  border-radius: var(--lp-radius-button);
+  background: var(--lp-accent);
+  color: var(--lp-on-accent);
+}
+
+.word {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.link {
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  color: var(--lp-text-2);
+  font-size: var(--lp-size-small);
+  font-weight: 500;
+  text-decoration: none;
+  transition: color var(--lp-fast) var(--lp-ease);
+}
+
+.link:hover {
+  color: var(--lp-text);
+}
+
+.connect {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 2.5rem;
+  margin-inline-start: 0.5rem;
+  padding-inline: 1rem;
+  border: 1px solid var(--lp-line);
+  border-radius: var(--lp-radius-button);
+  background: var(--lp-panel);
+  color: var(--lp-text);
+  font-size: var(--lp-size-small);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    border-color var(--lp-fast) var(--lp-ease),
+    color var(--lp-fast) var(--lp-ease),
+    transform var(--lp-fast) var(--lp-ease);
+}
+
+.connect:hover {
+  border-color: var(--lp-accent);
+  color: var(--lp-accent);
+}
+
+.connect:active {
+  transform: translateY(1px);
+}
+
+/* On a phone the page itself is the navigation: the demo button sits right
+   under the heading and How it works is the next thing on screen. */
+@media (max-width: 40rem) {
+  .wide {
+    display: none;
+  }
+
+  .inner {
+    min-block-size: 4rem;
+  }
+
+  .mark {
+    inline-size: 2.25rem;
+    block-size: 2.25rem;
+  }
+
+  .word {
+    font-size: 1.3125rem;
+  }
+
+  .link {
+    padding-inline: 0.5rem;
+  }
+
+  .connect {
+    margin-inline-start: 0.25rem;
+    padding-inline: 0.75rem;
+  }
+}

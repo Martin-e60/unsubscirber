@@ -1,0 +1,37 @@
+/**
+ * The signed-in navigation, as data.
+ *
+ * Kept out of the component so it can be asserted on in a test without pulling a
+ * React tree and a stylesheet into the test runner — and so the demo can mount
+ * the same screens under its own base path from the same list.
+ *
+ * Rollups is deliberately absent: it marked senders for a digest that was never
+ * built. Accounts that used it reach the retired page from Settings, and nobody
+ * else is shown a dead end.
+ */
+
+export type NavId = "home" | "cleanup" | "senders" | "unsubscribed" | "settings";
+
+export type NavItem = {
+  id: NavId;
+  /** Path in the real app. The demo prefixes it with /demo. */
+  href: string;
+  label: string;
+};
+
+export const NAV: NavItem[] = [
+  { id: "home", href: "/dashboard", label: "Home" },
+  { id: "cleanup", href: "/cleanup", label: "Cleanup" },
+  { id: "senders", href: "/senders", label: "Senders" },
+  { id: "unsubscribed", href: "/unsubscribed", label: "Unsubscribed" },
+  { id: "settings", href: "/settings", label: "Settings" },
+];
+
+/** The demo has no mailbox to configure, so it drops Settings. */
+export const DEMO_NAV: NavItem[] = NAV.filter((item) => item.id !== "settings");
+
+/** Where a nav item points, given the base the screens are mounted under. */
+export function navHref(item: NavItem, basePath = ""): string {
+  if (!basePath) return item.href;
+  return item.id === "home" ? basePath : `${basePath}${item.href}`;
+}

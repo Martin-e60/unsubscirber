@@ -41,15 +41,20 @@ export function AuthPage({ mode, error }: { mode: AuthMode; error?: string | str
           <div className={styles.divider}><span>or continue with email</span></div>
           <CredentialsForm mode={mode} />
 
-          <p className={styles.hint}><ShieldCheck size={14} aria-hidden /> Your inbox stays yours. Connect Gmail with your permission.</p>
+          <p className={styles.hint}><ShieldCheck size={14} aria-hidden /> Tidely reads message headers to find mailing lists. You choose what to unsubscribe from, and you can disconnect at any time.</p>
 
           <p className={styles.switch}>
             {register ? "Already have an account? " : "New to Tidely? "}
             <Link href={register ? "/login" : "/register"}>{register ? "Log in" : "Create an account"}</Link>
           </p>
 
+          <p className={styles.demo}>
+            <Link href="/demo">Try the demo instead <ArrowRight size={14} aria-hidden /></Link>
+            <span>No account, sample data</span>
+          </p>
+
           {process.env.NODE_ENV !== "production" && (
-            <p className={styles.demo}><a href="/api/auth/dev">Explore the demo <ArrowRight size={14} aria-hidden /></a><span>Development preview</span></p>
+            <p className={styles.demo}><a href="/api/auth/dev">Local development sign-in <ArrowRight size={14} aria-hidden /></a><span>Never available in production</span></p>
           )}
         </main>
         <footer className={styles.footer}>A tidier inbox, effortlessly.</footer>
@@ -79,7 +84,7 @@ export function AuthPage({ mode, error }: { mode: AuthMode; error?: string | str
         <div className={styles.benefits}>
           <p><Mail size={18} aria-hidden /> Find your mailing lists in one place</p>
           <p><Check size={18} aria-hidden /> Choose what stays and what goes</p>
-          <p><ShieldCheck size={18} aria-hidden /> See the result of every unsubscribe attempt</p>
+          <p><ShieldCheck size={18} aria-hidden /> See the honest result of every attempt</p>
         </div>
       </aside>
     </div>

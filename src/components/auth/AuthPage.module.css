@@ -80,3 +80,34 @@
 @media (min-width: 100rem) { .content { max-inline-size: 32rem; } .aside { padding-inline: 7rem; } }
 @media (max-width: 64rem) { .aside { padding-inline: var(--space-8); } .senderText > span { display: none; } .header { padding: var(--space-6); } }
 @media (max-width: 48rem) { .page { grid-template-columns: 1fr; } .main { min-block-size: 100dvh; } .aside { display: none; } .content { padding-block: var(--space-6); } .header { padding: var(--space-5) var(--space-6); } }
+
+/* The permission explanations on the connect screen. */
+.permissionList {
+  display: grid;
+  gap: var(--space-4);
+  inline-size: 100%;
+  margin-block: var(--space-2) var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-sunken);
+  list-style: none;
+  text-align: start;
+}
+
+.permissionList li {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.permissionList strong {
+  color: var(--color-text);
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+}
+
+.permissionList span {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+}

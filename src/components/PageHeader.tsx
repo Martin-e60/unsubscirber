@@ -1,22 +1,5 @@
-import type { ReactNode } from "react";
-import styles from "./PageHeader.module.css";
-
-export function PageHeader({
-  title,
-  subtitle,
-  action,
-}: {
-  title: ReactNode;
-  subtitle?: string;
-  action?: ReactNode;
-}) {
-  return (
-    <div className={styles.header}>
-      <div>
-        <h1 className={styles.title}>{title}</h1>
-        {subtitle ? <p className={styles.subtitle}>{subtitle}</p> : null}
-      </div>
-      {action ? <div className={styles.action}>{action}</div> : null}
-    </div>
-  );
-}
+// Superseded by src/components/layout/PageHeader.tsx in the Tidely component
+// reorganisation. The live copy is the one under a subfolder — that is what
+// every import resolves to. This file was left behind as a duplicate and had
+// started to drift, which is worse than not existing: it still typechecked,
+// so it looked maintained. Nothing imports it any more; safe to delete.

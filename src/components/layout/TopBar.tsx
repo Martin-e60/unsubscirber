@@ -17,10 +17,15 @@ export function TopBar({
   name,
   email,
   onSignOut,
+  basePath = "",
+  signOutLabel = "Sign out",
 }: {
   name: string | null;
   email: string | null;
   onSignOut: () => void;
+  /** Keeps search inside /demo when the demo mounts these screens. */
+  basePath?: string;
+  signOutLabel?: string;
 }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
@@ -56,7 +61,9 @@ export function TopBar({
           event.preventDefault();
           const trimmed = query.trim();
           router.push(
-            trimmed ? `/senders?search=${encodeURIComponent(trimmed)}` : "/senders",
+            trimmed
+              ? `${basePath}/senders?search=${encodeURIComponent(trimmed)}`
+              : `${basePath}/senders`,
           );
         }}
       >
@@ -97,7 +104,7 @@ export function TopBar({
               onClick={onSignOut}
             >
               <LogOut size={16} strokeWidth={1.75} aria-hidden />
-              Sign out
+              {signOutLabel}
             </button>
           </div>
         ) : null}

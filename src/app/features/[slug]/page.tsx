@@ -29,7 +29,10 @@ export default async function FeaturePage({ params }: Props) {
         <h1>{feature.name}</h1>
         <p className={styles.description}>{feature.description}</p>
         {feature.details.map((text) => <p key={text}>{text}</p>)}
-        <Link href="/register" className={styles.cta}>Get started with Tidely</Link>
+        <div className={styles.actions}>
+          <Link href="/demo" className={styles.cta}>Try it in the demo</Link>
+          <Link href="/register" className={styles.secondary}>Connect Gmail</Link>
+        </div>
       </main>
     </div>
   );

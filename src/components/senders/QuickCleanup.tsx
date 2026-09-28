@@ -15,7 +15,7 @@ import styles from "./QuickCleanup.module.css";
  */
 
 export function QuickCleanup() {
-  const { refreshStats } = useApp();
+  const { refreshStats, basePath, stats } = useApp();
 
   const senders = useSenders({
     initialStatus: SENDER_STATUS.ACTIVE,
@@ -31,6 +31,10 @@ export function QuickCleanup() {
     await refreshStats();
   }, [senders, refreshStats]);
 
+  // A mailbox with no senders at all has not been scanned — a different thing
+  // from a mailbox where everything has been dealt with.
+  const nothingScanned = stats !== null && stats.totalSenders === 0;
+
   return (
     <section className={styles.section}>
       <div className={styles.header}>
@@ -38,14 +42,16 @@ export function QuickCleanup() {
           <h2 className={styles.title}>Quick cleanup</h2>
           <p className={styles.subtitle}>
             {senders.total > 0
-              ? `We found ${senders.total.toLocaleString()} ${
-                  senders.total === 1 ? "sender" : "senders"
-                } you might not need anymore.`
-              : "Nothing waiting on you right now."}
+              ? `${senders.total.toLocaleString()} ${
+                  senders.total === 1 ? "sender is" : "senders are"
+                } still waiting on a decision.`
+              : nothingScanned
+                ? "Run a scan and the senders you can act on appear here."
+                : "Nothing waiting on you right now."}
           </p>
         </div>
 
-        <Link href="/cleanup" className={styles.viewAll}>
+        <Link href={`${basePath}/cleanup`} className={styles.viewAll}>
           View all
         </Link>
       </div>
@@ -55,12 +61,15 @@ export function QuickCleanup() {
         loading={senders.loading}
         selected={senders.selected}
         pending={unsubscribe.pending}
-        emptyTitle="Your inbox is tidy"
-        emptyDescription="Every sender we found has been dealt with. Run a scan from Cleanup to look further back."
+        emptyTitle={nothingScanned ? "Nothing scanned yet" : "Nothing waiting on a decision"}
+        emptyDescription={
+          nothingScanned
+            ? "Go to Cleanup and run your first scan. It looks back 30 days by default, and you can widen that."
+            : "Every sender found so far has been dealt with. Scan further back from Cleanup to look for more."
+        }
         onToggle={senders.toggle}
         onUnsubscribe={(id) => void unsubscribe.run([id]).then(afterChange)}
         onKeep={(id) => void senders.keepSender(id).then(afterChange)}
-        onRollUp={(id) => void senders.rollUpSender(id).then(afterChange)}
         onRestore={(id) => void senders.restoreSender(id).then(afterChange)}
       />
     </section>

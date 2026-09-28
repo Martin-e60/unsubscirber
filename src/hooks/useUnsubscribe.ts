@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { api } from "@/lib/api/client";
+import { useApi } from "@/lib/api/context";
 import { PROTECTED_UNSUBSCRIBE_STATUSES, SENDER_STATUS } from "@/lib/constants";
 import type { SenderDto, UnsubscribeResultDto } from "@/lib/api/types";
 
@@ -19,6 +19,7 @@ const PARALLEL = 3;
 export function useUnsubscribe(options: {
   onResult: (id: string, patch: Partial<SenderDto>) => void;
 }) {
+  const api = useApi();
   const [pending, setPending] = useState<Set<string>>(new Set());
   const [results, setResults] = useState<UnsubscribeResultDto[]>([]);
   const [running, setRunning] = useState(false);
@@ -81,7 +82,7 @@ export function useUnsubscribe(options: {
     await Promise.all(workers);
     setRunning(false);
     return collected;
-  }, []);
+  }, [api]);
 
   const summary = {
     requested: results.filter((r) => r.status === SENDER_STATUS.REQUESTED).length,

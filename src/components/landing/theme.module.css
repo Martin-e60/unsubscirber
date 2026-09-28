@@ -1,0 +1,122 @@
+/* ===========================================================================
+   LANDING PAGE TOKENS
+   ---------------------------------------------------------------------------
+   Scoped to `.theme`, which only the public landing page renders. The signed-in
+   app keeps its own tokens in src/styles/tokens.css and is not affected.
+
+   The eight colours are the approved HEX values, verbatim. They are not
+   approximated, not taken from a library, and not sampled from the mock-ups.
+   None of them is ever drawn with transparency on a background, text or
+   button, so what is specified is what appears.
+   ======================================================================== */
+
+.theme {
+  /* --- Approved palette ------------------------------------------------- */
+  --lp-bg: #FBF4EF;          /* page background */
+  --lp-text: #35232B;        /* primary text */
+  --lp-text-2: #795C65;      /* secondary text */
+  --lp-accent: #A32D4D;      /* primary buttons and accents */
+  --lp-soft: #F5D8DE;        /* soft pink */
+  --lp-line: #E8D6D9;        /* borders and dividers */
+  --lp-panel: #FFFEFC;       /* product panels */
+  --lp-on-accent: #FFFFFF;   /* text on primary buttons */
+
+  /* --- Outcome icons ----------------------------------------------------
+     The approved palette has no semantic colours, so these are the app's
+     existing, muted semantic values from src/styles/tokens.css, reused
+     rather than invented. Each outcome also has its own icon and title, so
+     colour is never the only way to tell them apart. */
+  --lp-ok: #2f8f6f;
+  --lp-ok-bg: #e8f8f2;
+  --lp-warn: #9a6c12;
+  --lp-warn-bg: #fdf3e2;
+  --lp-bad: #c9564d;
+  --lp-bad-bg: #fff0ee;
+
+  /* --- Type ---------------------------------------------------------------
+     Sans for everything that is read or operated. The serif italic is only
+     for a few short phrases inside the large headings. */
+  --lp-sans: "Manrope Variable", ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --lp-serif: "Newsreader Variable", "Iowan Old Style", "Palatino Linotype",
+    Georgia, serif;
+
+  --lp-size-body: 1.0625rem;   /* 17px */
+  --lp-size-small: 0.9375rem;  /* 15px */
+  --lp-size-lede: 1.125rem;    /* 18px */
+
+  /* --- Shape --------------------------------------------------------------- */
+  --lp-radius-button: 10px;
+  --lp-radius-tile: 16px;
+  --lp-radius-panel: 18px;
+  --lp-radius-band: 20px;
+
+  --lp-shadow-panel: 0 1px 2px rgb(53 35 43 / 5%),
+    0 28px 56px -32px rgb(53 35 43 / 28%);
+  --lp-shadow-lift: 0 10px 22px -12px rgb(53 35 43 / 35%);
+
+  /* --- Motion --------------------------------------------------------------- */
+  --lp-fast: 180ms;
+  --lp-reveal: 450ms;
+  --lp-ease: cubic-bezier(0.2, 0, 0, 1);
+
+  /* --- Layout --------------------------------------------------------------- */
+  --lp-max: 76rem;
+  --lp-gutter: 2rem;
+
+  min-block-size: 100dvh;
+  background: var(--lp-bg);
+  color: var(--lp-text);
+  font-family: var(--lp-sans);
+  font-size: var(--lp-size-body);
+  line-height: 1.6;
+  color-scheme: light;
+}
+
+/* The page fills the viewport, but overscroll and the space below a short page
+   show the body. Scoped with :has, so only the landing page's body changes. */
+:global(body):has(.theme) {
+  background: #FBF4EF;
+}
+
+.theme :focus-visible {
+  outline: 2px solid var(--lp-accent);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+.theme ::selection {
+  background: var(--lp-soft);
+  color: var(--lp-text);
+}
+
+/* Shared furniture for every landing section. */
+.container {
+  inline-size: 100%;
+  max-inline-size: var(--lp-max);
+  margin-inline: auto;
+  padding-inline: var(--lp-gutter);
+}
+
+.eyebrow {
+  color: var(--lp-accent);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+/* A short phrase inside a large heading. */
+.serif {
+  font-family: var(--lp-serif);
+  font-style: italic;
+  font-weight: 450;
+  letter-spacing: -0.01em;
+  color: var(--lp-accent);
+}
+
+@media (max-width: 40rem) {
+  .theme {
+    --lp-gutter: 1rem;
+  }
+}

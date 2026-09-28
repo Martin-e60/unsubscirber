@@ -54,3 +54,17 @@ export const api = {
   patch: <T>(path: string, json?: unknown) =>
     request<T>(path, { method: "PATCH", json }),
 };
+
+/**
+ * What a hook needs in order to talk to the app.
+ *
+ * `api` above is the real implementation. The demo ships a second one that
+ * answers the same paths from the visitor's own browser, which is how /demo
+ * runs the real screens with no account, no mailbox and no network — see
+ * src/lib/demo/client.ts.
+ */
+export type ApiClient = {
+  get: <T>(path: string) => Promise<T>;
+  post: <T>(path: string, json?: unknown) => Promise<T>;
+  patch: <T>(path: string, json?: unknown) => Promise<T>;
+};

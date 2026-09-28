@@ -105,3 +105,22 @@
   font-weight: var(--weight-medium);
   margin-inline-end: auto;
 }
+
+/* The two-step confirmation for a bulk unsubscribe. */
+.confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width) solid var(--color-warning);
+  border-radius: var(--radius-md);
+  background: var(--color-warning-soft);
+}
+
+.confirmText {
+  flex: 1 1 14rem;
+  min-inline-size: 0;
+  color: var(--color-warning-text);
+  font-size: var(--text-sm);
+}

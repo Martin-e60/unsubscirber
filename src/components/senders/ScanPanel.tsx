@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { Select } from "@/components/ui/Select";
-import { LOOKBACK_OPTIONS } from "@/lib/constants";
+import { DEFAULT_LOOKBACK_DAYS, LOOKBACK_OPTIONS } from "@/lib/constants";
 import type { ScanProgressDto } from "@/lib/api/types";
 import styles from "./ScanPanel.module.css";
 
@@ -36,7 +36,14 @@ export function ScanPanel({
   onStart: (lookbackDays: number) => void;
   onCancel: () => void;
 }) {
-  const [lookback, setLookback] = useState(365);
+  /**
+    * Thirty days by default.
+    *
+    * A first scan should finish while the person is still watching it, and a
+    * month of mail is enough to see who the worst offenders are. Anyone who
+    * wants their whole history can widen the window and scan again.
+    */
+  const [lookback, setLookback] = useState<number>(DEFAULT_LOOKBACK_DAYS);
   const neverScanned = !progress;
 
   return (
@@ -55,7 +62,9 @@ export function ScanPanel({
               ? `${progress?.processedMessages.toLocaleString() ?? 0} messages read · ${
                   progress?.foundSenders.toLocaleString() ?? 0
                 } senders found`
-              : "We read only message headers — never the contents of your email."}
+              : neverScanned
+                ? "Starts with the last 30 days. A scan reads message headers — who sent it, when, and how that sender says to unsubscribe."
+                : "Scanning again picks up anything new, and a longer window looks further back."}
           </p>
         </div>
 
@@ -92,7 +101,14 @@ export function ScanPanel({
         </div>
       ) : null}
 
-      {error ? <p className={styles.error}>{error}</p> : null}
+      {error ? (
+        <div className={styles.error} role="alert">
+          <p>{error}</p>
+          <Button variant="secondary" size="sm" onClick={() => onStart(lookback)}>
+            Try again
+          </Button>
+        </div>
+      ) : null}
     </section>
   );
 }
