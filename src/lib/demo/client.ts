@@ -70,6 +70,7 @@ function toDto(sender: DemoSender): SenderDto {
       lastSeenAt: new Date(sender.lastSeenAt),
     }),
     lastSeenAt: sender.lastSeenAt,
+    firstSeenAt: sender.firstSeenAt,
     sampleSubject: sender.sampleSubject,
     status: sender.status,
     canOneClick: sender.oneClick && sender.method !== null,
@@ -126,10 +127,17 @@ function listSenders(params: URLSearchParams): SendersResponse {
     );
   }
 
+  // "Most emails" orders by the monthly rate the list shows, as the server does.
+  const rate = (sender: DemoSender) => toDto(sender).perMonth;
+
   rows = [...rows].sort((a, b) => {
     if (sort === "recent") return b.lastSeenAt.localeCompare(a.lastSeenAt);
     if (sort === "name") return (a.name ?? a.address).localeCompare(b.name ?? b.address);
-    return b.messageCount - a.messageCount || b.lastSeenAt.localeCompare(a.lastSeenAt);
+    return (
+      rate(b) - rate(a) ||
+      b.messageCount - a.messageCount ||
+      b.lastSeenAt.localeCompare(a.lastSeenAt)
+    );
   });
 
   return {

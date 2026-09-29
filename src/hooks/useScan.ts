@@ -36,10 +36,14 @@ export function useScan(
 
   // A ref, not state: the loop needs to see cancellation immediately.
   const cancelled = useRef(false);
+  // Also a ref: two quick presses must not both get past the check before a
+  // re-render, or two scans would race each other.
+  const busy = useRef(false);
   const onFinished = useRef(options.onFinished);
   onFinished.current = options.onFinished;
 
   const runLoop = useCallback(async (scanId: string) => {
+    busy.current = true;
     setRunning(true);
     cancelled.current = false;
 
@@ -57,6 +61,7 @@ export function useScan(
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Scan failed");
     } finally {
+      busy.current = false;
       setRunning(false);
       onFinished.current?.();
     }
@@ -64,6 +69,9 @@ export function useScan(
 
   const start = useCallback(
     async (lookbackDays: number) => {
+      if (busy.current) return;
+      busy.current = true;
+      setRunning(true);
       setError(null);
       try {
         const started = await api.post<ScanProgressDto>("/api/scan/start", {
@@ -73,6 +81,7 @@ export function useScan(
         await runLoop(started.scanId);
       } catch (cause) {
         setError(cause instanceof Error ? cause.message : "Could not start scan");
+        busy.current = false;
         setRunning(false);
       }
     },

@@ -1,0 +1,173 @@
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-inline-size: 0;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3) var(--space-5);
+}
+
+.facts {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--text-base);
+  text-align: end;
+}
+
+.facts p {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.primaryFact {
+  color: var(--color-text-muted);
+}
+
+.check {
+  color: var(--color-primary);
+}
+
+.warn {
+  color: var(--color-warning-text);
+}
+
+.skeleton {
+  inline-size: 10rem;
+  block-size: 2.5rem;
+  border-radius: 8px;
+  background: var(--color-primary-soft);
+  opacity: 0.5;
+}
+
+.controls {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-2);
+}
+
+.period {
+  position: relative;
+  display: inline-flex;
+}
+
+.select {
+  appearance: none;
+  min-block-size: 3rem;
+  padding: 0 var(--space-8) 0 var(--space-4);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+}
+
+.select:hover:not(:disabled) {
+  border-color: var(--color-primary);
+}
+
+.select:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.chevron {
+  position: absolute;
+  inset-inline-end: var(--space-3);
+  inset-block-start: 50%;
+  translate: 0 -50%;
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.action {
+  min-inline-size: 11rem;
+}
+
+.spin {
+  transition: transform 300ms var(--ease);
+}
+
+.action:hover .spin {
+  transform: rotate(90deg);
+}
+
+.progress {
+  block-size: 6px;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--color-primary-soft);
+}
+
+.fill {
+  display: block;
+  block-size: 100%;
+  border-radius: inherit;
+  background: var(--color-primary);
+  transition: inline-size var(--duration-normal) var(--ease);
+}
+
+.error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  color: var(--color-danger-text);
+  font-size: var(--text-sm);
+}
+
+.error svg {
+  flex-shrink: 0;
+  margin-block-start: 0.125rem;
+}
+
+@media (max-width: 44rem) {
+  .row {
+    justify-content: flex-start;
+  }
+
+  .facts {
+    align-items: flex-start;
+    text-align: start;
+    flex-basis: 100%;
+  }
+
+  .controls {
+    inline-size: 100%;
+  }
+
+  .period {
+    flex: 1 1 0;
+    min-inline-size: 0;
+  }
+
+  .select {
+    inline-size: 100%;
+  }
+
+  .action {
+    flex: 1 1 0;
+    min-inline-size: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin,
+  .fill {
+    transition: none;
+  }
+
+  .action:hover .spin {
+    transform: none;
+  }
+}

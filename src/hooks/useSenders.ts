@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useApi } from "@/lib/api/context";
 import { SENDER_STATUS, type SenderStatus } from "@/lib/constants";
 import type {
@@ -38,11 +38,16 @@ export type UseSendersOptions = {
   initialSearch?: string;
   /** How many rows to request. */
   limit?: number;
+  /**
+   * Rows per page. When set, the list is paged on the server and `page`,
+   * `setPage` and `pageCount` apply; `limit` is then ignored.
+   */
+  pageSize?: number;
 };
 
 export function useSenders(options: UseSendersOptions = {}) {
   const api = useApi();
-  const { initialStatus = SENDER_STATUS.ACTIVE, initialSearch = "", limit } = options;
+  const { initialStatus = SENDER_STATUS.ACTIVE, initialSearch = "", limit, pageSize } = options;
   const [senders, setSenders] = useState<SenderDto[]>([]);
   const [counts, setCounts] = useState<SenderCountsDto>(emptyCounts);
   const [total, setTotal] = useState(0);
@@ -55,25 +60,46 @@ export function useSenders(options: UseSendersOptions = {}) {
   const debouncedSearch = useDebounced(search, 250);
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [page, setPage] = useState(0);
+
+  // Only the newest request may write to state, so a slow response for an
+  // older search or page can never overwrite a newer one.
+  const latestRequest = useRef(0);
 
   const refresh = useCallback(async () => {
+    const requestId = ++latestRequest.current;
     setLoading(true);
     try {
       const params = new URLSearchParams({ status, sort });
       if (debouncedSearch.trim()) params.set("search", debouncedSearch.trim());
-      if (limit) params.set("limit", String(limit));
+      if (pageSize) {
+        params.set("limit", String(pageSize));
+        params.set("offset", String(page * pageSize));
+      } else if (limit) {
+        params.set("limit", String(limit));
+      }
 
       const data = await api.get<SendersResponse>(`/api/senders?${params}`);
+      if (requestId !== latestRequest.current) return;
+
+      // A decision can empty the last page; step back to the last page that
+      // still has rows instead of showing an empty one.
+      if (pageSize && page > 0 && data.senders.length === 0 && data.total > 0) {
+        setPage(Math.ceil(data.total / pageSize) - 1);
+        return;
+      }
+
       setSenders(data.senders);
       setCounts(data.counts);
       setTotal(data.total);
       setError(null);
     } catch (cause) {
+      if (requestId !== latestRequest.current) return;
       setError(cause instanceof Error ? cause.message : "Could not load senders");
     } finally {
-      setLoading(false);
+      if (requestId === latestRequest.current) setLoading(false);
     }
-  }, [api, status, sort, debouncedSearch, limit]);
+  }, [api, status, sort, debouncedSearch, limit, pageSize, page]);
 
   useEffect(() => {
     void refresh();
@@ -83,6 +109,7 @@ export function useSenders(options: UseSendersOptions = {}) {
   // act on a sender you can no longer see.
   useEffect(() => {
     setSelected(new Set());
+    setPage(0);
   }, [status, sort, debouncedSearch]);
 
   const toggle = useCallback((id: string) => {
@@ -128,10 +155,12 @@ export function useSenders(options: UseSendersOptions = {}) {
           status: SENDER_STATUS.KEPT,
         });
         setCounts((c) => ({ ...c, ACTIVE: Math.max(0, c.ACTIVE - 1), KEPT: c.KEPT + 1 }));
+        return true;
       } catch (cause) {
         // Another tab may have sent an unsubscribe; reload its real status.
         await refresh();
         setError(cause instanceof Error ? cause.message : "Could not keep sender");
+        return false;
       }
     },
     [api, patchSender, refresh],
@@ -167,9 +196,11 @@ export function useSenders(options: UseSendersOptions = {}) {
           status: SENDER_STATUS.ACTIVE,
         });
         setCounts((c) => ({ ...c, KEPT: Math.max(0, c.KEPT - 1), ACTIVE: c.ACTIVE + 1 }));
+        return true;
       } catch (cause) {
         await refresh();
         setError(cause instanceof Error ? cause.message : "Could not restore sender");
+        return false;
       }
     },
     [api, patchSender, refresh],
@@ -181,6 +212,12 @@ export function useSenders(options: UseSendersOptions = {}) {
     total,
     loading,
     error,
+    clearError: () => setError(null),
+
+    page,
+    setPage,
+    pageSize: pageSize ?? null,
+    pageCount: pageSize ? Math.max(1, Math.ceil(total / pageSize)) : 1,
 
     status,
     setStatus,
@@ -188,6 +225,8 @@ export function useSenders(options: UseSendersOptions = {}) {
     setSort,
     search,
     setSearch,
+    /** The search the current rows were fetched with (search, debounced). */
+    appliedSearch: debouncedSearch,
 
     selected,
     selectedCount: selected.size,

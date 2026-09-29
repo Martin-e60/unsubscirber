@@ -250,8 +250,9 @@ test("search and sort work on the demo list", async () => {
   const byCount = await demoClient.get<SendersResponse>(
     "/api/senders?status=ALL&sort=count&limit=500",
   );
-  const counts = byCount.senders.map((sender) => sender.messageCount);
-  assert.deepEqual(counts, [...counts].sort((a, b) => b - a));
+  // "Most emails" follows the monthly rate the list displays.
+  const rates = byCount.senders.map((sender) => sender.perMonth);
+  assert.deepEqual(rates, [...rates].sort((a, b) => b - a));
 
   const term = byCount.senders[0].name!.split(" ")[0];
   const found = await demoClient.get<SendersResponse>(

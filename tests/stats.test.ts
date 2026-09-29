@@ -228,6 +228,35 @@ test("requests sent count as decisions but never as time saved", async () => {
   assert.equal(stats.timeSavedRecentSeconds, 0);
 });
 
+test("most emails sorts by the monthly rate the list shows", async () => {
+  const { listSenders } = await import("../src/lib/api/senders");
+  const [user] = await db.insert(schema.users).values({ email: "sort-stats@example.com" }).returning();
+  const [account] = await db.insert(schema.mailAccounts).values({
+    userId: user.id, email: user.email, accessTokenEnc: "x", expiresAt: 0, scope: "test",
+  }).returning();
+
+  const now = Date.now();
+  await db.insert(schema.senders).values([
+    // 120 over a year: 10 a month.
+    { mailAccountId: account.id, address: "yearly@example.com", messageCount: 120,
+      firstSeenAt: new Date(now - 360 * DAY), lastSeenAt: new Date(now) },
+    // 30 inside one month: 30 a month, despite the smaller total.
+    { mailAccountId: account.id, address: "busy@example.com", messageCount: 30,
+      firstSeenAt: new Date(now - 20 * DAY), lastSeenAt: new Date(now) },
+    // No dates: the raw count, as emailsPerMonth() does.
+    { mailAccountId: account.id, address: "undated@example.com", messageCount: 12 },
+  ]);
+
+  const { rows } = await listSenders({ mailAccountId: account.id, sort: "count" });
+  const dtos = rows.map((row) => toSenderDto(row));
+  assert.deepEqual(dtos.map((s) => s.address), [
+    "busy@example.com",
+    "undated@example.com",
+    "yearly@example.com",
+  ]);
+  assert.deepEqual(dtos.map((s) => s.perMonth), [30, 12, 10]);
+});
+
 test("formatDuration reads the way the design writes it", async () => {
   const { formatDuration } = await import("../src/components/senders/senderStatus");
 

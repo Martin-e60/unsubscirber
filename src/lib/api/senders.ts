@@ -45,12 +45,19 @@ export async function listSenders(options: ListSendersOptions) {
 
   const where = and(...filters);
 
+  // emailsPerMonth() in SQL, so "Most emails" orders by the rate the list
+  // shows rather than by a total that may cover a much longer span.
+  const perMonth = sql`max(1, round(coalesce(
+    ${senders.messageCount} * 1.0 / max(1.0, (${senders.lastSeenAt} - ${senders.firstSeenAt}) / 2592000000.0),
+    ${senders.messageCount}
+  )))`;
+
   const orderBy =
     sort === "recent"
       ? [desc(senders.lastSeenAt)]
       : sort === "name"
         ? [asc(sql`coalesce(${senders.name}, ${senders.address})`)]
-        : [desc(senders.messageCount), desc(senders.lastSeenAt)];
+        : [desc(perMonth), desc(senders.messageCount), desc(senders.lastSeenAt)];
 
   const rows = await db
     .select()
@@ -121,6 +128,7 @@ export function toSenderDto(sender: Sender, manualUrl: string | null = null): Se
     messageCount: sender.messageCount,
     perMonth: emailsPerMonth(sender),
     lastSeenAt: sender.lastSeenAt ? sender.lastSeenAt.toISOString() : null,
+    firstSeenAt: sender.firstSeenAt ? sender.firstSeenAt.toISOString() : null,
     sampleSubject: sender.sampleSubject,
     status: sender.status,
     canOneClick: sender.oneClick && Boolean(sender.unsubscribeHttp),

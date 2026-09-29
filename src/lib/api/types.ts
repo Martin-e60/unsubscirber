@@ -35,6 +35,8 @@ export type SenderDto = {
   perMonth: number;
   /** ISO date string, or null if unknown. */
   lastSeenAt: string | null;
+  /** ISO date of the earliest message seen, or null if unknown. */
+  firstSeenAt: string | null;
   sampleSubject: string | null;
   status: SenderStatus;
   /** True when we can unsubscribe with a single POST and no user action. */

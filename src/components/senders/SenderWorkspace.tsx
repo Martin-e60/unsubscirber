@@ -64,7 +64,7 @@ export function SenderWorkspace({
   );
 
   const applyToSelection = useCallback(
-    async (action: (id: string) => Promise<void>) => {
+    async (action: (id: string) => Promise<unknown>) => {
       const ids = [...senders.selected];
       await Promise.all(ids.map(action));
       senders.clearSelection();

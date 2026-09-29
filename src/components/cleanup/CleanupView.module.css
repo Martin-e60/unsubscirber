@@ -1,0 +1,468 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-10);
+  /* No fill mode: a transform that stays in effect would become the
+     containing block for the fixed details sheet and bulk bar. */
+  animation: cleanupIn 360ms var(--ease);
+}
+
+/* --- Header: the same rhythm as Home's. ----------------------------------- */
+
+.crumb {
+  color: var(--color-text-muted);
+  font-size: var(--text-base);
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-5) var(--space-8);
+  margin-block-start: var(--space-6);
+}
+
+.title {
+  font-size: clamp(2rem, 1.3rem + 2.2vw, 3rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+}
+
+.accent {
+  color: var(--color-primary);
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 450;
+  letter-spacing: -0.01em;
+}
+
+.lede {
+  margin-block-start: var(--space-3);
+  color: var(--color-text-muted);
+  font-size: var(--text-lg);
+}
+
+/* --- Workspace: list on the left, details on the right. ------------------- */
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "toolbar"
+    "status"
+    "list";
+  gap: var(--space-5);
+}
+
+.toolbar {
+  grid-area: toolbar;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(11rem, auto);
+  gap: var(--space-4);
+}
+
+.searchField,
+.sortField {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.fieldIcon {
+  position: absolute;
+  inset-inline-start: var(--space-5);
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.search,
+.sort {
+  inline-size: 100%;
+  min-block-size: 3.5rem;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-md);
+  transition: border-color var(--duration-fast) var(--ease);
+}
+
+.search {
+  padding: 0 var(--space-4) 0 3.25rem;
+}
+
+.search::placeholder {
+  color: var(--color-text-muted);
+}
+
+.sort {
+  appearance: none;
+  padding: 0 var(--space-10) 0 3.25rem;
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+}
+
+.search:hover,
+.sort:hover {
+  border-color: var(--color-primary);
+}
+
+.search:focus-visible,
+.sort:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+  border-color: var(--color-primary);
+}
+
+.chevron {
+  position: absolute;
+  inset-inline-end: var(--space-4);
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.sideLabel {
+  display: none;
+}
+
+.sideLabel,
+.count {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+.count {
+  color: var(--color-primary);
+}
+
+.countLoading {
+  color: var(--color-text-muted);
+}
+
+.status {
+  grid-area: status;
+  z-index: 5;
+}
+
+.countRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+  min-block-size: 1.5rem;
+}
+
+.hint {
+  color: var(--color-text-muted);
+  font-size: var(--text-base);
+}
+
+/* The bulk bar replaces the count row while anything is ticked. */
+.bulk {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-4);
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-5);
+  border: var(--border-width) solid var(--color-primary);
+  border-radius: 14px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-md);
+  animation: bulkIn 180ms var(--ease) both;
+}
+
+.bulkText {
+  flex: 1 1 auto;
+  color: var(--color-text);
+  font-size: var(--text-base);
+}
+
+.bulkText strong {
+  font-weight: var(--weight-bold);
+}
+
+.bulkScope {
+  color: var(--color-text-muted);
+}
+
+.bulkActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.clear {
+  display: grid;
+  place-items: center;
+  inline-size: 2.5rem;
+  block-size: 2.5rem;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.clear:hover {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.listArea {
+  grid-area: list;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-inline-size: 0;
+}
+
+.notice:empty {
+  display: none;
+}
+
+.error {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: 10px;
+  background: var(--color-danger-soft);
+  color: var(--color-danger-text);
+  font-size: var(--text-sm);
+}
+
+.tip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--text-base);
+}
+
+.side {
+  min-inline-size: 0;
+}
+
+/* --- Empty states ------------------------------------------------------------- */
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-10) var(--space-8);
+}
+
+.emptyTitle {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.02em;
+}
+
+.emptyBody {
+  max-inline-size: 34rem;
+  color: var(--color-text-muted);
+  font-size: var(--text-md);
+}
+
+.emptyAction {
+  margin-block-start: var(--space-4);
+}
+
+.emptyLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-6);
+}
+
+.inlineLink,
+.footLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  border-radius: 6px;
+  color: var(--color-primary);
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+}
+
+.inlineLink:hover,
+.footLink:hover {
+  text-decoration: underline;
+}
+
+.connect {
+  border: var(--border-width) solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+}
+
+/* --- Footer --------------------------------------------------------------------- */
+
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-6);
+  padding-block-start: var(--space-6);
+  border-block-start: var(--border-width) solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: var(--text-base);
+}
+
+.footLink {
+  font-weight: var(--weight-medium);
+}
+
+.footLink svg {
+  transition: transform var(--duration-fast) var(--ease);
+}
+
+.footLink:hover svg {
+  transform: translate(2px, -2px);
+}
+
+/* --- Wide: two columns, roughly 63 / 37. ------------------------------------- */
+
+@media (min-width: 75rem) {
+  .workspace {
+    grid-template-columns: minmax(0, 63fr) minmax(20rem, 37fr);
+    grid-template-areas:
+      "toolbar label"
+      "status  ."
+      "list    side";
+    column-gap: var(--space-8);
+  }
+
+  .sideLabel {
+    grid-area: label;
+    display: flex;
+    align-items: center;
+  }
+
+  .side {
+    grid-area: side;
+    align-self: start;
+  }
+
+  /* Only the bulk bar follows the scroll; the plain count row stays put. */
+  .workspace[data-checking] .status {
+    position: sticky;
+    inset-block-start: var(--space-3);
+  }
+}
+
+@media (min-width: 75rem) and (min-height: 52rem) {
+  .side {
+    position: sticky;
+    inset-block-start: var(--space-6);
+  }
+}
+
+@media (max-width: 44rem) {
+  .page {
+    gap: var(--space-8);
+  }
+
+  .head {
+    margin-block-start: var(--space-3);
+  }
+
+  .lede {
+    font-size: var(--text-md);
+  }
+
+  .toolbar {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-3);
+  }
+
+  .search,
+  .sort {
+    min-block-size: 3rem;
+  }
+
+  /* On phones the bulk bar rides above the tab bar, always within reach. */
+  .bulk {
+    position: fixed;
+    inset-inline: var(--space-3);
+    inset-block-end: calc(5rem + env(safe-area-inset-bottom));
+    z-index: 25;
+    padding: var(--space-3);
+  }
+
+  .workspace[data-checking] {
+    padding-block-end: 7rem;
+  }
+
+  /* Count and ✕ share the top line; the two actions split the one below. */
+  .bulk {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-2);
+  }
+
+  .bulkText {
+    align-self: center;
+    padding-inline-start: var(--space-2);
+  }
+
+  .bulkActions {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    flex-wrap: nowrap;
+  }
+
+  .bulkActions > button {
+    white-space: normal;
+    line-height: 1.2;
+    text-align: center;
+    flex: 1 1 0;
+    justify-content: center;
+    padding-inline: var(--space-3);
+  }
+
+  .empty {
+    padding: var(--space-8) var(--space-5);
+  }
+}
+
+@keyframes cleanupIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes bulkIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page,
+  .bulk {
+    animation: none;
+  }
+
+  .search,
+  .sort,
+  .footLink svg {
+    transition: none;
+  }
+
+  .footLink:hover svg {
+    transform: none;
+  }
+}

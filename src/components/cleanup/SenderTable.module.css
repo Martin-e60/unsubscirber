@@ -1,0 +1,424 @@
+.panel {
+  container: senders / inline-size;
+  overflow: hidden;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+}
+
+/* --- Header row ----------------------------------------------------------- */
+
+.head {
+  display: grid;
+  grid-template-columns: 3.25rem minmax(0, 1fr) 7rem 8.5rem;
+  align-items: center;
+  min-block-size: 3.5rem;
+  padding-inline-end: var(--space-6);
+  border-block-end: var(--border-width) solid var(--color-border);
+}
+
+.headLabel {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+.headNum,
+.headDate {
+  text-align: end;
+}
+
+/* --- Checkbox --------------------------------------------------------------- */
+
+.check {
+  display: grid;
+  place-items: center;
+  align-self: stretch;
+  inline-size: 3.25rem;
+  padding-inline-start: var(--space-2);
+  cursor: pointer;
+}
+
+.box {
+  appearance: none;
+  display: grid;
+  place-items: center;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  margin: 0;
+  border: 1.5px solid var(--color-border);
+  border-radius: 5px;
+  background: var(--color-surface);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease),
+    border-color var(--duration-fast) var(--ease);
+}
+
+.box:hover:not(:disabled) {
+  border-color: var(--color-primary);
+}
+
+.box:checked,
+.box:indeterminate {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 0.875rem;
+}
+
+.box:checked {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23FFFFFF' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 8.5l3 3 6-7'/%3E%3C/svg%3E");
+}
+
+.box:indeterminate {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23FFFFFF' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M4 8h8'/%3E%3C/svg%3E");
+}
+
+.box:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.box:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* --- Rows ----------------------------------------------------------------- */
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 3.25rem minmax(0, 1fr);
+  align-items: stretch;
+  transition: background-color var(--duration-fast) var(--ease);
+  animation: rowIn 240ms var(--ease) both;
+}
+
+/* Dividers stop short of the edges, as in the design. */
+.row + .row::after {
+  content: "";
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: var(--space-6);
+  border-block-start: var(--border-width) solid var(--color-border);
+}
+
+.row::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  inline-size: 3px;
+  background: var(--color-primary);
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease);
+}
+
+.row:hover {
+  background: color-mix(in srgb, var(--color-bg) 55%, var(--color-surface));
+}
+
+.row[data-active] {
+  background: var(--color-bg);
+}
+
+.row[data-active]::before {
+  opacity: 1;
+}
+
+/* The active row and its neighbour lose the divider between them. */
+.row[data-active]::after,
+.row[data-active] + .row::after {
+  opacity: 0;
+}
+
+.open {
+  display: grid;
+  grid-template-columns: 2.75rem minmax(0, 1fr) 7rem 8.5rem;
+  align-items: center;
+  gap: var(--space-4);
+  min-inline-size: 0;
+  padding: var(--space-4) var(--space-6) var(--space-4) 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.open:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -3px;
+  border-radius: 10px;
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  border-radius: 10px;
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.02em;
+  transition:
+    background-color var(--duration-fast) var(--ease),
+    color var(--duration-fast) var(--ease);
+}
+
+.row[data-active] .avatar {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.identity {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-inline-size: 0;
+}
+
+.name {
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subject {
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: var(--text-base);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row[data-busy] .subject {
+  color: var(--color-primary);
+}
+
+.row[data-busy] .open {
+  cursor: progress;
+}
+
+.num {
+  color: var(--color-text);
+  font-size: var(--text-lg);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--weight-bold);
+  text-align: end;
+}
+
+.numUnit {
+  display: none;
+}
+
+.date {
+  color: var(--color-text-muted);
+  font-size: var(--text-base);
+  text-align: end;
+  white-space: nowrap;
+}
+
+/* --- Footer ----------------------------------------------------------------- */
+
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-block-size: 4rem;
+  padding: var(--space-3) var(--space-6);
+  border-block-start: var(--border-width) solid var(--color-border);
+}
+
+.range {
+  color: var(--color-text-muted);
+  font-size: var(--text-base);
+  font-variant-numeric: tabular-nums;
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.pageOf {
+  min-inline-size: 3rem;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.pageButton {
+  display: grid;
+  place-items: center;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease);
+}
+
+.pageButton:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.pageButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+/* --- Loading ------------------------------------------------------------------ */
+
+.skeletonRow {
+  display: grid;
+  grid-template-columns: 2.75rem minmax(0, 1fr) 5rem;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-5) var(--space-6);
+}
+
+.skeletonRow + .skeletonRow {
+  border-block-start: var(--border-width) solid var(--color-border);
+}
+
+.skeletonRow span {
+  block-size: 1rem;
+  border-radius: 6px;
+  background: var(--color-bg);
+  animation: pulse 1.4s var(--ease) infinite alternate;
+}
+
+.skeletonRow span:first-child {
+  block-size: 2.75rem;
+  border-radius: 10px;
+}
+
+@keyframes pulse {
+  to {
+    opacity: 0.45;
+  }
+}
+
+@keyframes rowIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+/* --- Narrow: the numbers move under the name rather than squeezing it. --- */
+
+@container senders (max-width: 34rem) {
+  .head {
+    grid-template-columns: 3.25rem minmax(0, 1fr);
+  }
+
+  .headNum,
+  .headDate {
+    display: none;
+  }
+
+  .row {
+    grid-template-columns: 3rem minmax(0, 1fr);
+  }
+
+  .check {
+    inline-size: 3rem;
+  }
+
+  .open {
+    grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+    grid-template-areas:
+      "avatar identity num"
+      "avatar identity date";
+    gap: 0 var(--space-3);
+    padding-inline-end: var(--space-4);
+  }
+
+  .avatar {
+    grid-area: avatar;
+    inline-size: 2.5rem;
+    block-size: 2.5rem;
+  }
+
+  .identity {
+    grid-area: identity;
+  }
+
+  .num {
+    grid-area: num;
+    font-size: var(--text-md);
+  }
+
+  .numUnit {
+    display: inline;
+    color: var(--color-text-muted);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-medium);
+  }
+
+  .date {
+    grid-area: date;
+    font-size: var(--text-sm);
+  }
+
+  .row + .row::after {
+    inset-inline: var(--space-4);
+  }
+
+  .foot {
+    padding-inline: var(--space-4);
+  }
+}
+
+@container senders (max-width: 22rem) {
+  .open {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "identity num"
+      "identity date";
+  }
+
+  .avatar {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row,
+  .skeletonRow span {
+    animation: none;
+  }
+
+  .row,
+  .row::before,
+  .box,
+  .avatar,
+  .pageButton {
+    transition: none;
+  }
+}

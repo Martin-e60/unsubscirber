@@ -38,7 +38,7 @@ export function Avatar({
   );
 }
 
-function toInitials(value: string): string {
+export function toInitials(value: string): string {
   const cleaned = value.replace(/@.*$/, "").replace(/[^\p{L}\p{N}\s]/gu, " ").trim();
   const parts = cleaned.split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "?";
