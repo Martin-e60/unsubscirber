@@ -2,7 +2,8 @@ import "server-only";
 import { setTimeout as delay } from "node:timers/promises";
 import { and, eq, sql, count, isNull } from "drizzle-orm";
 import { db } from "@/db";
-import { scans, senders, scannedMessages, type MailAccount, type Scan } from "@/db/schema";
+import { scans, senders, scannedMessages, type MailAccount, type Scan, type Sender } from "@/db/schema";
+import { normaliseListId } from "@/lib/followup/match";
 import { HttpError } from "@/lib/api/respond";
 import {
   getProviderForAccount,
@@ -11,7 +12,7 @@ import {
   type MessageHeaders,
 } from "@/lib/mail";
 import { parseFromHeader, parseUnsubscribeHeaders } from "@/lib/mail/headers";
-import { SCAN_PAGE_SIZE, SCAN_STATUS } from "@/lib/constants";
+import { SCAN_PAGE_SIZE, SCAN_STATUS, SENDER_STATUS } from "@/lib/constants";
 
 /**
  * The scan engine.
@@ -126,10 +127,33 @@ export async function runScanStep(
       if (!claimed) return toProgress(await loadScan(account.id, scan.id, tx));
 
       for (const entry of grouped) {
-        const senderId = await upsertSender(tx, account.id, entry);
-        await tx.insert(scannedMessages).values(entry.messageIds.map((messageId) => ({
-          mailAccountId: account.id, messageId, senderId,
-        }))).onConflictDoNothing();
+        const sender = await upsertSender(tx, account.id, entry);
+        const senderId = sender.id;
+        // Subjects are kept only for mail that arrived after a confirmed
+        // unsubscribe: that is the one place the app shows them.
+        const keepSubject = (receivedAt: Date | null) =>
+          sender.status === SENDER_STATUS.UNSUBSCRIBED &&
+          sender.decidedAt !== null &&
+          receivedAt !== null &&
+          receivedAt > sender.decidedAt;
+
+        await tx.insert(scannedMessages).values(entry.messages.map((message) => ({
+          mailAccountId: account.id,
+          messageId: message.id,
+          senderId,
+          receivedAt: message.receivedAt,
+          listId: message.listId,
+          subject: keepSubject(message.receivedAt) ? message.subject : null,
+        }))).onConflictDoUpdate({
+          // Already recorded: never duplicated, never moved to another sender.
+          // Only fill in what older rows lack.
+          target: [scannedMessages.mailAccountId, scannedMessages.messageId],
+          set: {
+            receivedAt: sql`coalesce(${scannedMessages.receivedAt}, excluded.received_at)`,
+            listId: sql`coalesce(${scannedMessages.listId}, excluded.list_id)`,
+            subject: sql`coalesce(${scannedMessages.subject}, excluded.subject)`,
+          },
+        });
         // Rebuild from unique IDs, also repairing inflated legacy counts when
         // this sender is encountered after upgrading.
         await tx.update(senders).set({
@@ -235,10 +259,18 @@ export function toProgress(scan: Scan): ScanProgress {
 
 // --- Grouping ---------------------------------------------------------------
 
+type MessageDraft = {
+  id: string;
+  /** The provider's received time; null when it gave none. */
+  receivedAt: Date | null;
+  listId: string | null;
+  subject: string | null;
+};
+
 type SenderDraft = {
   address: string;
   name: string | null;
-  messageIds: string[];
+  messages: MessageDraft[];
   firstSeenAt: Date;
   lastSeenAt: Date;
   sampleSubject: string | null;
@@ -264,6 +296,12 @@ function groupBySender(messages: MessageHeaders[]): SenderDraft[] {
       message.listUnsubscribePost,
     );
     const date = message.date ?? new Date();
+    const draft: MessageDraft = {
+      id: message.id,
+      receivedAt: message.date,
+      listId: normaliseListId(message.listId),
+      subject: message.subject,
+    };
 
     const existing = drafts.get(address);
 
@@ -271,7 +309,7 @@ function groupBySender(messages: MessageHeaders[]): SenderDraft[] {
       drafts.set(address, {
         address,
         name,
-        messageIds: [message.id],
+        messages: [draft],
         firstSeenAt: date,
         lastSeenAt: date,
         sampleSubject: message.subject,
@@ -283,7 +321,7 @@ function groupBySender(messages: MessageHeaders[]): SenderDraft[] {
       continue;
     }
 
-    existing.messageIds.push(message.id);
+    existing.messages.push(draft);
     if (date < existing.firstSeenAt) existing.firstSeenAt = date;
     if (date >= existing.lastSeenAt) {
       existing.lastSeenAt = date;
@@ -307,7 +345,11 @@ function groupBySender(messages: MessageHeaders[]): SenderDraft[] {
  *   - a decision the user already made (KEPT, UNSUBSCRIBED) is never reset by
  *     a later scan; only counts and metadata are refreshed
  */
-async function upsertSender(tx: ScanTransaction, mailAccountId: string, draft: SenderDraft): Promise<string> {
+async function upsertSender(
+  tx: ScanTransaction,
+  mailAccountId: string,
+  draft: SenderDraft,
+): Promise<Pick<Sender, "id" | "status" | "decidedAt">> {
   const [sender] = await tx
     .insert(senders)
     .values({
@@ -340,6 +382,6 @@ async function upsertSender(tx: ScanTransaction, mailAccountId: string, draft: S
         oneClick: sql`${senders.oneClick} or excluded.one_click`,
         updatedAt: new Date(),
       },
-    }).returning({ id: senders.id });
-  return sender.id;
+    }).returning({ id: senders.id, status: senders.status, decidedAt: senders.decidedAt });
+  return sender;
 }

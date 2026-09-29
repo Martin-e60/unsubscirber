@@ -70,13 +70,16 @@ const ICON = {
   danger: CircleAlert,
 };
 
-/** The Unsubscribed tab each result is filed under. */
-function tabFor(status: SenderStatus): string {
+/**
+ * Where a result now lives. Only a confirmed unsubscribe goes to the
+ * Unsubscribed archive; anything unconfirmed is in Senders under its status.
+ */
+function whereFor(status: SenderStatus, basePath: string): { href: string; page: string } {
   return status === SENDER_STATUS.REQUESTED ||
     status === SENDER_STATUS.MANUAL ||
     status === SENDER_STATUS.FAILED
-    ? status
-    : SENDER_STATUS.UNSUBSCRIBED;
+    ? { href: `${basePath}/senders?status=${status}`, page: "Senders" }
+    : { href: `${basePath}/unsubscribed`, page: "Unsubscribed" };
 }
 
 export function OutcomeNotice({
@@ -176,9 +179,10 @@ export function OutcomeNotice({
       ? [...groups].map(([status, n]) => (RESULT[status] ?? FALLBACK).group(n)).join(" · ")
       : "Nothing was sent";
 
-  const primaryTab = tabFor(
+  const where = whereFor(
     [SENDER_STATUS.FAILED, SENDER_STATUS.MANUAL, SENDER_STATUS.REQUESTED].find((s) => groups.has(s)) ??
       SENDER_STATUS.UNSUBSCRIBED,
+    basePath,
   );
 
   return (
@@ -219,8 +223,8 @@ export function OutcomeNotice({
 
         {items.length ? (
           <div className={styles.actions}>
-            <Link href={`${basePath}/unsubscribed?status=${primaryTab}`} className={styles.link}>
-              {single ? "See it in Unsubscribed" : "See the outcomes in Unsubscribed"}
+            <Link href={where.href} className={styles.link}>
+              {single ? `See it in ${where.page}` : `See the outcomes in ${where.page}`}
               <ArrowUpRight size={15} strokeWidth={2} aria-hidden />
             </Link>
           </div>

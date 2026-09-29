@@ -1,0 +1,531 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  inline-size: 100%;
+  max-inline-size: 64rem;
+  margin-inline: auto;
+  /* No fill mode, as on Cleanup: a lingering transform would change what
+     fixed-position children are positioned against. */
+  animation: pageIn 320ms var(--ease);
+}
+
+/* --- Header ------------------------------------------------------------------ */
+
+.crumb {
+  color: var(--color-text-muted);
+  font-size: var(--text-base);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+  margin-block-start: var(--space-4);
+  padding-inline: var(--space-8) var(--space-4);
+}
+
+.title {
+  font-size: clamp(2.25rem, 1.4rem + 2.6vw, 3.5rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+}
+
+.accent {
+  color: var(--color-primary);
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 450;
+  letter-spacing: -0.01em;
+}
+
+.lede {
+  margin-block-start: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--text-xl);
+}
+
+.art {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  inline-size: 7.5rem;
+  block-size: 7.5rem;
+  border-radius: 50%;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+/* --- Check row ------------------------------------------------------------------ */
+
+.check {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-4);
+  padding-inline: var(--space-1);
+}
+
+.checkInfo {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  min-inline-size: 0;
+}
+
+.checkIcon {
+  flex-shrink: 0;
+  margin-block-start: 0.125rem;
+  color: var(--color-text);
+}
+
+.checkIcon[data-spinning] {
+  color: var(--color-primary);
+  animation: spin 1.1s linear infinite;
+}
+
+.checkTitle {
+  color: var(--color-text);
+  font-size: var(--text-md);
+}
+
+.checkSub {
+  margin-block-start: 0.125rem;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.checkButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-block-size: 3rem;
+  padding-inline: var(--space-5) var(--space-6);
+  border: 1.5px solid var(--color-primary);
+  border-radius: 10px;
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease),
+    box-shadow var(--duration-fast) var(--ease);
+}
+
+.checkButton:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-primary-soft) 45%, var(--color-surface));
+}
+
+.checkButton:hover:not(:disabled) svg {
+  transform: rotate(90deg);
+}
+
+.checkButton svg {
+  transition: transform 300ms var(--ease);
+}
+
+.checkButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.progress {
+  grid-column: 1 / -1;
+  block-size: 5px;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--color-primary-soft);
+}
+
+.progress span {
+  display: block;
+  block-size: 100%;
+  border-radius: inherit;
+  background: var(--color-primary);
+  transition: inline-size var(--duration-normal) var(--ease);
+}
+
+/* No estimate yet: say "working", never a made-up percentage. */
+.progress[data-indeterminate] span {
+  inline-size: 30%;
+  animation: sweep 1.2s var(--ease) infinite;
+}
+
+.alert {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-width) solid var(--color-border);
+  border-inline-start: 3px solid var(--color-danger-text);
+  border-radius: 12px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+}
+
+.alert[data-tone="quiet"] {
+  border-inline-start-color: var(--color-text-muted);
+}
+
+.alert > svg {
+  flex-shrink: 0;
+  margin-block-start: 0.125rem;
+  color: var(--color-danger-text);
+}
+
+.alert p {
+  flex: 1 1 18rem;
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+
+.alertDetail {
+  color: var(--color-text-muted);
+}
+
+.alertActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.textButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--color-primary);
+  font-size: inherit;
+  font-weight: var(--weight-bold);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.textButton:hover {
+  text-decoration: underline;
+}
+
+/* --- The list ----------------------------------------------------------------- */
+
+.panel {
+  padding: var(--space-6);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3) var(--space-6);
+  padding-block-end: var(--space-4);
+  border-block-end: var(--border-width) solid var(--color-border);
+}
+
+.searchField {
+  position: relative;
+  display: flex;
+  flex: 1 1 18rem;
+  align-items: center;
+}
+
+.searchIcon {
+  position: absolute;
+  inset-inline-start: var(--space-4);
+  color: var(--color-text);
+  pointer-events: none;
+}
+
+.search {
+  inline-size: 100%;
+  min-block-size: 3rem;
+  padding: 0 var(--space-4) 0 3.25rem;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-md);
+  transition: border-color var(--duration-fast) var(--ease);
+}
+
+.search::placeholder {
+  color: var(--color-text-muted);
+}
+
+.search:hover {
+  border-color: var(--color-primary);
+}
+
+.search:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+  border-color: var(--color-primary);
+}
+
+.count {
+  min-inline-size: 8rem;
+  color: var(--color-text-muted);
+  font-size: var(--text-md);
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.list[aria-busy] {
+  opacity: 0.75;
+  transition: opacity var(--duration-fast) var(--ease);
+}
+
+.inlineError {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-block-start: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: 10px;
+  background: var(--color-danger-soft);
+  color: var(--color-danger-text);
+  font-size: var(--text-sm);
+}
+
+.moreRow {
+  display: flex;
+  justify-content: center;
+  padding-block-start: var(--space-3);
+  border-block-start: var(--border-width) solid var(--color-border);
+}
+
+.more {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: 2.75rem;
+  padding-inline: var(--space-4);
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--color-primary);
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+}
+
+.more:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-primary-soft) 45%, var(--color-surface));
+}
+
+.more:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+
+.skeleton {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.skeleton li {
+  display: grid;
+  grid-template-columns: 3rem minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-5);
+}
+
+.skeleton li + li {
+  border-block-start: var(--border-width) solid var(--color-border);
+}
+
+.skeleton span {
+  block-size: 1.25rem;
+  border-radius: 6px;
+  background: var(--color-bg);
+  animation: pulse 1.4s var(--ease) infinite alternate;
+}
+
+.skeleton span:first-child {
+  block-size: 3rem;
+  border-radius: 12px;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-10) var(--space-4);
+}
+
+.emptyTitle {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.emptyBody {
+  max-inline-size: 36rem;
+  color: var(--color-text-muted);
+  font-size: var(--text-md);
+}
+
+.emptyAction {
+  margin-block-start: var(--space-3);
+  font-size: var(--text-md);
+}
+
+/* --- Footer -------------------------------------------------------------------- */
+
+.foot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-inline: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.footLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-6);
+}
+
+.footLink {
+  border-radius: 6px;
+  color: var(--color-primary);
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+}
+
+.footLink:hover {
+  text-decoration: underline;
+}
+
+@keyframes pageIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(340%);
+  }
+}
+
+@keyframes pulse {
+  to {
+    opacity: 0.45;
+  }
+}
+
+/* --- Narrow ------------------------------------------------------------------ */
+
+@media (max-width: 44rem) {
+  .head {
+    margin-block-start: var(--space-2);
+    padding-inline: 0;
+  }
+
+  .lede {
+    font-size: var(--text-md);
+  }
+
+  .art {
+    inline-size: 4.5rem;
+    block-size: 4.5rem;
+  }
+
+  .art svg {
+    inline-size: 2.5rem;
+    block-size: 2.5rem;
+  }
+
+  .check {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .checkButton {
+    justify-content: center;
+  }
+
+  .panel {
+    padding: var(--space-3);
+  }
+
+  .toolbar {
+    padding-block-end: var(--space-3);
+  }
+
+  .count {
+    min-inline-size: 0;
+    text-align: start;
+  }
+
+  .empty {
+    padding: var(--space-8) var(--space-2);
+  }
+}
+
+@media (max-width: 26rem) {
+  .art {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page,
+  .skeleton span {
+    animation: none;
+  }
+
+  .checkIcon[data-spinning] {
+    animation: none;
+  }
+
+  .progress[data-indeterminate] span {
+    inline-size: 100%;
+    animation: none;
+    opacity: 0.5;
+  }
+
+  .checkButton,
+  .checkButton svg,
+  .progress span,
+  .search {
+    transition: none;
+  }
+
+  .checkButton:hover:not(:disabled) svg {
+    transform: none;
+  }
+}

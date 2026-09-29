@@ -451,3 +451,99 @@ test("the demo's Home figures move after a confirmed unsubscribe, and only then"
   assert.ok(scan.finishedAt, "the sample scan has a finish time for Recent activity");
   assert.equal(scan.lookbackDays, 30);
 });
+
+// --- Unsubscribed archive ---------------------------------------------------
+
+type UnsubscribedResponse = import("../src/lib/api/types").UnsubscribedResponse;
+
+async function runDemoScan(lookbackDays: number) {
+  const started = await demoClient.post<ScanProgressDto>("/api/scan/start", { lookbackDays });
+  let progress = started;
+  for (let steps = 0; !progress.done && steps < 100; steps++) {
+    progress = await demoClient.post<ScanProgressDto>("/api/scan/step", { scanId: started.scanId });
+  }
+  return progress;
+}
+
+test("the demo archive shows each follow-up state, from confirmed unsubscribes only", async () => {
+  const archive = await demoClient.get<UnsubscribedResponse>("/api/unsubscribed?limit=50");
+  const senders = await demoClient.get<SendersResponse>("/api/senders?status=UNSUBSCRIBED&limit=500");
+
+  assert.equal(archive.archiveTotal, senders.total, "every confirmed unsubscribe, and nothing else");
+  const states = new Map(archive.items.map((item) => [item.name, item]));
+
+  const quiet = states.get("Verdant Grocery")!;
+  assert.equal(quiet.observation, "NO_NEW_MAIL");
+
+  const noisy = states.get("Strata Analytics")!;
+  assert.equal(noisy.observation, "NEW_MAIL");
+  assert.equal(noisy.newCount, 2);
+  assert.ok(noisy.newMessages.every((m) => m.gmailUrl === null), "sample mail never pretends to open in Gmail");
+  assert.ok(
+    noisy.newMessages.every((m) => new Date(m.receivedAt) > new Date(noisy.unsubscribedAt!)),
+    "only mail received after the unsubscribe",
+  );
+
+  const unchecked = states.get("Pinecrest Weekly")!;
+  assert.equal(unchecked.observation, "NOT_CHECKED");
+  assert.equal(unchecked.notCheckedReason, "NO_CHECK");
+
+  for (const item of archive.items) {
+    assert.equal(item.unsubscribePageUrl, null, "no real unsubscribe page is linked from the demo");
+  }
+  assert.equal(fetchCalls, 0);
+});
+
+test("requests, manual steps and failures never enter the demo archive", async () => {
+  const archive = await demoClient.get<UnsubscribedResponse>("/api/unsubscribed?limit=50");
+  const unconfirmed = await demoClient.get<SendersResponse>("/api/senders?status=ALL&limit=500");
+  const archived = new Set(archive.items.map((item) => item.senderId));
+  for (const sender of unconfirmed.senders) {
+    if (sender.status !== SENDER_STATUS.UNSUBSCRIBED) {
+      assert.equal(archived.has(sender.id), false, `${sender.name} is ${sender.status}`);
+    }
+  }
+});
+
+test("demo archive search and paging", async () => {
+  const found = await demoClient.get<UnsubscribedResponse>("/api/unsubscribed?search=strata");
+  assert.deepEqual(found.items.map((item) => item.name), ["Strata Analytics"]);
+  assert.equal(found.total, 1);
+  assert.ok(found.archiveTotal > 1, "the archive total stays the whole archive");
+
+  const first = await demoClient.get<UnsubscribedResponse>("/api/unsubscribed?limit=1&offset=0");
+  const second = await demoClient.get<UnsubscribedResponse>("/api/unsubscribed?limit=1&offset=1");
+  assert.notEqual(first.items[0].senderId, second.items[0].senderId);
+});
+
+test("a demo check is local, and a stopped one changes nothing", async () => {
+  const before = await demoClient.get<UnsubscribedResponse>("/api/unsubscribed?limit=50");
+
+  // Started and abandoned: still running, so it is no check at all.
+  await demoClient.post<ScanProgressDto>("/api/scan/start", { lookbackDays: before.checkLookbackDays });
+  const stopped = await demoClient.get<UnsubscribedResponse>("/api/unsubscribed?limit=50");
+  assert.equal(stopped.lastCheck?.finishedAt, before.lastCheck?.finishedAt);
+
+  const done = await runDemoScan(before.checkLookbackDays);
+  assert.equal(done.status, "DONE");
+  const after = await demoClient.get<UnsubscribedResponse>("/api/unsubscribed?limit=50");
+  assert.notEqual(after.lastCheck?.finishedAt, before.lastCheck?.finishedAt);
+
+  // Checked minutes after unsubscribing: too soon to say it went quiet.
+  const pinecrest = after.items.find((item) => item.name === "Pinecrest Weekly")!;
+  assert.equal(pinecrest.observation, "NOT_CHECKED");
+  assert.equal(pinecrest.notCheckedReason, "TOO_SOON");
+  assert.equal(after.items.find((item) => item.name === "Strata Analytics")?.newCount, 2);
+  assert.equal(fetchCalls, 0);
+});
+
+test("resetting the demo restores the archive's sample states", async () => {
+  const before = await demoClient.get<UnsubscribedResponse>("/api/unsubscribed?limit=50");
+  await runDemoScan(30);
+  store.clearState();
+  const after = await demoClient.get<UnsubscribedResponse>("/api/unsubscribed?limit=50");
+  assert.deepEqual(
+    after.items.map((item) => [item.name, item.observation]),
+    before.items.map((item) => [item.name, item.observation]),
+  );
+});

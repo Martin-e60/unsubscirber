@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowDownWideNarrow,
   ArrowUpRight,
@@ -24,6 +25,7 @@ import { ScanControl } from "./ScanControl";
 import { SenderTable } from "./SenderTable";
 import { SenderDetails } from "./SenderDetails";
 import { OutcomeNotice, type Outcome } from "./OutcomeNotice";
+import { ReviewCard } from "./ReviewCard";
 import buttons from "./buttons.module.css";
 import styles from "./CleanupView.module.css";
 
@@ -54,8 +56,18 @@ function without(set: Set<string>, ids: Iterable<string>): Set<string> {
   return next;
 }
 
-export function CleanupView() {
+export function CleanupView({ reviewId = null }: { reviewId?: string | null } = {}) {
   const { refreshStats, demo, basePath, accountConnected } = useApp();
+  const router = useRouter();
+
+  // "Review in Cleanup" from Unsubscribed opens one already-unsubscribed
+  // sender on its own card; the normal list below is unchanged.
+  const [reviewing, setReviewing] = useState<string | null>(reviewId);
+  useEffect(() => setReviewing(reviewId), [reviewId]);
+  const closeReview = () => {
+    setReviewing(null);
+    router.replace(`${basePath}/cleanup`, { scroll: false });
+  };
   const senders = useSenders({ initialStatus: SENDER_STATUS.ACTIVE, pageSize: PAGE_SIZE });
   const list = senders.senders;
 
@@ -404,6 +416,10 @@ export function CleanupView() {
           {accountConnected === false ? null : <ScanControl scan={scan} />}
         </div>
       </header>
+
+      {reviewing && accountConnected !== false ? (
+        <ReviewCard senderId={reviewing} basePath={basePath} demo={demo} onClose={closeReview} />
+      ) : null}
 
       {accountConnected === false ? (
         <div className={styles.connect}>

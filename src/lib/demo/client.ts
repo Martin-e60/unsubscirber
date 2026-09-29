@@ -7,10 +7,15 @@ import type {
   SessionDto,
   ScanProgressDto,
   StatsDto,
+  UnsubscribedResponse,
   UnsubscribeResultDto,
 } from "@/lib/api/types";
+import { lookbackToCover, observe, type CompletedCheck } from "@/lib/followup/match";
+import { toArchiveItem } from "@/lib/followup/archive";
 import {
   ATTEMPT_STATUS,
+  DEFAULT_LOOKBACK_DAYS,
+  LOOKBACK_OPTIONS,
   PROTECTED_UNSUBSCRIBE_STATUSES,
   SCAN_STATUS,
   SENDER_STATUS,
@@ -299,6 +304,90 @@ async function unsubscribe(id: string): Promise<UnsubscribeResultDto> {
   return { senderId: id, status, method, manualUrl, detail };
 }
 
+/**
+ * The Unsubscribed archive, from the visitor's sample data and the same rules
+ * the server uses. Sample messages get no Gmail link: there is nothing real
+ * for one to open.
+ */
+function archive(params: URLSearchParams): UnsubscribedResponse {
+  const { senders, attempts, followUps, lastDone: scan } = loadState();
+  const search = (params.get("search") ?? "").trim().toLowerCase();
+  const senderId = params.get("senderId");
+  const limit = Number(params.get("limit") ?? 10);
+  const offset = Number(params.get("offset") ?? 0);
+
+  const confirmedAt = (sender: DemoSender): Date | null => {
+    const success = attempts
+      .filter((a) => a.senderId === sender.id && a.status === ATTEMPT_STATUS.SUCCESS)
+      .map((a) => a.createdAt)
+      .sort()
+      .at(-1);
+    const at = success ?? sender.decidedAt;
+    return at ? new Date(at) : null;
+  };
+
+  const all = senders
+    .filter((sender) => sender.status === SENDER_STATUS.UNSUBSCRIBED)
+    .map((sender) => ({ sender, at: confirmedAt(sender) }))
+    .sort(
+      (a, b) =>
+        (b.at?.getTime() ?? -Infinity) - (a.at?.getTime() ?? -Infinity) ||
+        (a.sender.name ?? a.sender.address).localeCompare(b.sender.name ?? b.sender.address),
+    );
+
+  const matching = all.filter(
+    ({ sender }) =>
+      (!senderId || sender.id === senderId) &&
+      (!search ||
+        sender.address.toLowerCase().includes(search) ||
+        (sender.name ?? "").toLowerCase().includes(search)),
+  );
+
+  const latestCheck: CompletedCheck | null =
+    scan && scan.status === SCAN_STATUS.DONE && scan.finishedAt
+      ? {
+          startedAt: new Date(scan.startedAt),
+          finishedAt: new Date(scan.finishedAt),
+          lookbackDays: scan.lookbackDays,
+        }
+      : null;
+
+  const dated = all.map(({ at }) => at).filter((at): at is Date => at !== null);
+  const oldest = dated.length ? new Date(Math.min(...dated.map((d) => d.getTime()))) : null;
+
+  return {
+    items: matching.slice(offset, offset + limit).map(({ sender, at }) =>
+      toArchiveItem({
+        senderId: sender.id,
+        name: sender.name,
+        address: sender.address,
+        unsubscribedAt: at,
+        observation: observe({
+          unsubscribedAt: at,
+          earlierListIds: [],
+          messages: followUps
+            .filter((message) => message.senderId === sender.id)
+            .map((message) => ({
+              id: message.id,
+              receivedAt: new Date(message.receivedAt),
+              listId: null,
+              subject: message.subject,
+            })),
+          latestCheck,
+        }),
+        messageUrl: () => null,
+        unsubscribeHttp: null,
+      }),
+    ),
+    total: matching.length,
+    archiveTotal: all.length,
+    lastCheck: latestCheck
+      ? { finishedAt: latestCheck.finishedAt.toISOString(), lookbackDays: latestCheck.lookbackDays }
+      : null,
+    checkLookbackDays: lookbackToCover(oldest, LOOKBACK_OPTIONS, DEFAULT_LOOKBACK_DAYS),
+  };
+}
+
 function session(): SessionDto {
   return {
     user: { id: DEMO_USER.id, email: DEMO_USER.email, name: DEMO_USER.name, image: null },
@@ -327,6 +416,9 @@ async function handle(
 
     case "GET /api/history":
       return history();
+
+    case "GET /api/unsubscribed":
+      return archive(url.searchParams);
 
     case "GET /api/scan": {
       const { scan } = loadState();

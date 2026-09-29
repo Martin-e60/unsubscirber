@@ -127,6 +127,53 @@ export type HistoryItemDto = {
   createdAt: string;
 };
 
+/** A message that arrived after a confirmed unsubscribe. */
+export type FollowUpMessageDto = {
+  id: string;
+  /** Null when no subject was recorded. */
+  subject: string | null;
+  /** When the mailbox received it — never when a scan found it. */
+  receivedAt: string;
+  /** Opens this message in Gmail, or null where no reliable link exists. */
+  gmailUrl: string | null;
+};
+
+/** One confirmed unsubscribe in the archive, with what has been seen since. */
+export type ArchiveItemDto = {
+  senderId: string;
+  name: string | null;
+  address: string;
+  /** When the unsubscribe was confirmed. Null for old records without one. */
+  unsubscribedAt: string | null;
+  observation: "NEW_MAIL" | "NO_NEW_MAIL" | "NOT_CHECKED";
+  notCheckedReason: "NO_DATE" | "NO_CHECK" | "TOO_SOON" | null;
+  matchedBy: "LIST_ID" | "ADDRESS";
+  /** Newest first, capped; `newCount` has the full number. */
+  newMessages: FollowUpMessageDto[];
+  newCount: number;
+  check: {
+    at: string;
+    from: string;
+    to: string;
+    partial: boolean;
+    found: number;
+  } | null;
+  /** The sender's own unsubscribe page (https only), for doing it by hand. */
+  unsubscribePageUrl: string | null;
+};
+
+export type UnsubscribedResponse = {
+  items: ArchiveItemDto[];
+  /** Matching the search. */
+  total: number;
+  /** Every confirmed unsubscribe, whatever the search. */
+  archiveTotal: number;
+  /** The latest scan that finished. Failed or stopped scans never count. */
+  lastCheck: { finishedAt: string; lookbackDays: number } | null;
+  /** The period "Check again" scans so it reaches the oldest unsubscribe. */
+  checkLookbackDays: number;
+};
+
 export type ApiError = { error: string };
 
 /** Sorting options offered by GET /api/senders. */

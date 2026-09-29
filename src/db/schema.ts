@@ -185,10 +185,24 @@ export const scannedMessages = sqliteTable(
     messageId: text("message_id").notNull(),
     senderId: text("sender_id").notNull()
       .references(() => senders.id, { onDelete: "cascade" }),
+    /**
+     * When the mailbox received the message (Gmail's internalDate), never
+     * when a scan happened to find it. Null for rows recorded before this
+     * column existed, or when the provider gave no date.
+     */
+    receivedAt: integer("received_at", { mode: "timestamp_ms" }),
+    /** The List-Id header, the most precise way to tell one list from another. */
+    listId: text("list_id"),
+    /**
+     * Subject line — kept only for mail that arrived after a confirmed
+     * unsubscribe, so the Unsubscribed page can show what came back.
+     */
+    subject: text("subject"),
   },
   (t) => [
     primaryKey({ columns: [t.mailAccountId, t.messageId] }),
     index("scanned_messages_sender_idx").on(t.senderId),
+    index("scanned_messages_sender_received_idx").on(t.senderId, t.receivedAt),
   ],
 );
 

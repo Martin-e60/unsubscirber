@@ -9,6 +9,7 @@ import {
   type UnsubscribeMethod,
 } from "@/lib/constants";
 import {
+  DEMO_FOLLOW_UPS,
   DEMO_SCAN_TOTAL,
   DEMO_SENDERS,
   demoManualUrl,
@@ -30,9 +31,10 @@ import {
 const STORAGE_KEY = "tidely.demo.v1";
 /**
  * Bumped when the stored shape changes. Version 2 added scan timestamps for
- * the Home screen; a visitor holding version 1 simply starts the demo afresh.
+ * the Home screen; version 3 added mail received after an unsubscribe. A
+ * visitor holding an older version simply starts the demo afresh.
  */
-const STATE_VERSION = 2;
+const STATE_VERSION = 3;
 
 /** The default window for a first scan, matching the real app. */
 export const DEMO_DEFAULT_LOOKBACK_DAYS = 30;
@@ -77,10 +79,25 @@ export type DemoScan = {
   finishedAt: string | null;
 };
 
+/** A sample message that arrived after a confirmed unsubscribe. */
+export type DemoFollowUp = {
+  id: string;
+  senderId: string;
+  subject: string;
+  receivedAt: string;
+};
+
 export type DemoState = {
   version: number;
   senders: DemoSender[];
   attempts: DemoAttempt[];
+  followUps: DemoFollowUp[];
+  /**
+   * The last scan that finished. Kept apart from `scan`, which a new scan
+   * replaces: a check that is running or was abandoned must not wipe out
+   * what the last completed one found — the real app keeps every scan row.
+   */
+  lastDone: DemoScan | null;
   scan: DemoScan | null;
   /** Reserve senders already revealed by a longer scan. */
   revealed: string[];
@@ -183,22 +200,31 @@ export function initialState(): DemoState {
     }
   }
 
+  const seedScan: DemoScan = {
+    scanId: "demo-scan-seed",
+    status: SCAN_STATUS.DONE,
+    lookbackDays: DEMO_DEFAULT_LOOKBACK_DAYS,
+    processedMessages: DEMO_SCAN_TOTAL,
+    matchedMessages: senders.reduce((total, s) => total + s.messageCount, 0),
+    totalEstimate: DEMO_SCAN_TOTAL,
+    error: null,
+    // The sample mailbox was "scanned" a few minutes before the visit began.
+    startedAt: new Date(Date.now() - 9 * 60_000).toISOString(),
+    finishedAt: new Date(Date.now() - 8 * 60_000).toISOString(),
+  };
+
   return {
     version: STATE_VERSION,
     senders,
     attempts: attempts.sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
-    scan: {
-      scanId: "demo-scan-seed",
-      status: SCAN_STATUS.DONE,
-      lookbackDays: DEMO_DEFAULT_LOOKBACK_DAYS,
-      processedMessages: DEMO_SCAN_TOTAL,
-      matchedMessages: senders.reduce((total, s) => total + s.messageCount, 0),
-      totalEstimate: DEMO_SCAN_TOTAL,
-      error: null,
-      // The sample mailbox was "scanned" a few minutes before the visit began.
-      startedAt: new Date(Date.now() - 9 * 60_000).toISOString(),
-      finishedAt: new Date(Date.now() - 8 * 60_000).toISOString(),
-    },
+    followUps: DEMO_FOLLOW_UPS.map((seed) => ({
+      id: seed.id,
+      senderId: seed.senderId,
+      subject: seed.subject,
+      receivedAt: iso(seed.receivedDaysAgo),
+    })),
+    scan: seedScan,
+    lastDone: { ...seedScan },
     revealed: [],
   };
 }
@@ -229,7 +255,12 @@ export function loadState(): DemoState {
       const raw = store.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as DemoState;
-        if (parsed?.version === STATE_VERSION && Array.isArray(parsed.senders)) {
+        if (
+          parsed?.version === STATE_VERSION &&
+          Array.isArray(parsed.senders) &&
+          Array.isArray(parsed.followUps) &&
+          "lastDone" in parsed
+        ) {
           memoryState = parsed;
           return parsed;
         }
@@ -328,6 +359,7 @@ export function stepDemoScan(): DemoScan {
     }
     scan.status = SCAN_STATUS.DONE;
     scan.finishedAt = new Date().toISOString();
+    state.lastDone = { ...scan };
   }
 
   saveState(state);

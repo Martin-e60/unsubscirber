@@ -276,7 +276,8 @@ export const DEMO_SENDERS: DemoSenderSeed[] = [
     address: "boxes@verdantgrocery.example.com",
     messageCount: 27,
     firstSeenDaysAgo: 170,
-    lastSeenDaysAgo: 4,
+    // Nothing since the unsubscribe twelve days ago: the "no new mail" case.
+    lastSeenDaysAgo: 13,
     sampleSubject: "This week's box: what's inside",
     method: UNSUBSCRIBE_METHOD.ONE_CLICK,
     oneClick: true,
@@ -343,6 +344,22 @@ export const DEMO_SENDERS: DemoSenderSeed[] = [
     decidedDaysAgo: 8,
   },
 
+  {
+    // Unsubscribed a few minutes ago, after the sample scan: "not checked yet".
+    id: "d30",
+    name: "Pinecrest Weekly",
+    address: "digest@pinecrestweekly.example.org",
+    messageCount: 26,
+    firstSeenDaysAgo: 190,
+    lastSeenDaysAgo: 2,
+    sampleSubject: "Five stories worth your Sunday",
+    method: UNSUBSCRIBE_METHOD.ONE_CLICK,
+    oneClick: true,
+    outcome: "SUCCESS",
+    status: SENDER_STATUS.UNSUBSCRIBED,
+    decidedDaysAgo: 5 / 1440,
+  },
+
   // Held back: these only appear if the visitor scans further back than the
   // default 30-day window, so the lookback control does something visible.
   {
@@ -407,6 +424,22 @@ export const DEMO_SENDERS: DemoSenderSeed[] = [
     outcome: "FAILED",
     reserve: true,
   },
+];
+
+/**
+ * Mail that arrived after a confirmed unsubscribe — the Unsubscribed page's
+ * "new emails" case. Strata Analytics was unsubscribed four days ago.
+ */
+export type DemoFollowUpSeed = {
+  id: string;
+  senderId: string;
+  subject: string;
+  receivedDaysAgo: number;
+};
+
+export const DEMO_FOLLOW_UPS: DemoFollowUpSeed[] = [
+  { id: "f01", senderId: "d08", subject: "Your weekly dashboard digest", receivedDaysAgo: 2.4 },
+  { id: "f02", senderId: "d08", subject: "New: team benchmarks are here", receivedDaysAgo: 1 },
 ];
 
 /** A sample link for the "needs a click" outcome. Points at a reserved domain. */
