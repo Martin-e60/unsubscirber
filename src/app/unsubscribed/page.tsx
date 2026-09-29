@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
 import { UnsubscribedView } from "@/components/unsubscribed/UnsubscribedView";
 import { getCurrentUser, getPrimaryAccount } from "@/lib/api/auth";
-import { unconfirmedStatus } from "@/lib/navigation";
+import { cleanupHref, unconfirmedStatus } from "@/lib/navigation";
 
 export const dynamic = "force-dynamic";
 
@@ -10,8 +10,8 @@ export const dynamic = "force-dynamic";
  * The archive of confirmed unsubscribes.
  *
  * Requests sent, attempts that need a click, and failures used to be tabs
- * here. They are not confirmed unsubscribes, so they now live in Senders;
- * old links such as Home's ?status=MANUAL are sent straight there.
+ * here. They are not confirmed unsubscribes, so they are filters in Cleanup's
+ * To review view; old links such as ?status=MANUAL are sent straight there.
  */
 export default async function UnsubscribedPage({
   searchParams,
@@ -19,7 +19,7 @@ export default async function UnsubscribedPage({
   searchParams: Promise<{ status?: string }>;
 }) {
   const moved = unconfirmedStatus((await searchParams).status);
-  if (moved) redirect(`/senders?status=${moved}`);
+  if (moved) redirect(cleanupHref("", { status: moved }));
 
   const user = await getCurrentUser();
   if (!user) redirect("/login");

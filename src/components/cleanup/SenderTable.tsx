@@ -34,6 +34,12 @@ export function SenderTable({
   onToggle,
   onTogglePage,
   onPage,
+  selectable = true,
+  canCheck,
+  statusNote,
+  listLabel = "Senders to review",
+  noun = { one: "sender", many: "senders" },
+  plainTotal = false,
 }: {
   senders: SenderDto[];
   loading: boolean;
@@ -52,6 +58,16 @@ export function SenderTable({
   onToggle: (id: string) => void;
   onTogglePage: () => void;
   onPage: (page: number) => void;
+  /** False in Keeping: no checkboxes and no bulk selection at all. */
+  selectable?: boolean;
+  /** Rows that cannot be ticked, e.g. a request already sent. */
+  canCheck?: (sender: SenderDto) => boolean;
+  /** Replaces the subject line with a status, for unsubscribe follow-ups. */
+  statusNote?: (sender: SenderDto) => string | null;
+  listLabel?: string;
+  noun?: { one: string; many: string };
+  /** When everything fits on one page, say only how many there are. */
+  plainTotal?: boolean;
 }) {
   const listRef = useRef<HTMLUListElement>(null);
 
@@ -103,8 +119,9 @@ export function SenderTable({
   const last = page * pageSize + senders.length;
 
   return (
-    <div className={styles.panel} aria-busy={loading || undefined}>
+    <div className={styles.panel} aria-busy={loading || undefined} data-plain={!selectable || undefined}>
       <div className={styles.head}>
+        {selectable ? (
         <label className={styles.check} title="Select every sender on this page">
           <input
             id="cleanup-select-page"
@@ -119,17 +136,19 @@ export function SenderTable({
             aria-label={`Select this page (${senders.length} ${senders.length === 1 ? "sender" : "senders"})`}
           />
         </label>
+        ) : null}
         <span className={styles.headLabel}>Sender</span>
         <span className={`${styles.headLabel} ${styles.headNum}`}>Emails / mo</span>
         <span className={`${styles.headLabel} ${styles.headDate}`}>Last received</span>
       </div>
 
-      <ul className={styles.list} ref={listRef} aria-label="Senders to review">
+      <ul className={styles.list} ref={listRef} aria-label={listLabel}>
         {senders.map((sender, index) => {
           const label = sender.name ?? sender.address;
           const active = sender.id === activeId;
           const busy = pending.has(sender.id) || sender.status === SENDER_STATUS.UNSUBSCRIBING;
           const received = receivedLabel(sender.lastSeenAt);
+          const note = busy ? "Sending unsubscribe request…" : statusNote?.(sender) ?? null;
 
           return (
             <li
@@ -138,16 +157,18 @@ export function SenderTable({
               data-active={active || undefined}
               data-busy={busy || undefined}
             >
-              <label className={styles.check}>
-                <input
-                  type="checkbox"
-                  className={styles.box}
-                  checked={checked.has(sender.id)}
-                  disabled={locked || busy}
-                  onChange={() => onToggle(sender.id)}
-                  aria-label={`Select ${label}`}
-                />
-              </label>
+              {selectable ? (
+                <label className={styles.check}>
+                  <input
+                    type="checkbox"
+                    className={styles.box}
+                    checked={checked.has(sender.id)}
+                    disabled={locked || busy || (canCheck ? !canCheck(sender) : false)}
+                    onChange={() => onToggle(sender.id)}
+                    aria-label={`Select ${label}`}
+                  />
+                </label>
+              ) : null}
 
               <button
                 type="button"
@@ -155,7 +176,7 @@ export function SenderTable({
                 data-sender-id={sender.id}
                 aria-current={active ? "true" : undefined}
                 aria-label={`${label}. ${sender.perMonth} emails a month, last received ${received.toLowerCase()}.${
-                  busy ? " Sending unsubscribe request." : ""
+                  note ? ` ${note}` : ""
                 }`}
                 onClick={() => onActivate(sender.id, true)}
                 onKeyDown={(event) => moveFocus(event, index)}
@@ -165,8 +186,8 @@ export function SenderTable({
                 </span>
                 <span className={styles.identity}>
                   <span className={styles.name}>{label}</span>
-                  <span className={styles.subject}>
-                    {busy ? "Sending unsubscribe request…" : sender.sampleSubject ?? sender.address}
+                  <span className={styles.subject} data-note={note ? true : undefined}>
+                    {note ?? sender.sampleSubject ?? sender.address}
                   </span>
                 </span>
                 <span className={styles.num}>
@@ -182,7 +203,9 @@ export function SenderTable({
 
       <div className={styles.foot}>
         <p className={styles.range}>
-          {first}–{last} of {total.toLocaleString("en")} {total === 1 ? "sender" : "senders"}
+          {plainTotal && pageCount <= 1
+            ? `${total.toLocaleString("en")} ${total === 1 ? noun.one : noun.many}`
+            : `${first}–${last} of ${total.toLocaleString("en")} ${total === 1 ? noun.one : noun.many}`}
         </p>
         {pageCount > 1 ? (
           <nav className={styles.pager} aria-label="Pages">

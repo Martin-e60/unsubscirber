@@ -39,13 +39,14 @@ test("the first scan looks back a month, not a year", async () => {
   );
 });
 
-test("the signed-in navigation offers no pricing and no rollups", async () => {
+test("the signed-in navigation offers no pricing, rollups or senders page", async () => {
   const { NAV, DEMO_NAV } = await import("../src/lib/navigation");
 
   const paths = NAV.map((item) => item.href);
   assert.ok(!paths.includes("/pricing"));
   assert.ok(!paths.includes("/rollups"));
-  assert.deepEqual(paths, ["/dashboard", "/cleanup", "/senders", "/unsubscribed", "/settings"]);
+  assert.deepEqual(paths, ["/dashboard", "/cleanup", "/unsubscribed", "/settings"]);
+  assert.ok(!DEMO_NAV.some((item) => item.href === "/senders"), "nor does the demo");
 
   // The demo has no mailbox to configure.
   assert.ok(!DEMO_NAV.some((item) => item.href === "/settings"));
@@ -63,4 +64,57 @@ test("no public feature page advertises something that was never built", async (
       assert.ok(!text.includes(phrase), `"${phrase}" must not appear in ${feature.slug}`);
     }
   }
+});
+
+/** Runs an async page and returns the URL it redirected to. */
+async function redirectOf(render: () => Promise<unknown>): Promise<string> {
+  try {
+    await render();
+  } catch (thrown) {
+    const digest = String((thrown as { digest?: string }).digest ?? "");
+    assert.match(digest, /^NEXT_REDIRECT/);
+    return digest.split(";")[2];
+  }
+  throw new Error("the page rendered instead of redirecting");
+}
+
+test("old Senders links land in Cleanup, keeping their context", async () => {
+  const { sendersRedirect } = await import("../src/lib/navigation");
+
+  assert.equal(sendersRedirect("", {}), "/cleanup?view=keeping");
+  assert.equal(sendersRedirect("", { status: "ALL" }), "/cleanup?view=keeping");
+  assert.equal(sendersRedirect("", { status: "KEPT" }), "/cleanup?view=keeping");
+  assert.equal(sendersRedirect("", { search: "figma" }), "/cleanup?view=keeping&search=figma");
+  assert.equal(sendersRedirect("", { status: "MANUAL" }), "/cleanup?status=MANUAL");
+  assert.equal(sendersRedirect("", { status: "FAILED" }), "/cleanup?status=FAILED");
+  assert.equal(sendersRedirect("", { status: "REQUESTED" }), "/cleanup?status=REQUESTED");
+  assert.equal(sendersRedirect("", { status: "ACTIVE" }), "/cleanup");
+  assert.equal(sendersRedirect("", { status: "UNSUBSCRIBED" }), "/unsubscribed");
+  assert.equal(sendersRedirect("/demo", {}), "/demo/cleanup?view=keeping");
+  assert.equal(sendersRedirect("/demo", { status: "MANUAL" }), "/demo/cleanup?status=MANUAL");
+});
+
+test("the Senders pages redirect, in the app and the demo", async () => {
+  const { default: SendersPage } = await import("../src/app/senders/page");
+  const { default: DemoSendersPage } = await import("../src/app/demo/senders/page");
+
+  assert.equal(
+    await redirectOf(() => SendersPage({ searchParams: Promise.resolve({}) })),
+    "/cleanup?view=keeping",
+  );
+  assert.equal(
+    await redirectOf(() => DemoSendersPage({ searchParams: Promise.resolve({ status: "FAILED" }) })),
+    "/demo/cleanup?status=FAILED",
+  );
+});
+
+test("Cleanup's view is read from the URL, defaulting to To review", async () => {
+  const { cleanupView, cleanupHref, unconfirmedStatus } = await import("../src/lib/navigation");
+
+  assert.equal(cleanupView(null), "review");
+  assert.equal(cleanupView("anything"), "review");
+  assert.equal(cleanupView("keeping"), "keeping");
+  assert.equal(unconfirmedStatus("ACTIVE"), null, "the default list is not a follow-up filter");
+  assert.equal(cleanupHref("", { view: "review" }), "/cleanup");
+  assert.equal(cleanupHref("/demo", { view: "keeping", status: "MANUAL" }), "/demo/cleanup?view=keeping");
 });

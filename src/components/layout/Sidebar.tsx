@@ -9,7 +9,6 @@ import {
   MailCheck,
   Mails,
   SlidersHorizontal,
-  Users,
   type LucideIcon,
 } from "lucide-react";
 import { AccountMenu } from "@/components/layout/AccountMenu";
@@ -29,7 +28,6 @@ import styles from "./Sidebar.module.css";
 const ICONS: Record<NavId, LucideIcon> = {
   home: Home,
   cleanup: ListFilter,
-  senders: Users,
   unsubscribed: MailCheck,
   settings: SlidersHorizontal,
 };

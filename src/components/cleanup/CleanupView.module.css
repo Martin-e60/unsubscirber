@@ -1,7 +1,10 @@
 .page {
   display: flex;
   flex-direction: column;
-  gap: var(--space-10);
+  /* ~24px between major groups; related elements sit 8–12px apart. */
+  gap: var(--space-6);
+  /* Brings the heading up to ~24px below the demo banner / page top. */
+  margin-block-start: calc(var(--space-2) * -1);
   /* No fill mode: a transform that stays in effect would become the
      containing block for the fixed details sheet and bulk bar. */
   animation: cleanupIn 360ms var(--ease);
@@ -9,18 +12,12 @@
 
 /* --- Header: the same rhythm as Home's. ----------------------------------- */
 
-.crumb {
-  color: var(--color-text-muted);
-  font-size: var(--text-base);
-}
-
 .head {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--space-5) var(--space-8);
-  margin-block-start: var(--space-6);
+  gap: var(--space-4) var(--space-8);
 }
 
 .title {
@@ -39,9 +36,118 @@
 }
 
 .lede {
-  margin-block-start: var(--space-3);
+  margin-block-start: var(--space-2);
   color: var(--color-text-muted);
   font-size: var(--text-lg);
+}
+
+/* --- To review / Keeping --------------------------------------------------- */
+
+.views {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.switch {
+  display: inline-grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-border) 30%, var(--color-bg));
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-block-size: 2.75rem;
+  min-inline-size: 11rem;
+  padding-inline: var(--space-5);
+  border: var(--border-width) solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: var(--text-md);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease),
+    color var(--duration-fast) var(--ease),
+    box-shadow var(--duration-fast) var(--ease);
+}
+
+.tab:hover:not([data-selected]) {
+  color: var(--color-text);
+}
+
+.tab[data-selected] {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-weight: var(--weight-bold);
+  box-shadow: var(--shadow-sm);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.tabCount {
+  min-inline-size: 1ch;
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--weight-semibold);
+}
+
+.context {
+  color: var(--color-text-muted);
+  font-size: var(--text-md);
+}
+
+/* Follow-up filters inside To review: small, and only when there are any. */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.filter {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: 2.25rem;
+  padding-inline: var(--space-3);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+}
+
+.filter:hover {
+  border-color: var(--color-primary);
+  color: var(--color-text);
+}
+
+.filter[aria-pressed="true"] {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-weight: var(--weight-semibold);
+}
+
+.filterCount {
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--weight-bold);
 }
 
 /* --- Workspace: list on the left, details on the right. ------------------- */
@@ -53,7 +159,7 @@
     "toolbar"
     "status"
     "list";
-  gap: var(--space-5);
+  gap: var(--space-4);
 }
 
 .toolbar {
@@ -123,11 +229,6 @@
   pointer-events: none;
 }
 
-.sideLabel {
-  display: none;
-}
-
-.sideLabel,
 .count {
   color: var(--color-text-muted);
   font-size: var(--text-xs);
@@ -147,12 +248,15 @@
 .status {
   grid-area: status;
   z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
 }
 
 .countRow {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: var(--space-2) var(--space-4);
   min-block-size: 1.5rem;
@@ -285,6 +389,11 @@
 
 .inlineLink,
 .footLink {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: inherit;
+  cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
@@ -337,16 +446,10 @@
   .workspace {
     grid-template-columns: minmax(0, 63fr) minmax(20rem, 37fr);
     grid-template-areas:
-      "toolbar label"
+      "toolbar ."
       "status  ."
       "list    side";
     column-gap: var(--space-8);
-  }
-
-  .sideLabel {
-    grid-area: label;
-    display: flex;
-    align-items: center;
   }
 
   .side {
@@ -370,11 +473,20 @@
 
 @media (max-width: 44rem) {
   .page {
-    gap: var(--space-8);
+    gap: var(--space-5);
   }
 
-  .head {
-    margin-block-start: var(--space-3);
+  .views {
+    align-items: stretch;
+  }
+
+  .switch {
+    display: grid;
+  }
+
+  .tab {
+    min-inline-size: 0;
+    padding-inline: var(--space-3);
   }
 
   .lede {
@@ -458,6 +570,7 @@
 
   .search,
   .sort,
+  .tab,
   .footLink svg {
     transition: none;
   }

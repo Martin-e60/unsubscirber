@@ -153,8 +153,8 @@ export function NextStep({
       body =
         "Every sender Tidely has found has a decision. Scan again to check for new mailing lists.";
       action = (
-        <Link href={`${basePath}/senders`} className={styles.tertiary}>
-          See all senders
+        <Link href={`${basePath}/cleanup?view=keeping`} className={styles.tertiary}>
+          See kept senders
         </Link>
       );
       break;

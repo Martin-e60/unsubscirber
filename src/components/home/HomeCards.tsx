@@ -69,7 +69,7 @@ export function Attention({
         <ul className={styles.list}>
           {needsClick > 0 ? (
             <li>
-              <Link href={`${results}?status=MANUAL`} className={styles.row}>
+              <Link href={`${basePath}/cleanup?status=MANUAL`} className={styles.row}>
                 <span className={styles.rowIcon} aria-hidden="true">
                   <MousePointer2 size={18} strokeWidth={1.75} />
                 </span>
@@ -85,7 +85,7 @@ export function Attention({
           ) : null}
           {failed > 0 ? (
             <li>
-              <Link href={`${results}?status=FAILED`} className={styles.row}>
+              <Link href={`${basePath}/cleanup?status=FAILED`} className={styles.row}>
                 <span className={styles.rowIcon} aria-hidden="true">
                   <CircleAlert size={18} strokeWidth={1.75} />
                 </span>

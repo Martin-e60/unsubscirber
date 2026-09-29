@@ -547,3 +547,70 @@ test("resetting the demo restores the archive's sample states", async () => {
     before.items.map((item) => [item.name, item.observation]),
   );
 });
+
+// --- Keeping ------------------------------------------------------------------
+
+test("in the demo, Keep moves a sender to Keeping and Move to review brings it back", async () => {
+  const review = await demoClient.get<SendersResponse>("/api/senders?status=ACTIVE&limit=500");
+  const keeping = await demoClient.get<SendersResponse>("/api/senders?status=KEPT&limit=500");
+  const target = review.senders[0];
+
+  await demoClient.patch<SenderDto>(`/api/senders/${target.id}`, { status: SENDER_STATUS.KEPT });
+  const afterKeep = await demoClient.get<SendersResponse>("/api/senders?status=KEPT&limit=500");
+  assert.ok(afterKeep.senders.some((s) => s.id === target.id));
+  assert.equal(afterKeep.counts.KEPT, keeping.counts.KEPT + 1);
+  assert.equal(afterKeep.counts.ACTIVE, review.counts.ACTIVE - 1);
+
+  const attemptsBefore = await demoClient.get<HistoryItemDto[]>("/api/history");
+  await demoClient.patch<SenderDto>(`/api/senders/${target.id}`, { status: SENDER_STATUS.ACTIVE });
+  const afterMove = await demoClient.get<SendersResponse>("/api/senders?status=ACTIVE&limit=500");
+  assert.ok(afterMove.senders.some((s) => s.id === target.id));
+  assert.equal(afterMove.counts.KEPT, keeping.counts.KEPT);
+  assert.equal(afterMove.counts.ACTIVE, review.counts.ACTIVE);
+
+  const attemptsAfter = await demoClient.get<HistoryItemDto[]>("/api/history");
+  assert.equal(attemptsAfter.length, attemptsBefore.length, "moving to review never unsubscribes");
+  assert.equal(fetchCalls, 0);
+});
+
+test("a simulated rescan, of any window, preserves Keep decisions", async () => {
+  const review = await demoClient.get<SendersResponse>("/api/senders?status=ACTIVE&limit=500");
+  await demoClient.patch<SenderDto>(`/api/senders/${review.senders[1].id}`, { status: SENDER_STATUS.KEPT });
+  const before = await demoClient.get<SendersResponse>("/api/senders?status=KEPT&limit=500");
+
+  for (const days of [30, 1095]) {
+    const started = await demoClient.post<ScanProgressDto>("/api/scan/start", { lookbackDays: days });
+    let progress = started;
+    for (let steps = 0; !progress.done && steps < 100; steps++) {
+      progress = await demoClient.post<ScanProgressDto>("/api/scan/step", { scanId: started.scanId });
+    }
+    const after = await demoClient.get<SendersResponse>("/api/senders?status=KEPT&limit=500");
+    assert.deepEqual(
+      after.senders.map((s) => s.id).sort(),
+      before.senders.map((s) => s.id).sort(),
+      `a ${days}-day scan keeps every kept sender kept`,
+    );
+  }
+});
+
+test("resetting the demo restores its sample kept senders", async () => {
+  const initial = await demoClient.get<SendersResponse>("/api/senders?status=KEPT&limit=500");
+  assert.ok(initial.total > 0, "the sample starts with someone in Keeping");
+
+  for (const sender of initial.senders) {
+    await demoClient.patch<SenderDto>(`/api/senders/${sender.id}`, { status: SENDER_STATUS.ACTIVE });
+  }
+  assert.equal((await demoClient.get<SendersResponse>("/api/senders?status=KEPT")).total, 0);
+
+  store.clearState();
+  const reset = await demoClient.get<SendersResponse>("/api/senders?status=KEPT&limit=500");
+  assert.deepEqual(reset.senders.map((s) => s.id), initial.senders.map((s) => s.id));
+});
+
+test("follow-up outcomes stay reachable from Cleanup's To review filters", async () => {
+  for (const status of ["MANUAL", "FAILED", "REQUESTED"]) {
+    const list = await demoClient.get<SendersResponse>(`/api/senders?status=${status}&limit=500`);
+    assert.equal(list.total, list.counts[status as keyof typeof list.counts], `${status} is listed`);
+    assert.ok(list.total > 0, `the sample has a ${status} sender to show`);
+  }
+});

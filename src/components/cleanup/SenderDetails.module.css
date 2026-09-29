@@ -3,10 +3,20 @@
 }
 
 .card {
-  padding: var(--space-8);
+  padding: var(--space-6);
   border: var(--border-width) solid var(--color-border);
   border-radius: 18px;
   background: var(--color-surface);
+}
+
+/* "Sender details", inside the card it describes. */
+.cardLabel {
+  margin-block-end: var(--space-4);
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
 }
 
 .content {
@@ -18,8 +28,8 @@
 .identity {
   display: flex;
   align-items: center;
-  gap: var(--space-5);
-  padding-block-end: var(--space-6);
+  gap: var(--space-4);
+  padding-block-end: var(--space-5);
   border-block-end: var(--border-width) solid var(--color-border);
 }
 
@@ -59,7 +69,7 @@
 .stats {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  padding-block: var(--space-6);
+  padding-block: var(--space-5);
   border-block-end: var(--border-width) solid var(--color-border);
 }
 
@@ -114,13 +124,13 @@
 
 /* --- Latest email ----------------------------------------------------------- */
 
+/* Last in the card now, below the decision. */
 .recent {
-  padding-block: var(--space-6);
-  border-block-end: var(--border-width) solid var(--color-border);
+  padding-block-start: var(--space-5);
 }
 
 .eyebrow {
-  margin-block-end: var(--space-4);
+  margin-block-end: var(--space-3);
   color: var(--color-text-muted);
   font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
@@ -156,7 +166,8 @@
 /* --- Decision ---------------------------------------------------------------- */
 
 .decide {
-  padding-block-start: var(--space-6);
+  padding-block: var(--space-5);
+  border-block-end: var(--border-width) solid var(--color-border);
 }
 
 .question {
@@ -175,13 +186,13 @@
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
   gap: var(--space-4);
-  margin-block-start: var(--space-6);
+  margin-block-start: var(--space-4);
 }
 
 .note {
   display: flex;
   gap: var(--space-2);
-  margin-block-start: var(--space-5);
+  margin-block-start: var(--space-3);
   color: var(--color-text-muted);
   font-size: var(--text-sm);
 }
@@ -341,3 +352,80 @@
     animation: none;
   }
 }
+
+/* --- Keeping and follow-ups ---------------------------------------------------- */
+
+.nameRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+}
+
+.badge {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border-radius: 8px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+}
+
+.single {
+  margin-block-start: var(--space-4);
+}
+
+.single > button {
+  justify-content: center;
+  gap: var(--space-3);
+  inline-size: 100%;
+}
+
+.followUp {
+  display: flex;
+  gap: var(--space-3);
+  margin-block-end: var(--space-5);
+  padding: var(--space-4);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-primary-soft) 30%, var(--color-bg));
+}
+
+.followUp > svg {
+  flex-shrink: 0;
+  margin-block-start: 0.125rem;
+  color: var(--color-primary);
+}
+
+.followUp[data-tone="danger"] > svg {
+  color: var(--color-danger-text);
+}
+
+.followUp .muted {
+  margin-block-start: var(--space-1);
+  font-size: var(--text-sm);
+}
+
+.followTitle {
+  color: var(--color-text);
+  font-weight: var(--weight-bold);
+}
+
+.inlineLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 4px;
+  color: var(--color-primary);
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+}
+
+.inlineLink:hover {
+  text-decoration: underline;
+}
+

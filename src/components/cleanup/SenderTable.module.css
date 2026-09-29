@@ -330,11 +330,41 @@
   }
 }
 
+/* --- Keeping: no checkbox column. ----------------------------------------- */
+
+.panel[data-plain] .head {
+  grid-template-columns: minmax(0, 1fr) 7rem 8.5rem;
+  padding-inline-start: var(--space-6);
+}
+
+.panel[data-plain] .row {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.panel[data-plain] .open {
+  padding-inline-start: var(--space-6);
+}
+
+/* A follow-up's status stands in for the subject line, in words. */
+.subject[data-note] {
+  color: var(--color-text);
+  font-weight: var(--weight-medium);
+}
+
 /* --- Narrow: the numbers move under the name rather than squeezing it. --- */
 
 @container senders (max-width: 34rem) {
   .head {
     grid-template-columns: 3.25rem minmax(0, 1fr);
+  }
+
+  .panel[data-plain] .head {
+    grid-template-columns: minmax(0, 1fr);
+    padding-inline-start: var(--space-4);
+  }
+
+  .panel[data-plain] .open {
+    padding-inline-start: var(--space-4);
   }
 
   .headNum,

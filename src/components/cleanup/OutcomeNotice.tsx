@@ -32,7 +32,10 @@ export type Outcome =
       skipped: string[];
     }
   | { kind: "keep"; kept: { id: string; name: string }[]; failed: string[] }
-  | { kind: "restored"; names: string[]; failed: string[] };
+  | { kind: "restored"; names: string[]; failed: string[] }
+  /** A kept sender sent back to To review. */
+  | { kind: "moved"; id: string; name: string }
+  | { kind: "moveFailed"; name: string };
 
 type Tone = "success" | "info" | "warning" | "danger";
 
@@ -72,13 +75,13 @@ const ICON = {
 
 /**
  * Where a result now lives. Only a confirmed unsubscribe goes to the
- * Unsubscribed archive; anything unconfirmed is in Senders under its status.
+ * Unsubscribed archive; anything unconfirmed is a filter in To review.
  */
 function whereFor(status: SenderStatus, basePath: string): { href: string; page: string } {
   return status === SENDER_STATUS.REQUESTED ||
     status === SENDER_STATUS.MANUAL ||
     status === SENDER_STATUS.FAILED
-    ? { href: `${basePath}/senders?status=${status}`, page: "Senders" }
+    ? { href: `${basePath}/cleanup?status=${status}`, page: "To review" }
     : { href: `${basePath}/unsubscribed`, page: "Unsubscribed" };
 }
 
@@ -88,18 +91,54 @@ export function OutcomeNotice({
   working,
   onDismiss,
   onUndoKeep,
+  onView,
 }: {
   outcome: Outcome;
   basePath: string;
   working: boolean;
   onDismiss: () => void;
   onUndoKeep: (items: { id: string; name: string }[]) => void;
+  /** Opens a sender that was moved to review. */
+  onView?: (id: string, name: string) => void;
 }) {
   const dismiss = (
     <button type="button" className={styles.dismiss} onClick={onDismiss} aria-label="Dismiss">
       <X size={16} strokeWidth={1.9} aria-hidden />
     </button>
   );
+
+  if (outcome.kind === "moved" || outcome.kind === "moveFailed") {
+    const moved = outcome.kind === "moved";
+    return (
+      <div className={styles.notice} data-tone={moved ? "success" : "danger"}>
+        <span className={styles.icon} aria-hidden="true">
+          {moved ? <CircleCheck size={18} strokeWidth={1.9} /> : <CircleAlert size={18} strokeWidth={1.9} />}
+        </span>
+        <div className={styles.body}>
+          <p className={styles.title}>
+            {moved ? `${outcome.name} moved to review` : `Couldn’t move ${outcome.name} to review`}
+          </p>
+          <p className={styles.detail}>
+            {moved
+              ? "It’s waiting in To review. Nothing was unsubscribed or sent."
+              : "It’s still in Keeping and nothing else changed. Please try again."}
+          </p>
+          {moved && onView ? (
+            <div className={styles.actions}>
+              <button
+                type="button"
+                className={styles.textButton}
+                onClick={() => onView(outcome.id, outcome.name)}
+              >
+                View
+              </button>
+            </div>
+          ) : null}
+        </div>
+        {dismiss}
+      </div>
+    );
+  }
 
   if (outcome.kind === "keep" || outcome.kind === "restored") {
     const kept = outcome.kind === "keep" ? outcome.kept : [];
@@ -126,10 +165,10 @@ export function OutcomeNotice({
           {outcome.kind === "keep" && names.length ? (
             <p className={styles.detail}>
               {names.length === 1 ? "It stays" : "They stay"} in{" "}
-              <Link href={`${basePath}/senders`} className={styles.link}>
-                Senders
+              <Link href={`${basePath}/cleanup?view=keeping`} className={styles.link}>
+                Keeping
               </Link>
-              , and you won’t be asked about {names.length === 1 ? "it" : "them"} here again.
+              . You can move {names.length === 1 ? "it" : "them"} back to review anytime.
             </p>
           ) : null}
           {failed.length ? (

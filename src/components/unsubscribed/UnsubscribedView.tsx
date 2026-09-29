@@ -19,8 +19,8 @@ import styles from "./UnsubscribedView.module.css";
  * those lists has written since.
  *
  * Only confirmed unsubscribes live here. Requests that were only sent,
- * attempts waiting on a click, and failures stay in Senders under their own
- * status, and every attempt is in the attempt history.
+ * attempts waiting on a click, and failures stay in Cleanup's To review, each
+ * under its own filter, and every attempt is in the attempt history.
  *
  * "Check again" is an ordinary mailbox scan — the same read-only, headers-only
  * scan Cleanup runs — reaching back far enough to cover the oldest
@@ -139,7 +139,7 @@ export function UnsubscribedView() {
     listBody = (
       <Empty
         title="No confirmed unsubscribes yet"
-        body="When a sender confirms an unsubscribe, it lands here. Requests that were only sent, or that still need a click, stay in Senders until they’re confirmed."
+        body="When a sender confirms an unsubscribe, it lands here. Requests that were only sent, or that still need a click, stay in Cleanup until they’re confirmed."
       >
         <Link href={`${basePath}/cleanup`} className={styles.textButton}>
           Go to Cleanup
@@ -339,8 +339,8 @@ export function UnsubscribedView() {
           inbox in the background.
         </p>
         <p className={styles.footLinks}>
-          <Link href={`${basePath}/senders?status=REQUESTED`} className={styles.footLink}>
-            Requests sent, pending clicks and failures are in Senders
+          <Link href={`${basePath}/cleanup?status=REQUESTED`} className={styles.footLink}>
+            Requests sent, pending clicks and failures are in Cleanup
           </Link>
           <Link href={`${basePath}/history`} className={styles.footLink}>
             Every attempt
