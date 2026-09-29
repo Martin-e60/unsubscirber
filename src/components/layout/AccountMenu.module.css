@@ -1,0 +1,141 @@
+.root {
+  position: relative;
+}
+
+.trigger {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  inline-size: 100%;
+  padding: var(--space-2);
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: transparent;
+  color: var(--color-text);
+  text-align: start;
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease);
+}
+
+.trigger:hover {
+  background: var(--color-surface-sunken);
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  inline-size: 2.5rem;
+  block-size: 2.5rem;
+  border-radius: var(--radius-full);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.02em;
+}
+
+.who {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+}
+
+.name {
+  font-weight: var(--weight-semibold);
+  line-height: 1.3;
+}
+
+.email {
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chevron {
+  color: var(--color-text-muted);
+  transition: transform var(--duration-fast) var(--ease);
+}
+
+.chevron[data-open] {
+  transform: rotate(180deg);
+}
+
+.menu {
+  position: absolute;
+  z-index: 30;
+  inset-inline: 0;
+  min-inline-size: 13rem;
+  padding: var(--space-2);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-lg);
+  animation: menuIn 160ms var(--ease) both;
+}
+
+.menu[data-placement="up"] {
+  inset-block-end: calc(100% + var(--space-2));
+}
+
+.menu[data-placement="down"] {
+  inset-block-start: calc(100% + var(--space-2));
+  inset-inline: auto 0;
+}
+
+.menuEmail {
+  overflow: hidden;
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  inline-size: 100%;
+  min-block-size: 2.75rem;
+  padding-inline: var(--space-3);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text);
+  font-weight: var(--weight-medium);
+  text-align: start;
+  cursor: pointer;
+}
+
+.item:hover,
+.item:focus-visible {
+  background: var(--color-surface-sunken);
+}
+
+/* Avatar only: the icon rail and the phone bar. */
+.root[data-compact] .trigger {
+  display: inline-grid;
+  grid-template-columns: auto;
+  inline-size: auto;
+  padding: var(--space-1);
+  border-radius: var(--radius-full);
+}
+
+.root[data-compact] .who,
+.root[data-compact] .chevron {
+  display: none;
+}
+
+.root[data-compact] .menu[data-placement="up"] {
+  inset-inline: 0 auto;
+}
+
+@keyframes menuIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}

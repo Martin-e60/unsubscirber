@@ -1,7 +1,7 @@
 .shell {
   display: flex;
+  align-items: flex-start;
   min-block-size: 100dvh;
-  background: var(--color-bg);
 }
 
 .body {
@@ -14,13 +14,52 @@
 .main {
   flex: 1 1 auto;
   inline-size: 100%;
-  max-inline-size: var(--layout-max-width);
-  padding: var(--space-2) var(--layout-gutter) var(--space-16);
+  max-inline-size: 78rem;
+  padding: var(--space-8) clamp(var(--space-4), 4vw, var(--space-12)) var(--space-12);
+}
+
+.mobileBar {
+  display: none;
 }
 
 @media (max-width: 44rem) {
-  /* Room for the bottom tab bar. */
+  .mobileBar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border-block-end: var(--border-width) solid var(--color-border);
+  }
+
+  .mobileBrand {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--color-text);
+    text-decoration: none;
+    border-radius: var(--radius-md);
+  }
+
+  .mobileMark {
+    display: grid;
+    place-items: center;
+    inline-size: 2.25rem;
+    block-size: 2.25rem;
+    border-radius: 10px;
+    background: var(--color-primary);
+    color: var(--color-primary-contrast);
+  }
+
+  .mobileWord {
+    font-size: 1.3125rem;
+    font-weight: 800;
+    letter-spacing: -0.035em;
+  }
+
   .main {
-    padding-block-end: var(--space-20);
+    padding: var(--space-6) var(--space-4);
+    /* Room for the bottom tab bar. */
+    padding-block-end: calc(var(--space-20) + env(safe-area-inset-bottom));
   }
 }

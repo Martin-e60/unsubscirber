@@ -412,3 +412,41 @@ test("nothing outside the demo's own screens is reachable through it", async () 
 
   assert.equal(fetchCalls, 0, "and no request left the browser at any point");
 });
+
+test("the demo's Home figures move after a confirmed unsubscribe, and only then", async () => {
+  const before = await demoClient.get<StatsDto>("/api/stats");
+  assert.ok(before.confirmedUnsubscribes > 0, "the sample mailbox starts with some removals");
+  assert.ok((before.fewerEmailsPerMonth ?? 0) > 0);
+
+  const list = await demoClient.get<SendersResponse>("/api/senders?status=ACTIVE&limit=500");
+
+  // Find one sender whose outcome is a confirmed removal and one that is not.
+  let confirmedId: string | null = null;
+  let pendingId: string | null = null;
+  for (const sender of list.senders) {
+    if (!sender.canUnsubscribe) continue;
+    const result = await demoClient.post<UnsubscribeResultDto>("/api/unsubscribe", {
+      senderId: sender.id,
+    });
+    if (result.status === SENDER_STATUS.UNSUBSCRIBED && !confirmedId) confirmedId = sender.id;
+    if (result.status === SENDER_STATUS.REQUESTED && !pendingId) pendingId = sender.id;
+    if (confirmedId && pendingId) break;
+  }
+  assert.ok(confirmedId && pendingId, "the sample includes both kinds of outcome");
+
+  const after = await demoClient.get<StatsDto>("/api/stats");
+  const confirmedNow = (
+    await demoClient.get<SendersResponse>("/api/senders?status=UNSUBSCRIBED&limit=500")
+  ).total;
+
+  assert.equal(after.confirmedUnsubscribes, confirmedNow, "matches the Unsubscribed list exactly");
+  assert.ok(after.fewerEmailsPerMonth! > before.fewerEmailsPerMonth!);
+  assert.equal(
+    Math.round(after.timeSavedPerMonthSeconds!),
+    Math.round(after.fewerEmailsPerMonth! * 5),
+  );
+
+  const scan = await demoClient.get<ScanProgressDto>("/api/scan");
+  assert.ok(scan.finishedAt, "the sample scan has a finish time for Recent activity");
+  assert.equal(scan.lookbackDays, 30);
+});

@@ -135,10 +135,10 @@ export function SettingsView({
         </ul>
 
         <p className={styles.footnote}>
-          &ldquo;Time saved&rdquo; is an estimate: {SECONDS_SAVED_PER_EMAIL}{" "}
-          seconds per email that no longer arrives, counted only for confirmed
-          unsubscribes. &ldquo;Inbox Health&rdquo; is the share of your
-          subscription volume that has a decision against it.{" "}
+          On Home, &ldquo;Confirmed unsubscribes&rdquo; counts only removals the
+          sender confirmed. &ldquo;Fewer emails&rdquo; and &ldquo;Time saved&rdquo;
+          per month are estimates: how often those senders wrote before, at{" "}
+          {SECONDS_SAVED_PER_EMAIL} seconds per email.{" "}
           <Link href="/privacy">Full privacy policy</Link>.
         </p>
       </section>

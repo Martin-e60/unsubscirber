@@ -1,98 +1,119 @@
 "use client";
 
-import Link from "next/link";
-import { BarChart3, Mail, Clock } from "lucide-react";
-import { StatCard } from "@/components/views/StatCard";
-import { QuickCleanup } from "@/components/senders/QuickCleanup";
+import { useCallback, useMemo } from "react";
+import { CircleAlert, CircleCheck, FlaskConical } from "lucide-react";
+// The short serif accent (the person's name) — the same face as the landing page.
+import "@fontsource-variable/newsreader/wght-italic.css";
 import { useApp } from "@/components/layout/AppShell";
-import { formatDuration, greetingFor } from "@/components/senders/senderStatus";
+import { NextStep } from "@/components/home/NextStep";
+import { Impact } from "@/components/home/Impact";
+import { Activity, Attention } from "@/components/home/HomeCards";
+import { useScan } from "@/hooks/useScan";
+import { useHistory } from "@/hooks/useHistory";
+import { buildActivity } from "@/lib/home/activity";
 import styles from "./HomeView.module.css";
 
-/** The Home screen: greeting, three headline numbers, and what to do next. */
-
+/**
+ * Home, inside the app and the demo.
+ *
+ * Answers, top to bottom: is my mailbox connected, what should I do now, what
+ * has this been worth, what is waiting on me, and what happened recently.
+ * The sender list itself lives in Cleanup — Home points there rather than
+ * repeating it.
+ *
+ * Every figure comes from the same API the rest of the app uses, so in the
+ * demo it is the demo's sample data, and in a real account it is that
+ * account's data. No figure from the design mock-up is carried over.
+ */
 export function HomeView() {
-  const { stats, userName, accountEmail, basePath } = useApp();
+  const { stats, refreshStats, userName, accountConnected, basePath, demo } = useApp();
+  const history = useHistory();
 
-  const firstName =
-    userName?.split(/\s+/)[0] ?? accountEmail?.split("@")[0] ?? "there";
+  const afterScan = useCallback(() => {
+    void refreshStats();
+    void history.refresh();
+  }, [refreshStats, history]);
 
-  /**
-    * What to say under the greeting.
-    *
-    * A mailbox that has never been scanned is not a tidy mailbox, so it gets the
-    * next step instead of a compliment. Until the stats have loaded it says
-    * nothing rather than guessing.
-    */
-  const nothingFound = stats !== null && stats.totalSenders === 0;
+  const scan = useScan({ onFinished: afterScan, resume: false });
+
+  const activity = useMemo(
+    () =>
+      history.items === null
+        ? null
+        : buildActivity({ history: history.items, scan: scan.progress }),
+    [history.items, scan.progress],
+  );
+
+  // First name only, and only if we actually have one. An email address is
+  // not a name, so without one the greeting simply does not use it.
+  const firstName = userName?.trim().split(/\s+/)[0] || null;
 
   return (
     <div className={styles.page}>
-      <header className={styles.greeting}>
+      <header>
+        <p className={styles.crumb}>Home</p>
+        <div className={styles.head}>
         <div>
           <h1 className={styles.title}>
-            {greetingFor()}, {firstName} <span aria-hidden="true">👋</span>
-          </h1>
-          <p className={styles.subtitle}>
-            {stats === null ? (
-              "Loading your numbers…"
-            ) : nothingFound ? (
+            Good to see you
+            {firstName ? (
               <>
-                Nothing scanned yet.{" "}
-                <Link href={`${basePath}/cleanup`}>Run your first scan</Link> — it
-                looks back 30 days by default.
+                , <span className={styles.name}>{firstName}.</span>
               </>
-            ) : stats.activeSenders > 0 ? (
-              `${stats.activeSenders.toLocaleString()} ${
-                stats.activeSenders === 1 ? "sender is" : "senders are"
-              } waiting on a decision.`
             ) : (
-              "Every sender found so far has a decision against it."
+              "."
             )}
+          </h1>
+          <p className={styles.lede}>
+            Here’s where your inbox stands — and what you can do next.
           </p>
         </div>
-        <span className={styles.window}>Changes: last 30 days</span>
+
+        <p className={styles.status} data-state={demo ? "demo" : accountConnected ? "on" : "off"}>
+          {demo ? (
+            <>
+              <FlaskConical size={17} strokeWidth={1.75} aria-hidden />
+              Sample mailbox
+            </>
+          ) : accountConnected === null ? (
+            <span className={styles.statusLoading}>Checking Gmail…</span>
+          ) : accountConnected ? (
+            <>
+              <CircleCheck size={17} strokeWidth={1.75} aria-hidden />
+              Gmail connected
+            </>
+          ) : (
+            <>
+              <CircleAlert size={17} strokeWidth={1.75} aria-hidden />
+              Gmail not connected
+            </>
+          )}
+        </p>
+        </div>
       </header>
 
-      <div className={styles.stats}>
-        <StatCard
-          value={stats ? String(stats.inboxHealth) : "—"}
-          label="Inbox Health"
-          hint="Estimate: share of subscription volume you have decided about"
-          delta={
-            stats && stats.handledThisMonth > 0
-              ? `${stats.handledThisMonth} this month`
-              : undefined
-          }
-          icon={BarChart3}
-          tone="primary"
-        />
-        <StatCard
-          value={stats ? stats.emailsHandled.toLocaleString() : "—"}
-          label="Emails handled"
-          delta={
-            stats && stats.emailsHandledDeltaPct !== null &&
-            stats.emailsHandledDeltaPct > 0
-              ? `${stats.emailsHandledDeltaPct}%`
-              : undefined
-          }
-          icon={Mail}
-          tone="success"
-        />
-        <StatCard
-          value={stats ? formatDuration(stats.timeSavedSeconds) : "—"}
-          label="Time saved"
-          hint="Estimate: 5 seconds per email that no longer arrives"
-          delta={
-            stats && stats.timeSavedRecentSeconds > 0
-              ? formatDuration(stats.timeSavedRecentSeconds)
-              : undefined
-          }
-          icon={Clock}
-          tone="danger"
-        />
-      </div>
+      <NextStep
+        connected={accountConnected}
+        stats={stats}
+        scan={scan}
+        basePath={basePath}
+      />
 
-      <QuickCleanup />
+      {accountConnected === false ? null : (
+        <>
+          <Impact stats={stats} />
+
+          <div className={styles.cards}>
+            <Attention stats={stats} basePath={basePath} />
+            <Activity items={activity} basePath={basePath} />
+          </div>
+        </>
+      )}
+
+      <footer className={styles.foot}>
+        <p>A little less noise. A little more room.</p>
+        <p>Your inbox. Your choice.</p>
+      </footer>
     </div>
   );
 }

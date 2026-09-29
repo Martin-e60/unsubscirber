@@ -1,5 +1,6 @@
 import { SECONDS_SAVED_PER_EMAIL, SENDER_STATUS } from "@/lib/constants";
 import type { StatsDto } from "@/lib/api/types";
+import { monthlyRate, type SeenSpan } from "@/lib/senders/derive";
 
 /**
  * The arithmetic behind the Home screen's numbers.
@@ -48,9 +49,20 @@ export type StatsInput = {
   recent: StatusVolume[];
   /** Senders decided in the window before that. */
   previous: StatusVolume[];
+  /**
+   * The senders whose removal was confirmed (status UNSUBSCRIBED), with the
+   * span their messages covered. Requests sent, attempts that need a click
+   * and failures are deliberately not here: none of them stops mail arriving.
+   */
+  confirmed: SeenSpan[];
 };
 
-export function summariseStats({ all, recent, previous }: StatsInput): StatsDto {
+export function summariseStats({
+  all,
+  recent,
+  previous,
+  confirmed,
+}: StatsInput): StatsDto {
   const volumeOf = (rows: StatusVolume[], statuses: readonly string[]): number =>
     rows
       .filter((row) => statuses.includes(row.status))
@@ -81,6 +93,20 @@ export function summariseStats({ all, recent, previous }: StatsInput): StatsDto 
   const inboxHealth =
     totalVolume === 0 ? 100 : Math.round((decidedVolume / totalVolume) * 100);
 
+  /**
+   * The Home screen's impact figures.
+   *
+   * "Fewer emails a month" adds up how often each confirmed-removed sender
+   * wrote before, normalised to the period its messages actually covered
+   * (see monthlyRate). It is an estimate of mail that should stop arriving,
+   * not a count of mail that did — Tidely does not watch the inbox after an
+   * unsubscribe — and the interface says so wherever it is shown.
+   */
+  const fewerEmailsPerMonth =
+    confirmed.length === 0
+      ? null
+      : confirmed.reduce((total, sender) => total + monthlyRate(sender), 0);
+
   return {
     inboxHealth,
     handledThisMonth: countOf(recent, DECIDED),
@@ -97,5 +123,14 @@ export function summariseStats({ all, recent, previous }: StatsInput): StatsDto 
     totalSenders,
     activeSenders: countOf(all, [SENDER_STATUS.ACTIVE]),
     activeVolume: volumeOf(all, [SENDER_STATUS.ACTIVE]),
+
+    confirmedUnsubscribes: countOf(all, [SENDER_STATUS.UNSUBSCRIBED]),
+    fewerEmailsPerMonth,
+    timeSavedPerMonthSeconds:
+      fewerEmailsPerMonth === null
+        ? null
+        : fewerEmailsPerMonth * SECONDS_SAVED_PER_EMAIL,
+    needsClick: countOf(all, [SENDER_STATUS.MANUAL]),
+    failed: countOf(all, [SENDER_STATUS.FAILED]),
   };
 }

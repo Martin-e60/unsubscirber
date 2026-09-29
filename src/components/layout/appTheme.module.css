@@ -1,0 +1,84 @@
+/* ===========================================================================
+   APP THEME
+   ---------------------------------------------------------------------------
+   The signed-in app and the demo, in the approved warm palette.
+
+   Applied to AppShell's root, so it covers every screen inside the app —
+   Home, Cleanup, Senders, Unsubscribed, Settings — and nothing outside it.
+   The public landing page has its own tokens; the sign-in and legal pages
+   keep the original ones.
+
+   It works by redefining the app's existing token names rather than adding
+   new ones, so every component that already reads --color-primary and
+   friends follows without being touched.
+
+   The eight palette colours are the approved HEX values, verbatim. Where the
+   app needs a role the palette does not name (a hover shade, a subtle text
+   tone, a stronger border), it reuses a palette value instead of inventing a
+   near-miss. Hover feedback comes from movement and shadow, not a new colour.
+   ======================================================================== */
+
+.theme {
+  --color-primary: #A32D4D;
+  --color-primary-hover: #A32D4D;
+  --color-primary-soft: #F5D8DE;
+  --color-primary-contrast: #FFFFFF;
+
+  /* Aliases are re-stated here: a var() in :root resolves there, so they
+     would otherwise still carry the old purple into this subtree. */
+  --color-accent: var(--color-primary);
+  --color-accent-hover: var(--color-primary-hover);
+  --color-accent-soft: var(--color-primary-soft);
+  --color-accent-contrast: var(--color-primary-contrast);
+
+  --color-info: var(--color-primary);
+  --color-info-soft: var(--color-primary-soft);
+  --color-info-text: var(--color-primary);
+
+  --color-bg: #FBF4EF;
+  --color-surface: #FFFEFC;
+  --color-surface-raised: #FFFEFC;
+  --color-surface-sunken: #FBF4EF;
+
+  --color-text: #35232B;
+  --color-text-muted: #795C65;
+  --color-text-subtle: #795C65;
+  --color-text-inverse: #FFFFFF;
+
+  --color-border: #E8D6D9;
+  --color-border-strong: #E8D6D9;
+  --color-focus: #A32D4D;
+
+  /* Semantic tones are not in the approved palette. These are the app's
+     existing light values, pinned so the OS dark mode cannot swap them for
+     dark ones against these light surfaces. */
+  --color-success: #56c9a3;
+  --color-success-soft: #e8f8f2;
+  --color-success-text: #2f8f6f;
+  --color-danger: #f47d75;
+  --color-danger-soft: #fff0ee;
+  --color-danger-text: #c9564d;
+  --color-warning: #e0a33a;
+  --color-warning-soft: #fdf3e2;
+  --color-warning-text: #9a6c12;
+
+  --color-overlay: rgb(53 35 43 / 45%);
+
+  --shadow-sm: 0 1px 2px rgb(53 35 43 / 5%);
+  --shadow-md: 0 4px 16px rgb(53 35 43 / 7%);
+  --shadow-lg: 0 24px 48px -28px rgb(53 35 43 / 28%);
+  --shadow-primary: 0 10px 22px -12px rgb(163 45 77 / 45%);
+
+  --font-serif: "Newsreader Variable", "Iowan Old Style", "Palatino Linotype",
+    Georgia, serif;
+
+  background: var(--color-bg);
+  color: var(--color-text);
+  color-scheme: light;
+}
+
+/* Overscroll and the space under a short page show the body, so paint it
+   too — but only while the app shell is on the page. */
+:global(body):has(.theme) {
+  background: #FBF4EF;
+}

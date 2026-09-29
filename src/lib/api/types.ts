@@ -63,6 +63,11 @@ export type ScanProgressDto = {
   fraction: number;
   done: boolean;
   error: string | null;
+  /** How far back this scan looked, in days. */
+  lookbackDays: number;
+  /** ISO timestamps; finishedAt is null while the scan is still running. */
+  startedAt: string | null;
+  finishedAt: string | null;
 };
 
 export type UnsubscribeResultDto = {
@@ -92,6 +97,21 @@ export type StatsDto = {
   totalSenders: number;
   activeSenders: number;
   activeVolume: number;
+
+  /** Senders whose removal the sender itself confirmed. Nothing else counts. */
+  confirmedUnsubscribes: number;
+  /**
+   * Estimated emails per month that no longer arrive, from how often each
+   * confirmed-removed sender wrote before. Null until there is at least one
+   * confirmed removal to base it on.
+   */
+  fewerEmailsPerMonth: number | null;
+  /** fewerEmailsPerMonth × SECONDS_SAVED_PER_EMAIL. Null when that is null. */
+  timeSavedPerMonthSeconds: number | null;
+  /** Senders whose unsubscribe needs one more click from the user. */
+  needsClick: number;
+  /** Senders whose unsubscribe attempt failed. */
+  failed: number;
 };
 
 export type HistoryItemDto = {

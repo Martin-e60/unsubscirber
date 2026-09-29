@@ -38,6 +38,9 @@ export type ScanProgress = {
   fraction: number;
   done: boolean;
   error: string | null;
+  lookbackDays: number;
+  startedAt: string | null;
+  finishedAt: string | null;
 };
 
 /** Starts a new scan, replacing any scan already running for this mailbox. */
@@ -224,6 +227,9 @@ export function toProgress(scan: Scan): ScanProgress {
     fraction: done ? 1 : fraction,
     done,
     error: scan.error,
+    lookbackDays: scan.lookbackDays,
+    startedAt: scan.startedAt ? scan.startedAt.toISOString() : null,
+    finishedAt: scan.finishedAt ? scan.finishedAt.toISOString() : null,
   };
 }
 

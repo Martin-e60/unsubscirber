@@ -14,11 +14,25 @@ import type { ScanProgressDto } from "@/lib/api/types";
  * If a scan was left running when the tab closed, `resume` picks it back up on
  * the next page load.
  */
-export function useScan(options: { onFinished?: () => void } = {}) {
+export function useScan(
+  options: {
+    onFinished?: () => void;
+    /**
+     * Pick an unfinished scan back up on mount. Home turns this off: it only
+     * ever scans when someone presses a button, and shows an unfinished scan
+     * as unfinished instead.
+     */
+    resume?: boolean;
+  } = {},
+) {
+  const resume = options.resume ?? true;
   const api = useApi();
   const [progress, setProgress] = useState<ScanProgressDto | null>(null);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // False until the last scan has been looked up, so "never scanned" is not
+  // confused with "not loaded yet".
+  const [loaded, setLoaded] = useState(false);
 
   // A ref, not state: the loop needs to see cancellation immediately.
   const cancelled = useRef(false);
@@ -76,11 +90,15 @@ export function useScan(options: { onFinished?: () => void } = {}) {
     void (async () => {
       try {
         const existing = await api.get<ScanProgressDto | null>("/api/scan");
-        if (!active || !existing) return;
-        setProgress(existing);
-        if (existing.status === "RUNNING") void runLoop(existing.scanId);
+        if (!active) return;
+        if (existing) {
+          setProgress(existing);
+          if (resume && existing.status === "RUNNING") void runLoop(existing.scanId);
+        }
       } catch {
         // A missing mailbox is normal before the first connect.
+      } finally {
+        if (active) setLoaded(true);
       }
     })();
 
@@ -88,7 +106,7 @@ export function useScan(options: { onFinished?: () => void } = {}) {
       active = false;
       cancelled.current = true;
     };
-  }, [api, runLoop]);
+  }, [api, runLoop, resume]);
 
-  return { progress, running, error, start, cancel };
+  return { progress, running, error, loaded, start, cancel };
 }

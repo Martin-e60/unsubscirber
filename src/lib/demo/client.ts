@@ -93,6 +93,9 @@ function toProgress(scan: NonNullable<ReturnType<typeof loadState>["scan"]>): Sc
       : 0,
     done,
     error: scan.error,
+    lookbackDays: scan.lookbackDays,
+    startedAt: scan.startedAt ?? null,
+    finishedAt: scan.finishedAt ?? null,
   };
 }
 
@@ -156,6 +159,13 @@ function computeDemoStats(): StatsDto {
     sender.decidedAt ? new Date(sender.decidedAt).getTime() : null;
 
   return summariseStats({
+    confirmed: senders
+      .filter((s) => s.status === SENDER_STATUS.UNSUBSCRIBED)
+      .map((s) => ({
+        messageCount: s.messageCount,
+        firstSeenAt: new Date(s.firstSeenAt),
+        lastSeenAt: new Date(s.lastSeenAt),
+      })),
     all: group(senders),
     recent: group(
       senders.filter((s) => {

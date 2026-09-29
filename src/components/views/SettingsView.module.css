@@ -18,8 +18,15 @@
 
 .cardHeader {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   gap: var(--space-4);
+}
+
+.cardHeader > div {
+  flex: 1 1 12rem;
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
 }
 
 .icon {

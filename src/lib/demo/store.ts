@@ -28,7 +28,11 @@ import {
  */
 
 const STORAGE_KEY = "tidely.demo.v1";
-const STATE_VERSION = 1;
+/**
+ * Bumped when the stored shape changes. Version 2 added scan timestamps for
+ * the Home screen; a visitor holding version 1 simply starts the demo afresh.
+ */
+const STATE_VERSION = 2;
 
 /** The default window for a first scan, matching the real app. */
 export const DEMO_DEFAULT_LOOKBACK_DAYS = 30;
@@ -69,6 +73,8 @@ export type DemoScan = {
   matchedMessages: number;
   totalEstimate: number;
   error: string | null;
+  startedAt: string;
+  finishedAt: string | null;
 };
 
 export type DemoState = {
@@ -189,6 +195,9 @@ export function initialState(): DemoState {
       matchedMessages: senders.reduce((total, s) => total + s.messageCount, 0),
       totalEstimate: DEMO_SCAN_TOTAL,
       error: null,
+      // The sample mailbox was "scanned" a few minutes before the visit began.
+      startedAt: new Date(Date.now() - 9 * 60_000).toISOString(),
+      finishedAt: new Date(Date.now() - 8 * 60_000).toISOString(),
     },
     revealed: [],
   };
@@ -278,6 +287,8 @@ export function startDemoScan(lookbackDays: number): DemoScan {
       Math.round(DEMO_SCAN_TOTAL * Math.min(4, lookbackDays / DEMO_DEFAULT_LOOKBACK_DAYS)),
     ),
     error: null,
+    startedAt: new Date().toISOString(),
+    finishedAt: null,
   };
   mutate((state) => {
     state.scan = scan;
@@ -316,6 +327,7 @@ export function stepDemoScan(): DemoScan {
       scan.matchedMessages = state.senders.reduce((t, s) => t + s.messageCount, 0);
     }
     scan.status = SCAN_STATUS.DONE;
+    scan.finishedAt = new Date().toISOString();
   }
 
   saveState(state);

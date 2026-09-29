@@ -15,7 +15,9 @@
   transition:
     background-color var(--duration-fast) var(--ease),
     border-color var(--duration-fast) var(--ease),
-    color var(--duration-fast) var(--ease);
+    color var(--duration-fast) var(--ease),
+    box-shadow var(--duration-fast) var(--ease),
+    transform var(--duration-fast) var(--ease);
 }
 
 .button:disabled {
@@ -33,8 +35,18 @@
   background: var(--color-accent);
   color: var(--color-accent-contrast);
 }
+/* The warm palette has no separate hover shade, so a primary button answers
+   the pointer by lifting rather than by changing colour. */
 .primary:hover:not(:disabled) {
   background: var(--color-accent-hover);
+  box-shadow: var(--shadow-primary);
+  transform: translateY(-1px);
+}
+
+.primary:active:not(:disabled),
+.secondary:active:not(:disabled) {
+  box-shadow: none;
+  transform: translateY(0) scale(0.98);
 }
 
 .secondary {
