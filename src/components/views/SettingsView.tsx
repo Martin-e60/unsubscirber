@@ -25,11 +25,14 @@ export function SettingsView({
   accountEmail,
   userEmail,
   rolledUpCount,
+  canOrganise,
 }: {
   connectedAt: string;
   accountEmail: string;
   userEmail: string;
   rolledUpCount: number;
+  /** Whether Clear out's organise permission has been granted. */
+  canOrganise: boolean;
 }) {
   const { stats } = useApp();
   const [confirming, setConfirming] = useState<Removal | null>(null);
@@ -103,8 +106,8 @@ export function SettingsView({
           <div>
             <h2 className={styles.cardTitle}>What Tidely reads, and when</h2>
             <p className={styles.cardSubtitle}>
-              Three different things happen at three different moments. This is
-              all of them.
+              Each thing Tidely does with your mailbox, and when. This is all
+              of them.
             </p>
           </div>
         </div>
@@ -128,9 +131,31 @@ export function SettingsView({
             address&rdquo;.
           </li>
           <li>
+            <strong>Clear out searches your mail while you use it.</strong>{" "}
+            It shows each message&rsquo;s sender, subject, date, labels and
+            Gmail&rsquo;s short excerpt — fetched for the page, not stored, and
+            never the full body or attachments.
+          </li>
+          <li>
+            <strong>Organising changes only what you select.</strong>{" "}
+            {canOrganise ? (
+              <>
+                You&rsquo;ve allowed Tidely to archive, move to Trash, label and
+                mark as read the emails you select and confirm. It can&rsquo;t
+                delete anything permanently.
+              </>
+            ) : (
+              <>
+                Not allowed yet: Tidely can&rsquo;t archive, label or move your
+                mail. Clear out asks for this separately when you first try.
+              </>
+            )}
+          </li>
+          <li>
             <strong>Stored:</strong> your email address, the connected Google
-            account, one summary row per sender, your decisions, and a log of
-            every unsubscribe attempt. Message bodies are never stored.
+            account, one summary row per sender, your decisions, a log of every
+            unsubscribe attempt, and counts of what you did in Clear out.
+            Message bodies are never stored.
           </li>
         </ul>
 
@@ -175,7 +200,7 @@ export function SettingsView({
             <h2 className={styles.cardTitle}>Disconnect mailbox</h2>
             <p className={styles.cardSubtitle}>
               Revokes Tidely&rsquo;s access with Google and deletes every sender,
-              scan and attempt stored for {accountEmail}. Your Tidely login stays,
+              scan, attempt and Clear out History entry stored for {accountEmail}. Your Tidely login stays,
               so you can connect a mailbox again later. Emails you already
               unsubscribed from are not resubscribed.
             </p>

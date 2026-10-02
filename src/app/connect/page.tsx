@@ -81,6 +81,12 @@ export default async function ConnectPage({
         </a>
 
         <p className={styles.permissions}>
+          Tidely can’t archive, label or move your mail with these permissions.
+          If you later want to organise emails in Clear out, it asks for that
+          separately and explains it first.
+        </p>
+
+        <p className={styles.permissions}>
           After connecting, the first scan looks back 30 days — you can widen that
           or stop it at any time. You can disconnect the mailbox, or delete your
           account entirely, from Settings.{" "}

@@ -80,3 +80,35 @@
     flex-basis: 100%;
   }
 }
+
+/* Clear out fits its workspace to the window, so the strip is one slim line
+   there. The words and both controls stay; only the padding goes. */
+@media (min-width: 60rem) {
+  :global(body):has([data-clearout-workspace]) .banner {
+    flex-wrap: nowrap;
+    margin: var(--space-2) 1.75rem 0;
+    padding: 0.25rem 0.3125rem 0.25rem var(--space-4);
+    border-color: var(--color-border);
+  }
+
+  :global(body):has([data-clearout-workspace]) .label {
+    flex-wrap: nowrap;
+    min-inline-size: 0;
+  }
+
+  :global(body):has([data-clearout-workspace]) .detail {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  :global(body):has([data-clearout-workspace]) .actions {
+    flex-shrink: 0;
+  }
+
+  :global(body):has([data-clearout-workspace]) .reset,
+  :global(body):has([data-clearout-workspace]) .exit {
+    min-block-size: 1.875rem;
+    border-radius: 8px;
+  }
+}

@@ -178,3 +178,90 @@ export type ApiError = { error: string };
 
 /** Sorting options offered by GET /api/senders. */
 export type SenderSort = "count" | "recent" | "name";
+
+// --- Clear out ------------------------------------------------------------------
+
+export type ClearOutLabelDto = { id: string; name: string };
+
+/** One message in Clear out's list. One row is one message, never a thread. */
+export type ClearOutMessageDto = {
+  id: string;
+  threadId: string;
+  fromName: string | null;
+  fromAddress: string;
+  /** Recipients as written, for sent mail and the preview. */
+  to: string | null;
+  /** True for mail the connected address sent. */
+  sentByMe: boolean;
+  subject: string | null;
+  /** Gmail's own short excerpt. Shown, never stored. */
+  snippet: string;
+  receivedAt: string | null;
+  unread: boolean;
+  inInbox: boolean;
+  /**
+   * True when the message has attachments. From Gmail search when the
+   * attachments filter is on; otherwise from a multipart/mixed Content-Type,
+   * which is how mail with attachments is built.
+   */
+  hasAttachment: boolean;
+  sizeBytes: number | null;
+  /** The person's own labels on it, not system ones. */
+  labels: ClearOutLabelDto[];
+  /** Opens it in Gmail, or null where there is nothing real to open. */
+  gmailUrl: string | null;
+};
+
+export type ClearOutPreviewDto = ClearOutMessageDto & {
+  cc: string | null;
+};
+
+export type ClearOutListResponse = {
+  messages: ClearOutMessageDto[];
+  nextPageToken: string | null;
+  /** Gmail gives an estimate; the demo knows exactly. */
+  total: number;
+  totalExact: boolean;
+  /** Plain-language caveats about this result, e.g. a filter that was capped. */
+  notes: string[];
+};
+
+export type ClearOutAccessDto = {
+  /** Can search and read message details. */
+  canRead: boolean;
+  /** Can archive, trash, label and mark as read. */
+  canOrganise: boolean;
+  /** Where to ask for the missing permission, or null if none is missing. */
+  grantUrl: string | null;
+};
+
+export type SenderSuggestionDto = {
+  name: string | null;
+  address: string;
+};
+
+export type ClearOutResolveResponse = {
+  ids: string[];
+  nextPageToken: string | null;
+  estimate: number;
+};
+
+export type ClearOutRunDto = {
+  id: string;
+  action: "mark_read" | "label" | "archive" | "trash";
+  labelName: string | null;
+  /** How many emails were in the reviewed selection. */
+  requested: number;
+  /** Confirmed by Gmail. */
+  succeeded: number;
+  /** Still failed after any retries. */
+  failed: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ClearOutChunkResponse = {
+  run: ClearOutRunDto;
+  succeeded: string[];
+  failed: string[];
+};

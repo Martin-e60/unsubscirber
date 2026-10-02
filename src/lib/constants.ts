@@ -130,3 +130,23 @@ export const GOOGLE_SCOPES = [
   "https://www.googleapis.com/auth/gmail.readonly",
   "https://www.googleapis.com/auth/gmail.send",
 ];
+
+/**
+ * The one extra scope Clear out needs to organise mail: archive, move to
+ * Trash, add a label, mark as read.
+ *
+ * Not requested when a mailbox is first connected. It is asked for only when
+ * someone chooses to organise mail, through an explicit reconnect that says
+ * what it is for. gmail.modify cannot delete permanently; the full
+ * https://mail.google.com/ scope, which can, is never requested.
+ */
+export const GMAIL_MODIFY_SCOPE = "https://www.googleapis.com/auth/gmail.modify";
+export const GMAIL_READONLY_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
+const GMAIL_FULL_SCOPE = "https://mail.google.com/";
+
+/** What a stored, space-separated grant allows Clear out to do. */
+export function scopeAccess(scope: string): { canRead: boolean; canOrganise: boolean } {
+  const granted = new Set(scope.split(/\s+/).filter(Boolean));
+  const canOrganise = granted.has(GMAIL_MODIFY_SCOPE) || granted.has(GMAIL_FULL_SCOPE);
+  return { canRead: canOrganise || granted.has(GMAIL_READONLY_SCOPE), canOrganise };
+}

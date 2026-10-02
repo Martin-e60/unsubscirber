@@ -79,7 +79,12 @@ test("cross-site credential submissions are rejected", () => {
 test("OAuth state is signed, audience-bound, and rejects tampering or mismatched state", async () => {
   const { createOAuthState, readOAuthState } = await import("../src/lib/auth/oauth-state");
   const cookie = await createOAuthState("random-state", "connect", "user-123");
-  assert.deepEqual(await readOAuthState(cookie, "random-state"), { mode: "connect", userId: "user-123" });
+  assert.deepEqual(await readOAuthState(cookie, "random-state"), { mode: "connect", userId: "user-123", access: null });
+  // Clear out's organise reconnect is carried in the signed state, and only for a connect.
+  const organise = await createOAuthState("random-state", "connect", "user-123", "organise");
+  assert.equal((await readOAuthState(organise, "random-state"))?.access, "organise");
+  const login = await createOAuthState("random-state", "login", null, "organise");
+  assert.equal((await readOAuthState(login, "random-state"))?.access, null);
   assert.equal(await readOAuthState(cookie, "other-state"), null);
   assert.equal(await readOAuthState(`tampered.${cookie}`, "random-state"), null);
   const { createSession } = await import("../src/lib/session");

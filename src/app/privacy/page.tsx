@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LegalShell } from "@/components/layout/LegalShell";
-import { GOOGLE_SCOPES } from "@/lib/constants";
+import { GMAIL_MODIFY_SCOPE, GOOGLE_SCOPES } from "@/lib/constants";
 
 export const metadata: Metadata = { title: "Privacy Policy | Tidely" };
 
@@ -19,11 +19,13 @@ const CONTACT = "martin.marinov406@gmail.com";
  */
 export default function PrivacyPage() {
   return (
-    <LegalShell title="Privacy Policy" updated="26 September 2026">
+    <LegalShell title="Privacy Policy" updated="2 October 2026">
       <h2>What Tidely does</h2>
       <p>
         Tidely finds newsletters and promotional email in your Gmail mailbox,
-        groups them by sender, and unsubscribes from the ones you choose. It is
+        groups them by sender, and unsubscribes from the ones you choose. Its
+        Clear out page also lets you find emails already in your mailbox and
+        archive them, move them to Trash, label them or mark them as read. It is
         free, and it is a personal project rather than a company.
       </p>
       <p>
@@ -34,8 +36,8 @@ export default function PrivacyPage() {
 
       <h2>What Tidely reads, and exactly when</h2>
       <p>
-        Three different things can happen, at three different moments. This is
-        all of them.
+        These are the moments Tidely reads or changes anything in your mailbox.
+        This is all of them.
       </p>
       <ul>
         <li>
@@ -59,6 +61,22 @@ export default function PrivacyPage() {
           that address, with the subject &ldquo;unsubscribe&rdquo; and a single
           line asking to be removed. It sends nothing else, to nobody else, ever.
         </li>
+        <li>
+          <strong>When you use Clear out:</strong> Tidely searches your mailbox
+          with the filters you choose and shows each matching message&rsquo;s
+          sender, recipients, subject, date, size, labels and read status, plus
+          Gmail&rsquo;s own short excerpt of it. It does not download message
+          bodies or attachments. This is fetched while you look at the page and
+          is not stored. Opening a preview does not mark an email as read.
+        </li>
+        <li>
+          <strong>When you organise emails in Clear out,</strong> and only after
+          you select them and ask: Tidely archives them, moves them to
+          Gmail&rsquo;s Trash, adds one of your labels, or marks them as read. It
+          changes only the messages you selected — not the rest of their
+          conversations — and never deletes anything permanently. Gmail empties
+          its Trash after 30 days.
+        </li>
       </ul>
 
       <h2>The Google permissions this needs</h2>
@@ -75,17 +93,27 @@ export default function PrivacyPage() {
           above. It is not used for anything else.
         </li>
         <li>
+          <code>gmail.modify</code> — only if you choose to organise mail in Clear
+          out. It is not requested when you first connect: Tidely asks for it
+          separately, explains it first, and keeps everything you already
+          allowed. It is used to archive, move to Trash, label and mark as read
+          the emails you select. Unlike Gmail&rsquo;s full-access scope, it
+          cannot permanently delete mail, and Tidely never asks for full access.
+        </li>
+        <li>
           <code>userinfo.email</code>, <code>userinfo.profile</code> and{" "}
           <code>openid</code> — to know which mailbox is connected and to show
           your name in the interface.
         </li>
       </ul>
       <p className="muted">
-        In full: <code>{GOOGLE_SCOPES.join(" ")}</code>
+        In full: <code>{GOOGLE_SCOPES.join(" ")}</code>, and, once you allow
+        organising, <code>{GMAIL_MODIFY_SCOPE}</code>.
       </p>
       <p>
-        Tidely never deletes, moves, labels or modifies your messages, and it has
-        no permission to.
+        Without the organise permission, Tidely cannot archive, move, label or
+        modify your messages. With it, Tidely changes messages only when you
+        select them and confirm, and it never deletes anything permanently.
       </p>
 
       <h2>What is stored</h2>
@@ -105,12 +133,18 @@ export default function PrivacyPage() {
           The progress of your scans, so a scan can be resumed rather than
           restarted.
         </li>
+        <li>
+          A History of what you did in Clear out: the action, when, and how many
+          emails it succeeded or failed for. Not which emails, and nothing about
+          their contents.
+        </li>
       </ul>
       <p>
         Your Google refresh token is encrypted with AES-256-GCM before it is
         written to the database. The login cookie is a signed token holding only
         an internal user id — no email address and no Google tokens.{" "}
-        <strong>Message bodies are never stored.</strong> The one message that may
+        <strong>Message bodies are never stored</strong>, and neither are the
+        subjects, senders or excerpts Clear out shows you. The one message that may
         be fetched during an unsubscribe is searched for a link in memory and
         discarded; what is kept is the outcome and, where relevant, the
         unsubscribe URL you were handed.
@@ -160,8 +194,8 @@ export default function PrivacyPage() {
       <ul>
         <li>
           <strong>Disconnect mailbox</strong> (in Settings) revokes the token with
-          Google and deletes every sender, scan and attempt stored for that
-          mailbox. Your Tidely login stays, so you can connect a mailbox again
+          Google and deletes every sender, scan, attempt and Clear out History
+          entry stored for that mailbox. Your Tidely login stays, so you can connect a mailbox again
           without signing up twice.
         </li>
         <li>
@@ -191,7 +225,8 @@ export default function PrivacyPage() {
       </p>
       <p>
         Unsubscribes already carried out are not reversed by any of this, and
-        emails already sent cannot be unsent.
+        emails already sent cannot be unsent. Emails you archived, labelled or
+        moved to Trash stay that way in Gmail.
       </p>
 
       <h2>Google app verification</h2>

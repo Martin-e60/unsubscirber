@@ -11,6 +11,8 @@ import styles from "./Accordion.module.css";
  *   body link    → one message, only when a sender has no unsubscribe header
  *                  and only because you asked (planMethods, BODY_LINK)
  *   mailto       → one email from your address (sendMailto)
+ *   clear out    → searches and organises selected messages, only with the
+ *                  separately granted gmail.modify scope (src/lib/clearout)
  *   disconnect   → revokes Google access and deletes the scan data
  *                  (DELETE /api/account)
  *
@@ -57,6 +59,11 @@ export function AccessDetails() {
             <li>
               <strong>Some senders only accept an email.</strong> For those,
               Tidely sends one short unsubscribe request from your address.
+            </li>
+            <li>
+              <strong>Clear out organises only what you select.</strong> To
+              archive, label or move emails to Trash, Tidely first asks for one
+              more Google permission. It can’t delete anything permanently.
             </li>
             <li>
               <strong>You can disconnect Gmail at any time</strong> in Settings,

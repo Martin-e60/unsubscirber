@@ -25,6 +25,7 @@ import type {
   UnsubscribeMethod,
   AttemptStatus,
 } from "@/lib/constants";
+import type { ClearOutAction } from "@/lib/clearout/actions";
 
 const id = () =>
   text("id")
@@ -226,6 +227,36 @@ export const unsubscribeAttempts = sqliteTable(
   ],
 );
 
+/**
+ * One Clear out action: what was done, to how many emails, and how many Gmail
+ * confirmed. Counts only — no message ids, subjects or senders are kept.
+ * Belongs to a mailbox, so it is scoped to its owner and deleted with it.
+ */
+export const clearOutRuns = sqliteTable(
+  "clear_out_runs",
+  {
+    id: id(),
+    mailAccountId: text("mail_account_id")
+      .notNull()
+      .references(() => mailAccounts.id, { onDelete: "cascade" }),
+    action: text("action").$type<ClearOutAction>().notNull(),
+    /**
+     * For the Label action: which label every batch adds, fixed when the
+     * action starts, and its name at the time for "Labelled …".
+     */
+    labelId: text("label_id"),
+    labelName: text("label_name"),
+    requested: integer("requested").notNull(),
+    succeeded: integer("succeeded").notNull().default(0),
+    failed: integer("failed").notNull().default(0),
+    createdAt: createdAt(),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+  },
+  (t) => [index("clear_out_runs_account_created_idx").on(t.mailAccountId, t.createdAt)],
+);
+
 // --- Relations (used by drizzle's query API) --------------------------------
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -267,3 +298,4 @@ export type MailAccount = typeof mailAccounts.$inferSelect;
 export type Scan = typeof scans.$inferSelect;
 export type Sender = typeof senders.$inferSelect;
 export type UnsubscribeAttempt = typeof unsubscribeAttempts.$inferSelect;
+export type ClearOutRun = typeof clearOutRuns.$inferSelect;

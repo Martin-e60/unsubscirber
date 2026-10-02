@@ -41,6 +41,20 @@ export async function readJson(
 }
 
 /**
+ * readJson for routes that change mail: the body must also be declared as
+ * JSON. A cross-site form cannot send that content type without a CORS
+ * preflight, which this app never grants — a second line of defence behind
+ * the SameSite session cookie.
+ */
+export async function readJsonRequest(request: Request): Promise<unknown> {
+  const type = request.headers.get("content-type") ?? "";
+  if (!/^application\/json\b/i.test(type)) {
+    throw new HttpError("Request body must be JSON.", 415);
+  }
+  return readJson(request);
+}
+
+/**
  * Wraps a route handler so thrown errors become clean JSON responses.
  *
  * An HttpError is intentional and its message is safe to show. Anything else

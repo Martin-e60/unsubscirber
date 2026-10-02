@@ -1,6 +1,6 @@
 import "server-only";
 import type { MailAccount } from "@/db/schema";
-import type { MailProvider } from "./provider";
+import type { MailOrganiser, MailProvider } from "./provider";
 import { GmailProvider } from "./gmail";
 import { getValidAccessToken } from "./tokens";
 
@@ -20,6 +20,18 @@ export async function getProviderForAccount(
       return new GmailProvider(account.email, accessToken);
     default:
       throw new Error(`No mail provider implemented for "${account.provider}"`);
+  }
+}
+
+/** The organiser for a connected account — Clear out's search and actions. */
+export async function getOrganiserForAccount(account: MailAccount): Promise<MailOrganiser> {
+  const accessToken = await getValidAccessToken(account);
+
+  switch (account.provider) {
+    case "gmail":
+      return new GmailProvider(account.email, accessToken);
+    default:
+      throw new Error(`No mail organiser implemented for "${account.provider}"`);
   }
 }
 

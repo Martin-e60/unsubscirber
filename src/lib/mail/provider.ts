@@ -79,3 +79,49 @@ export function looksLikeSubscription(message: MessageHeaders): boolean {
   const precedence = (message.precedence ?? "").toLowerCase();
   return precedence === "bulk" || precedence === "list";
 }
+
+// --- Organising mail (Clear out) -----------------------------------------------
+
+/** What Clear out reads about one message: metadata and the provider's snippet. */
+export type MessageMetadata = {
+  id: string;
+  threadId: string;
+  labelIds: string[];
+  snippet: string;
+  sizeEstimate: number | null;
+  date: Date | null;
+  /** Requested headers, keyed by lowercase name. */
+  headers: Record<string, string>;
+};
+
+export type MailLabel = { id: string; name: string; type: "user" | "system" };
+
+export type SearchOptions = {
+  q: string;
+  labelIds: string[];
+  pageToken?: string | null;
+  maxResults: number;
+};
+
+/**
+ * Finding and organising individual messages.
+ *
+ * Kept apart from MailProvider because it needs a further permission: search
+ * and metadata work with read access, but every method that changes labels
+ * or moves mail to the bin needs modify access, which a mailbox may not have
+ * granted yet.
+ */
+export interface MailOrganiser {
+  searchMessages(options: SearchOptions): Promise<{
+    ids: string[];
+    nextPageToken: string | null;
+    estimate: number;
+  }>;
+  /** Null in a slot whose message could not be read. Same order as `ids`. */
+  getMetadata(ids: string[], headers: string[]): Promise<(MessageMetadata | null)[]>;
+  listLabels(): Promise<MailLabel[]>;
+  /** Changes labels on exactly these messages, never their whole threads. */
+  modifyLabels(ids: string[], add: string[], remove: string[]): Promise<void>;
+  /** Moves each message to the bin. Reports which ones made it. */
+  trashMessages(ids: string[]): Promise<{ succeeded: string[]; failed: string[] }>;
+}

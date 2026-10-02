@@ -16,6 +16,8 @@ import {
   type DemoOutcome,
   type DemoSenderSeed,
 } from "@/lib/demo/data";
+import { demoMailboxSeeds, type DemoMessageSeed } from "@/lib/demo/mailbox";
+import type { ClearOutAction } from "@/lib/clearout/actions";
 
 /**
  * The demo's state, and where it lives.
@@ -31,10 +33,11 @@ import {
 const STORAGE_KEY = "tidely.demo.v1";
 /**
  * Bumped when the stored shape changes. Version 2 added scan timestamps for
- * the Home screen; version 3 added mail received after an unsubscribe. A
- * visitor holding an older version simply starts the demo afresh.
+ * the Home screen; version 3 added mail received after an unsubscribe;
+ * version 4 added Clear out's mailbox and its History. A visitor holding an
+ * older version simply starts the demo afresh.
  */
-const STATE_VERSION = 3;
+const STATE_VERSION = 4;
 
 /** The default window for a first scan, matching the real app. */
 export const DEMO_DEFAULT_LOOKBACK_DAYS = 30;
@@ -87,6 +90,22 @@ export type DemoFollowUp = {
   receivedAt: string;
 };
 
+/** One sample message in Clear out. Changes only ever touch this copy. */
+export type DemoMessage = Omit<DemoMessageSeed, "daysAgo"> & { receivedAt: string };
+
+/** One Clear out action in the demo's History. */
+export type DemoClearOutRun = {
+  id: string;
+  action: ClearOutAction;
+  labelId: string | null;
+  labelName: string | null;
+  requested: number;
+  succeeded: number;
+  failed: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type DemoState = {
   version: number;
   senders: DemoSender[];
@@ -101,6 +120,9 @@ export type DemoState = {
   scan: DemoScan | null;
   /** Reserve senders already revealed by a longer scan. */
   revealed: string[];
+  /** Clear out's sample mailbox, and what was done to it. */
+  mailbox: DemoMessage[];
+  clearOutRuns: DemoClearOutRun[];
 };
 
 const dayMs = 86_400_000;
@@ -226,6 +248,12 @@ export function initialState(): DemoState {
     scan: seedScan,
     lastDone: { ...seedScan },
     revealed: [],
+    mailbox: demoMailboxSeeds().map(({ daysAgo, ...seed }) => ({
+      ...seed,
+      receivedAt: new Date(Date.now() - daysAgo * dayMs).toISOString(),
+    })),
+    // History starts empty: nothing was done before the visit.
+    clearOutRuns: [],
   };
 }
 
@@ -259,6 +287,8 @@ export function loadState(): DemoState {
           parsed?.version === STATE_VERSION &&
           Array.isArray(parsed.senders) &&
           Array.isArray(parsed.followUps) &&
+          Array.isArray(parsed.mailbox) &&
+          Array.isArray(parsed.clearOutRuns) &&
           "lastDone" in parsed
         ) {
           memoryState = parsed;

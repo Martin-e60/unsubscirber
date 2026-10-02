@@ -12,9 +12,13 @@
  * Senders is absent too: kept senders live in Cleanup's Keeping view, and
  * unsubscribe outcomes that still need something are filters inside To review.
  * The old /senders links redirect there — see `sendersRedirect`.
+ *
+ * Each page has one job: Home is the overview, Cleanup decides which mailing
+ * lists to keep or leave, Clear out organises mail already in the mailbox,
+ * and Unsubscribed reviews what happened after leaving a list.
  */
 
-export type NavId = "home" | "cleanup" | "unsubscribed" | "settings";
+export type NavId = "home" | "cleanup" | "clearout" | "unsubscribed" | "settings";
 
 export type NavItem = {
   id: NavId;
@@ -26,6 +30,7 @@ export type NavItem = {
 export const NAV: NavItem[] = [
   { id: "home", href: "/dashboard", label: "Home" },
   { id: "cleanup", href: "/cleanup", label: "Cleanup" },
+  { id: "clearout", href: "/clear-out", label: "Clear out" },
   { id: "unsubscribed", href: "/unsubscribed", label: "Unsubscribed" },
   { id: "settings", href: "/settings", label: "Settings" },
 ];

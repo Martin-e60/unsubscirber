@@ -9,7 +9,9 @@ import { route } from "@/lib/api/respond";
 import { readOAuthState } from "@/lib/auth/oauth-state";
 import { authFailure } from "@/lib/auth/redirect";
 import { resolveGoogleUser, GoogleAccountError } from "@/lib/auth/google-user";
-import { getCurrentUser } from "@/lib/api/auth";
+import { getCurrentUser, getPrimaryAccount } from "@/lib/api/auth";
+import { scopeAccess } from "@/lib/constants";
+import { and, eq } from "drizzle-orm";
 
 /**
  * Step 2 of sign-in: Google sends the user back here with a code.
@@ -47,6 +49,7 @@ export const GET = route(async (request: NextRequest) => {
 
   const context = await readOAuthState(request.cookies.get("oauth_state")?.value, state);
   if (!context) return authFailure("login", "expired");
+  if (context.access === "organise") return organiseCallback(code, error, context.userId);
   if (error) return authFailure(context.mode, error === "access_denied" ? "cancelled" : "failed");
   if (!code) return authFailure(context.mode, "incomplete");
   const currentUser = await getCurrentUser();
@@ -107,3 +110,52 @@ export const GET = route(async (request: NextRequest) => {
     return authFailure(context.mode, cause instanceof GoogleAccountError ? cause.code : "failed");
   }
 });
+
+/**
+ * The end of Clear out's "organise" reconnect.
+ *
+ * Only for the person who started it, and only for the mailbox they already
+ * connected: a different Google account is refused and nothing is stored.
+ * Google lets people untick individual permissions, so whether organising
+ * was actually granted is read from what Google returned, not assumed.
+ * The page then says plainly which happened.
+ */
+async function organiseCallback(code: string | null, error: string | null, userId: string | null) {
+  const back = (outcome: "granted" | "declined" | "cancelled" | "wrong_account" | "failed") => {
+    const response = NextResponse.redirect(`${env.appUrl}/clear-out?access=${outcome}`);
+    response.cookies.delete("oauth_state");
+    return response;
+  };
+
+  const user = await getCurrentUser();
+  if (!user || user.id !== userId) return authFailure("login", "expired");
+  if (error) return back(error === "access_denied" ? "cancelled" : "failed");
+  if (!code) return back("failed");
+
+  const account = await getPrimaryAccount(user.id);
+  if (!account) return back("failed");
+
+  try {
+    const tokens = await exchangeCodeForTokens(code);
+    const profile = await fetchUserInfo(tokens.accessToken);
+    if (profile.email.toLowerCase() !== account.email.toLowerCase()) {
+      return back("wrong_account");
+    }
+
+    await db
+      .update(mailAccounts)
+      .set({
+        accessTokenEnc: encrypt(tokens.accessToken),
+        ...(tokens.refreshToken ? { refreshTokenEnc: encrypt(tokens.refreshToken) } : {}),
+        expiresAt: tokens.expiresAt,
+        scope: tokens.scope,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(mailAccounts.id, account.id), eq(mailAccounts.userId, user.id)));
+
+    return back(scopeAccess(tokens.scope).canOrganise ? "granted" : "declined");
+  } catch (cause) {
+    console.error("[auth/google/callback] organise reconnect failed", { reason: failureReason(cause) });
+    return back("failed");
+  }
+}

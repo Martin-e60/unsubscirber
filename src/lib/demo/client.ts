@@ -25,6 +25,7 @@ import {
 import { emailsPerMonth } from "@/lib/senders/derive";
 import { RECENT_WINDOW_DAYS, summariseStats } from "@/lib/stats/summarise";
 import { DEMO_ACCOUNT, DEMO_USER, demoManualUrl } from "@/lib/demo/data";
+import { handleClearOut } from "@/lib/demo/clearout";
 import {
   attemptDetail,
   clearState,
@@ -442,6 +443,9 @@ async function handle(
       return { ok: true };
 
     default: {
+      const clearOut = await handleClearOut(method, url, payload);
+      if (clearOut !== undefined) return clearOut;
+
       const patchSender = /^\/api\/senders\/([^/]+)$/.exec(url.pathname);
       if (method === "PATCH" && patchSender) {
         return changeStatus(

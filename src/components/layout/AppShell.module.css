@@ -63,3 +63,35 @@
     padding-block-end: calc(var(--space-20) + env(safe-area-inset-bottom));
   }
 }
+
+/* --- Clear out's workspace -------------------------------------------------
+   Only when the page marks itself with data-clearout-workspace; every other
+   page keeps the layout above. Wide screens use the full width beside the
+   sidebar. When the window is also tall enough (FIT_QUERY in ClearOutView),
+   the body is exactly the window's height so the workspace can fill it
+   without the document scrolling. */
+
+@media (min-width: 60rem) {
+  .main:has(> [data-clearout-workspace]) {
+    max-inline-size: none;
+    padding: var(--space-4) 1.75rem var(--space-4);
+  }
+}
+
+@media (min-width: 60rem) and (min-height: 36rem) {
+  .body:has(> .main > [data-clearout-workspace]) {
+    block-size: 100dvh;
+  }
+
+  .main:has(> [data-clearout-workspace]) {
+    display: flex;
+    flex-direction: column;
+    min-block-size: 0;
+  }
+}
+
+@media (min-width: 60rem) and (min-height: 36rem) and (max-height: 60rem) {
+  .main:has(> [data-clearout-workspace]) {
+    padding-block: var(--space-2);
+  }
+}

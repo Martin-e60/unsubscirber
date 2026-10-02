@@ -39,20 +39,31 @@ export type GoogleUserInfo = {
   picture?: string;
 };
 
-export function getAuthorizationUrl(state: string): string {
+/**
+ * `extraScopes` asks for more than the base set — Clear out's organise
+ * permission — and `loginHint` steers Google to the mailbox already
+ * connected, so a reconnect does not quietly connect a different one.
+ */
+export function getAuthorizationUrl(
+  state: string,
+  options: { extraScopes?: string[]; loginHint?: string | null } = {},
+): string {
   const params = new URLSearchParams({
     client_id: env.googleClientId,
     redirect_uri: env.googleRedirectUri,
     response_type: "code",
-    scope: GOOGLE_SCOPES.join(" "),
+    scope: [...GOOGLE_SCOPES, ...(options.extraScopes ?? [])].join(" "),
     state,
     // `offline` is what makes Google issue a refresh token at all.
     access_type: "offline",
     // Forces the consent screen so we reliably receive a refresh token, even
     // for a user who has authorised this app before.
     prompt: "consent",
+    // Keeps every permission already granted, so asking for one more never
+    // takes away what the app could already do.
     include_granted_scopes: "true",
   });
+  if (options.loginHint) params.set("login_hint", options.loginHint);
   return `${AUTH_ENDPOINT}?${params.toString()}`;
 }
 

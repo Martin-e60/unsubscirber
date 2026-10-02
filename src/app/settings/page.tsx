@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { SettingsView } from "@/components/views/SettingsView";
 import { getCurrentUser, getPrimaryAccount } from "@/lib/api/auth";
 import { countByStatus } from "@/lib/api/senders";
-import { SENDER_STATUS } from "@/lib/constants";
+import { SENDER_STATUS, scopeAccess } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +27,7 @@ export default async function SettingsPage() {
         accountEmail={account.email}
         userEmail={user.email}
         rolledUpCount={counts[SENDER_STATUS.ROLLED_UP]}
+        canOrganise={scopeAccess(account.scope).canOrganise}
       />
     </AppShell>
   );

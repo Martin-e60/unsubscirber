@@ -45,7 +45,8 @@ test("the signed-in navigation offers no pricing, rollups or senders page", asyn
   const paths = NAV.map((item) => item.href);
   assert.ok(!paths.includes("/pricing"));
   assert.ok(!paths.includes("/rollups"));
-  assert.deepEqual(paths, ["/dashboard", "/cleanup", "/unsubscribed", "/settings"]);
+  assert.deepEqual(paths, ["/dashboard", "/cleanup", "/clear-out", "/unsubscribed", "/settings"]);
+  assert.ok(DEMO_NAV.some((item) => item.href === "/clear-out"), "Clear out is in the demo too");
   assert.ok(!DEMO_NAV.some((item) => item.href === "/senders"), "nor does the demo");
 
   // The demo has no mailbox to configure.

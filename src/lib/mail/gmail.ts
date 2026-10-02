@@ -1,9 +1,13 @@
 import "server-only";
 import type {
   ListOptions,
+  MailLabel,
+  MailOrganiser,
   MailProvider,
   MessageHeaders,
+  MessageMetadata,
   MessagePage,
+  SearchOptions,
   SendMailOptions,
 } from "./provider";
 import { SCAN_CONCURRENCY } from "@/lib/constants";
@@ -33,7 +37,7 @@ const METADATA_HEADERS = [
   "Precedence",
 ];
 
-export class GmailProvider implements MailProvider {
+export class GmailProvider implements MailProvider, MailOrganiser {
   readonly name = "gmail";
 
   constructor(
@@ -131,6 +135,110 @@ export class GmailProvider implements MailProvider {
     });
   }
 
+  // --- Clear out --------------------------------------------------------------
+  //
+  // messages.list with `q` needs gmail.readonly (it is unavailable under
+  // gmail.metadata). batchModify and messages.trash need gmail.modify, which
+  // cannot delete permanently. Nothing here downloads a body or an attachment.
+
+  async searchMessages(options: SearchOptions) {
+    const params = new URLSearchParams({
+      q: options.q,
+      maxResults: String(options.maxResults),
+    });
+    for (const id of options.labelIds) params.append("labelIds", id);
+    if (options.pageToken) params.set("pageToken", options.pageToken);
+
+    const list = await this.request<{
+      messages?: { id: string }[];
+      nextPageToken?: string;
+      resultSizeEstimate?: number;
+    }>(`/messages?${params.toString()}`);
+
+    return {
+      ids: (list.messages ?? []).map((m) => m.id),
+      nextPageToken: list.nextPageToken ?? null,
+      estimate: list.resultSizeEstimate ?? 0,
+    };
+  }
+
+  async getMetadata(ids: string[], headers: string[]): Promise<(MessageMetadata | null)[]> {
+    const params = new URLSearchParams({ format: "metadata" });
+    for (const h of headers) params.append("metadataHeaders", h);
+
+    return mapWithConcurrency(ids, SCAN_CONCURRENCY, async (id) => {
+      try {
+        const message = await this.request<{
+          id: string;
+          threadId: string;
+          labelIds?: string[];
+          snippet?: string;
+          sizeEstimate?: number;
+          internalDate?: string;
+          payload?: { headers?: { name: string; value: string }[] };
+        }>(`/messages/${encodeURIComponent(id)}?${params.toString()}`);
+
+        const found: Record<string, string> = {};
+        for (const h of message.payload?.headers ?? []) {
+          const key = h.name.toLowerCase();
+          if (!(key in found)) found[key] = h.value;
+        }
+        const internal = message.internalDate ? Number(message.internalDate) : NaN;
+
+        return {
+          id: message.id,
+          threadId: message.threadId,
+          labelIds: message.labelIds ?? [],
+          snippet: message.snippet ?? "",
+          sizeEstimate: message.sizeEstimate ?? null,
+          date: Number.isFinite(internal) ? new Date(internal) : null,
+          headers: found,
+        };
+      } catch (error) {
+        // A permission problem is not one unreadable message; let it surface.
+        if (error instanceof GmailApiError && error.isPermission) throw error;
+        return null;
+      }
+    });
+  }
+
+  async listLabels(): Promise<MailLabel[]> {
+    const data = await this.request<{
+      labels?: { id: string; name: string; type?: string }[];
+    }>("/labels");
+    return (data.labels ?? []).map((label) => ({
+      id: label.id,
+      name: label.name,
+      type: label.type === "user" ? "user" : "system",
+    }));
+  }
+
+  async modifyLabels(ids: string[], add: string[], remove: string[]): Promise<void> {
+    if (ids.length === 0) return;
+    if (ids.length > 1000) throw new Error("batchModify takes at most 1,000 ids.");
+    await this.request("/messages/batchModify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids, addLabelIds: add, removeLabelIds: remove }),
+    });
+  }
+
+  async trashMessages(ids: string[]) {
+    const results = await mapWithConcurrency(ids, 8, async (id) => {
+      try {
+        await this.request(`/messages/${encodeURIComponent(id)}/trash`, { method: "POST" });
+        return true;
+      } catch (error) {
+        if (error instanceof GmailApiError && error.isPermission) throw error;
+        return false;
+      }
+    });
+    return {
+      succeeded: ids.filter((_, index) => results[index]),
+      failed: ids.filter((_, index) => !results[index]),
+    };
+  }
+
   /**
    * One HTTP call to Gmail, with retries for the failures that are worth
    * retrying: rate limits and transient server errors.
@@ -153,11 +261,14 @@ export class GmailProvider implements MailProvider {
         return (await response.json()) as T;
       }
 
+      const body = await response.text().catch(() => "");
+      // Gmail reports per-user rate limits as 403 as well as 429.
       const retryable =
-        response.status === 429 || (response.status >= 500 && response.status < 600);
+        response.status === 429 ||
+        (response.status === 403 && /rateLimitExceeded/i.test(body)) ||
+        (response.status >= 500 && response.status < 600);
 
       if (!retryable || attempt === maxAttempts) {
-        const body = await response.text().catch(() => "");
         throw new GmailApiError(
           `Gmail API ${response.status} on ${path}: ${body.slice(0, 300)}`,
           response.status,
@@ -180,6 +291,14 @@ export class GmailApiError extends Error {
   ) {
     super(message);
     this.name = "GmailApiError";
+  }
+
+  /** The token is missing a scope the call needs, or is no longer valid. */
+  get isPermission(): boolean {
+    return (
+      this.status === 401 ||
+      (this.status === 403 && /insufficient|PERMISSION_DENIED|SCOPE/i.test(this.message))
+    );
   }
 }
 

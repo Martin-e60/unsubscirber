@@ -1,0 +1,274 @@
+/* The selection toolbar's contents. The card around it is the page's
+   reserved action slot (ClearOutView.module.css .slot). */
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-6);
+  inline-size: 100%;
+  min-inline-size: 0;
+}
+
+.summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3) var(--space-4);
+  min-inline-size: 0;
+}
+
+/* The count never gives way; the select-all link is the first to. */
+.count {
+  display: flex;
+  flex-shrink: 0;
+  align-items: baseline;
+  gap: var(--space-2);
+  white-space: nowrap;
+}
+
+.count strong {
+  font-size: var(--text-lg);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.scope {
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  text-overflow: ellipsis;
+}
+
+.rule {
+  flex-shrink: 0;
+  inline-size: 1px;
+  block-size: 1.75rem;
+  background: var(--color-border);
+}
+
+.selectAll {
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.clear,
+.selectAll {
+  padding: var(--space-2) var(--space-1);
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-primary);
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.clear {
+  flex-shrink: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.selectAll:hover,
+.clear:hover:not(:disabled) {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+.clear:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.anchor {
+  position: relative;
+}
+
+.outline,
+.primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-block-size: 2.625rem;
+  padding-inline: var(--space-5);
+  border-radius: 8px;
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 160ms var(--ease),
+    border-color 160ms var(--ease),
+    box-shadow 160ms var(--ease),
+    transform 160ms var(--ease);
+}
+
+.outline {
+  border: var(--border-width) solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.outline:hover:not(:disabled),
+.outline[aria-expanded="true"] {
+  border-color: var(--color-primary);
+}
+
+.primary {
+  min-inline-size: 13rem;
+  border: var(--border-width) solid var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  font-weight: var(--weight-bold);
+}
+
+.primary:hover:not(:disabled) {
+  box-shadow: var(--shadow-primary);
+}
+
+.outline:active:not(:disabled),
+.primary:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.outline:disabled,
+.primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.working {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-block-size: 2.625rem;
+  color: var(--color-text);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.spinner {
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
+  border: 2px solid var(--color-primary);
+  border-inline-end-color: transparent;
+  border-radius: 50%;
+  animation: spin 700ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.stop {
+  min-block-size: 2.25rem;
+  padding-inline: var(--space-3);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+}
+
+.short {
+  display: none;
+}
+
+/* Medium widths: the long scope note and labels give way first. */
+@media (max-width: 88rem) {
+  .scope {
+    display: none;
+  }
+
+  .primary {
+    min-inline-size: 0;
+  }
+
+  .bar {
+    column-gap: var(--space-4);
+  }
+
+  .actions {
+    gap: var(--space-2);
+  }
+
+  .outline,
+  .primary {
+    padding-inline: var(--space-4);
+  }
+}
+
+/* Phones: count and links on one row, the three actions sharing the next. */
+@media (max-width: 44rem) {
+  .bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+
+  .summary {
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
+
+  .count strong {
+    font-size: var(--text-md);
+  }
+
+  .rule,
+  .selectAll {
+    display: none;
+  }
+
+  .actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-2);
+  }
+
+  .anchor,
+  .anchor > button {
+    inline-size: 100%;
+  }
+
+  .outline,
+  .primary {
+    min-block-size: 2.75rem;
+    padding-inline: var(--space-2);
+    font-size: var(--text-sm);
+  }
+
+  .long {
+    display: none;
+  }
+
+  .short {
+    display: inline;
+  }
+
+  .working {
+    white-space: normal;
+  }
+}
+
+@media (max-width: 24rem) {
+  .outline svg,
+  .primary svg {
+    display: none;
+  }
+}

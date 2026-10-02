@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   CircleHelp,
   Home,
+  Inbox,
   ListFilter,
   MailCheck,
   Mails,
@@ -28,6 +29,7 @@ import styles from "./Sidebar.module.css";
 const ICONS: Record<NavId, LucideIcon> = {
   home: Home,
   cleanup: ListFilter,
+  clearout: Inbox,
   unsubscribed: MailCheck,
   settings: SlidersHorizontal,
 };

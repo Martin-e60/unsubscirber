@@ -5,7 +5,9 @@ import { route } from "@/lib/api/respond";
 import { authMode } from "@/lib/auth-flow";
 import { createOAuthState } from "@/lib/auth/oauth-state";
 import { authFailure } from "@/lib/auth/redirect";
-import { getCurrentUser } from "@/lib/api/auth";
+import { getCurrentUser, getPrimaryAccount } from "@/lib/api/auth";
+import { GMAIL_MODIFY_SCOPE } from "@/lib/constants";
+import { env } from "@/lib/env";
 
 /**
  * Step 1 of sign-in: send the user to Google.
@@ -27,9 +29,17 @@ export const GET = route(async (request: NextRequest) => {
   }
   const state = crypto.randomBytes(32).toString("base64url");
 
-  const response = NextResponse.redirect(getAuthorizationUrl(state));
+  // Clear out's "organise" permission is added to an existing connection, for
+  // the mailbox already connected — never a first connection, never another one.
+  const organise = request.nextUrl.searchParams.get("access") === "organise" && mode === "connect";
+  const account = organise && user ? await getPrimaryAccount(user.id) : null;
+  if (organise && !account) return NextResponse.redirect(`${env.appUrl}/connect`);
 
-  response.cookies.set("oauth_state", await createOAuthState(state, mode, user?.id ?? null), {
+  const response = NextResponse.redirect(
+    getAuthorizationUrl(state, organise ? { extraScopes: [GMAIL_MODIFY_SCOPE], loginHint: account?.email } : {}),
+  );
+
+  response.cookies.set("oauth_state", await createOAuthState(state, mode, user?.id ?? null, organise ? "organise" : null), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
