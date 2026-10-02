@@ -1,0 +1,737 @@
+/* ============================================================================
+   Sign in, and password recovery.
+
+   Colours come only from the app theme (appTheme.module.css), which holds the
+   approved palette verbatim; Google's mark keeps Google's own colours.
+   ========================================================================= */
+
+.page {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-block-size: 100dvh;
+  padding-inline: clamp(1rem, 4vw, 4rem);
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+/* --- Header -------------------------------------------------------------------- */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-block: 1.625rem;
+  border-block-end: var(--border-width) solid var(--color-border);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--color-text);
+  text-decoration: none;
+  border-radius: var(--radius-md);
+}
+
+.mark {
+  display: grid;
+  place-items: center;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  border-radius: 11px;
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+}
+
+.word {
+  font-size: 1.875rem;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1;
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-block-size: 2.75rem;
+  padding-inline: var(--space-2);
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  font-size: var(--text-md);
+  font-weight: var(--weight-medium);
+  text-decoration: none;
+  transition: color 160ms var(--ease);
+}
+
+.back:hover {
+  color: var(--color-text);
+}
+
+/* --- Two columns ------------------------------------------------------------------ */
+
+.main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 30rem);
+  align-items: center;
+  gap: clamp(2rem, 6vw, 6rem);
+  inline-size: 100%;
+  max-inline-size: 84rem;
+  margin-inline: auto;
+  padding: clamp(1.25rem, 4vh, 3.5rem) clamp(0rem, 3vw, 4rem) clamp(1.25rem, 3vh, 2.25rem);
+}
+
+.editorial {
+  min-inline-size: 0;
+}
+
+.eyebrow {
+  color: var(--color-primary);
+  font-size: 0.9375rem;
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.headline {
+  display: flex;
+  flex-direction: column;
+  margin-block-start: 1.5rem;
+  font-size: clamp(3rem, 5.45vw, 5.5rem);
+  line-height: 1.04;
+}
+
+.headlineFirst {
+  font-weight: 800;
+  letter-spacing: -0.055em;
+}
+
+.headlineSecond {
+  margin-inline-start: -0.04em;
+  color: var(--color-primary);
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.025em;
+}
+
+.lede {
+  margin-block-start: 1.5rem;
+  color: var(--color-text-muted);
+  font-size: clamp(1.125rem, 1.5vw, 1.5rem);
+  letter-spacing: -0.01em;
+}
+
+.art {
+  inline-size: min(100%, 34rem);
+  block-size: auto;
+  max-block-size: 38vh;
+  margin-block-start: clamp(1rem, 3.5vh, 2.25rem);
+}
+
+.cardColumn {
+  display: flex;
+  justify-content: center;
+  min-inline-size: 0;
+}
+
+/* --- The card ------------------------------------------------------------------------ */
+
+.card {
+  inline-size: 100%;
+  max-inline-size: 30rem;
+  padding: 2.25rem 2rem 2rem;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface);
+  box-shadow: 0 24px 48px -36px rgb(53 35 43 / 30%), 0 1px 2px rgb(53 35 43 / 4%);
+}
+
+.title {
+  font-size: clamp(2.25rem, 3vw, 3rem);
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 1.08;
+}
+
+.subtitle {
+  margin-block-start: 0.625rem;
+  color: var(--color-text-muted);
+  font-size: 1.125rem;
+}
+
+.subtitle:focus {
+  outline: none;
+}
+
+.subtitle p + p {
+  margin-block-start: var(--space-3);
+}
+
+.small {
+  margin-block-start: var(--space-4);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+}
+
+.address {
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+/* Messages sit in the flow, so they push the form down rather than cover it. */
+.alert,
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin-block-start: 1.25rem;
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-width) solid var(--color-border);
+  border-inline-start: 3px solid var(--color-primary);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--color-primary-soft) 40%, var(--color-surface));
+  color: var(--color-text);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  animation: appear 180ms var(--ease);
+}
+
+.alert svg,
+.notice svg {
+  flex-shrink: 0;
+  margin-block-start: 0.0625rem;
+  color: var(--color-primary);
+}
+
+.alert:focus {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+@keyframes appear {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+}
+
+.google,
+.secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  inline-size: 100%;
+  min-block-size: 3rem;
+  margin-block-start: 1.75rem;
+  padding-inline: var(--space-4);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 1.0625rem;
+  font-weight: var(--weight-bold);
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    border-color 160ms var(--ease),
+    background-color 160ms var(--ease);
+}
+
+.google:hover,
+.secondary:hover {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-bg) 50%, var(--color-surface));
+}
+
+.google[aria-disabled="true"] {
+  cursor: progress;
+  opacity: 0.75;
+}
+
+.google svg {
+  flex-shrink: 0;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-block: 1.5rem;
+  color: var(--color-text-muted);
+  font-size: var(--text-md);
+  white-space: nowrap;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  block-size: 1px;
+  background: var(--color-border);
+}
+
+.form {
+  margin-block-start: 1.5rem;
+}
+
+.divider + .form {
+  margin-block-start: 0;
+}
+
+.fieldset {
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.fieldset:disabled .input,
+.fieldset:disabled .reveal {
+  opacity: 0.7;
+}
+
+.field + .field {
+  margin-block-start: 1.25rem;
+}
+
+.label {
+  display: block;
+  margin-block-end: 0.5rem;
+  color: var(--color-text);
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+}
+
+.input {
+  display: block;
+  inline-size: 100%;
+  min-block-size: 3rem;
+  padding-inline: 1rem;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-md);
+  transition:
+    border-color 160ms var(--ease),
+    box-shadow 160ms var(--ease);
+}
+
+.input::placeholder {
+  color: var(--color-text-muted);
+  opacity: 0.8;
+}
+
+.input:hover {
+  border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border));
+}
+
+.input:focus {
+  border-color: var(--color-primary);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
+}
+
+.input[aria-invalid="true"] {
+  border-color: var(--color-primary);
+}
+
+.fieldError {
+  margin-block-start: 0.375rem;
+  color: var(--color-primary);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+}
+
+.password {
+  position: relative;
+}
+
+.password .input {
+  padding-inline-end: 3.25rem;
+}
+
+.reveal {
+  position: absolute;
+  inset-block: 0.25rem;
+  inset-inline-end: 0.25rem;
+  display: grid;
+  place-items: center;
+  inline-size: 2.75rem;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: color 160ms var(--ease);
+}
+
+.reveal:hover {
+  color: var(--color-text);
+}
+
+.reveal:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
+}
+
+.forgot {
+  margin-block-start: 0.75rem;
+  text-align: end;
+  font-size: 0.9375rem;
+}
+
+.forgot a,
+.switch a {
+  color: var(--color-primary);
+  font-weight: var(--weight-medium);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  border-radius: 4px;
+}
+
+.forgot a:hover,
+.switch a:hover {
+  text-decoration-thickness: 2px;
+}
+
+.primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  inline-size: 100%;
+  min-block-size: 3rem;
+  margin-block-start: 1.25rem;
+  border: 0;
+  border-radius: 8px;
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  font-size: 1.125rem;
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    box-shadow 160ms var(--ease),
+    transform 160ms var(--ease);
+}
+
+.primary:hover:not(:disabled) {
+  box-shadow: var(--shadow-primary);
+}
+
+.primary:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+.fieldset:disabled .primary {
+  cursor: progress;
+}
+
+.forgot + .primary {
+  margin-block-start: 1.5rem;
+}
+
+.spinner {
+  flex-shrink: 0;
+  animation: spin 800ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.switch {
+  margin-block-start: 1.5rem;
+  color: var(--color-text-muted);
+  font-size: var(--text-md);
+  text-align: center;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.dev {
+  margin-block-start: var(--space-3);
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  text-align: center;
+}
+
+.dev a {
+  color: var(--color-text-muted);
+}
+
+.doneIcon {
+  display: grid;
+  place-items: center;
+  inline-size: 3.25rem;
+  block-size: 3.25rem;
+  margin-block-end: var(--space-5);
+  border-radius: 14px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+/* --- Footer ------------------------------------------------------------------------- */
+
+.footer {
+  padding-block: 1.125rem 1.25rem;
+  border-block-start: var(--border-width) solid var(--color-border);
+}
+
+.legal {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  color: var(--color-text-muted);
+  font-size: 0.9375rem;
+}
+
+.legal a {
+  color: var(--color-text-muted);
+  text-decoration: none;
+  border-radius: 4px;
+}
+
+.legal a:hover {
+  color: var(--color-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* --- Shorter desktop windows: decoration gives way before the form does ------------- */
+
+@media (min-width: 52.01rem) and (max-height: 50rem) {
+  .header {
+    padding-block: 1rem;
+  }
+
+  .mark {
+    inline-size: 2.5rem;
+    block-size: 2.5rem;
+  }
+
+  .word {
+    font-size: 1.625rem;
+  }
+
+  .main {
+    padding-block: 1.25rem;
+  }
+
+  .headline {
+    margin-block-start: 1rem;
+    font-size: clamp(2.75rem, 4.6vw, 4.25rem);
+  }
+
+  .lede {
+    margin-block-start: 1rem;
+  }
+
+  .art {
+    max-block-size: 30vh;
+  }
+
+  .card {
+    padding: 1.75rem 2rem 1.5rem;
+  }
+
+  .title {
+    font-size: 2.375rem;
+  }
+
+  .subtitle {
+    margin-block-start: 0.375rem;
+    font-size: var(--text-md);
+  }
+
+  .google {
+    margin-block-start: 1.25rem;
+  }
+
+  .divider {
+    margin-block: 1rem;
+  }
+
+  .field + .field {
+    margin-block-start: 0.875rem;
+  }
+
+  .label {
+    margin-block-end: 0.375rem;
+  }
+
+  .google,
+  .input,
+  .primary {
+    min-block-size: 2.75rem;
+  }
+
+  .forgot {
+    margin-block-start: 0.5rem;
+  }
+
+  .forgot + .primary {
+    margin-block-start: 1rem;
+  }
+
+  .switch {
+    margin-block-start: 1rem;
+  }
+
+  .footer {
+    padding-block: 0.75rem;
+  }
+}
+
+/* Laptop-short windows (about 700px and less): tighter still. */
+@media (min-width: 52.01rem) and (max-height: 44rem) {
+  .header {
+    padding-block: 0.75rem;
+  }
+
+  .main {
+    padding-block: 0.75rem;
+  }
+
+  .art {
+    max-block-size: 28vh;
+    margin-block-start: 0.75rem;
+  }
+
+  .card {
+    padding-block: 1.25rem 1.125rem;
+  }
+
+  .title {
+    font-size: 2.125rem;
+  }
+
+  .subtitle {
+    margin-block-start: 0.25rem;
+  }
+
+  .google {
+    margin-block-start: 1rem;
+  }
+
+  .divider {
+    margin-block: 0.75rem;
+  }
+
+  .field + .field {
+    margin-block-start: 0.75rem;
+  }
+
+  .forgot + .primary {
+    margin-block-start: 0.75rem;
+  }
+
+  .switch {
+    margin-block-start: 0.75rem;
+  }
+
+  .dev {
+    margin-block-start: 0.25rem;
+  }
+
+  .footer {
+    padding-block: 0.5rem;
+  }
+}
+
+@media (min-width: 52.01rem) and (max-height: 37.5rem) {
+  .art {
+    display: none;
+  }
+}
+
+/* --- Phones and narrow windows: the form first -------------------------------------- */
+
+@media (max-width: 52rem) {
+  .header {
+    padding-block: 1rem;
+  }
+
+  .mark {
+    inline-size: 2.375rem;
+    block-size: 2.375rem;
+  }
+
+  .word {
+    font-size: 1.5rem;
+  }
+
+  .back {
+    gap: var(--space-2);
+    font-size: var(--text-base);
+  }
+
+  .main {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    padding: 1.25rem 0 1.5rem;
+  }
+
+  .editorial {
+    display: none;
+  }
+
+  .card {
+    padding: 1.75rem 1.25rem 1.5rem;
+    border-radius: 14px;
+  }
+
+  .title {
+    font-size: 2.125rem;
+  }
+
+  .subtitle {
+    font-size: var(--text-md);
+  }
+
+  .google {
+    margin-block-start: 1.5rem;
+  }
+
+  .divider {
+    gap: var(--space-3);
+    font-size: var(--text-base);
+  }
+}
+
+@media (max-width: 22rem) {
+  .back {
+    font-size: var(--text-sm);
+  }
+
+  .card {
+    padding-inline: 1rem;
+  }
+
+  .title {
+    font-size: 1.875rem;
+  }
+
+  .google {
+    gap: var(--space-2);
+    font-size: var(--text-md);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 2.4s;
+  }
+}

@@ -14,6 +14,8 @@ import { SESSION_COOKIE, SESSION_MAX_AGE_SECONDS } from "./constants";
 
 export type SessionPayload = {
   userId: string;
+  /** When the token was signed, in seconds; null for tokens without one. */
+  issuedAt: number | null;
 };
 
 export async function createSession(userId: string): Promise<string> {
@@ -32,7 +34,7 @@ export async function readSession(): Promise<SessionPayload | null> {
   try {
     const { payload } = await jwtVerify(token, env.sessionSecret);
     if (typeof payload.userId !== "string") return null;
-    return { userId: payload.userId };
+    return { userId: payload.userId, issuedAt: typeof payload.iat === "number" ? payload.iat : null };
   } catch {
     // Expired or tampered with. Treat exactly like "not logged in".
     return null;

@@ -36,6 +36,13 @@
       "when": 1790951443140,
       "tag": "0004_clear_out_runs",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1790964001343,
+      "tag": "0005_password_reset",
+      "breakpoints": true
     }
   ]
 }

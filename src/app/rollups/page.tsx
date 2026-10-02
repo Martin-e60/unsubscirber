@@ -6,6 +6,7 @@ import { SenderWorkspace } from "@/components/senders/SenderWorkspace";
 import { Notice } from "@/components/ui/Notice";
 import { getCurrentUser, getPrimaryAccount } from "@/lib/api/auth";
 import { SENDER_STATUS } from "@/lib/constants";
+import { loginHref } from "@/lib/auth/next";
 
 /**
  * Rollups, retired.
@@ -21,7 +22,7 @@ export const dynamic = "force-dynamic";
 
 export default async function RollupsPage() {
   const user = await getCurrentUser();
-  if (!user) redirect("/login");
+  if (!user) redirect(loginHref("/rollups"));
   if (!(await getPrimaryAccount(user.id))) redirect("/connect");
 
   return (

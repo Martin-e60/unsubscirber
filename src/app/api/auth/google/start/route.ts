@@ -39,7 +39,9 @@ export const GET = route(async (request: NextRequest) => {
     getAuthorizationUrl(state, organise ? { extraScopes: [GMAIL_MODIFY_SCOPE], loginHint: account?.email } : {}),
   );
 
-  response.cookies.set("oauth_state", await createOAuthState(state, mode, user?.id ?? null, organise ? "organise" : null), {
+  // A sign-in from a page that asked for it returns there; validated in createOAuthState.
+  const next = request.nextUrl.searchParams.get("next");
+  response.cookies.set("oauth_state", await createOAuthState(state, mode, user?.id ?? null, organise ? "organise" : null, next), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",

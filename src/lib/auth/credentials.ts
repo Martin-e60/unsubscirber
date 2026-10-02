@@ -21,7 +21,7 @@ export function requireAuthOrigin(request: Request): void {
   }
 }
 
-export async function limitAuthAttempts(action: "login" | "register", email: string, now = Date.now()) {
+export async function limitAuthAttempts(action: "login" | "register" | "reset", email: string, now = Date.now()) {
   const key = `${action}:${createHash("sha256").update(email.trim().toLowerCase()).digest("hex")}`;
   const expiresAt = now + 15 * 60 * 1000;
   await db.delete(authAttempts).where(lt(authAttempts.expiresAt, now));

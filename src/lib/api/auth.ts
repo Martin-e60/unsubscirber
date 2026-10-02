@@ -3,6 +3,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { mailAccounts, users, type MailAccount, type User } from "@/db/schema";
 import { readSession } from "@/lib/session";
+import { issuedBeforePasswordChange } from "@/lib/auth/session-rules";
 import { HttpError } from "./respond";
 
 /**
@@ -10,7 +11,8 @@ import { HttpError } from "./respond";
  *
  * The session cookie holds only a user id, so every request re-reads the user
  * from the database. A deleted user with a valid cookie is treated as logged
- * out rather than crashing.
+ * out rather than crashing, and so is a session signed before the account's
+ * last password reset.
  */
 
 export async function getCurrentUser(): Promise<User | null> {
@@ -23,7 +25,8 @@ export async function getCurrentUser(): Promise<User | null> {
     .where(eq(users.id, session.userId))
     .limit(1);
 
-  return user ?? null;
+  if (!user || issuedBeforePasswordChange(session.issuedAt, user.passwordChangedAt)) return null;
+  return user;
 }
 
 export async function requireUser(): Promise<User> {

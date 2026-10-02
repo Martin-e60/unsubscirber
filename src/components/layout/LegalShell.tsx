@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { PublicHeader } from "@/components/layout/PublicHeader";
-import { readSession } from "@/lib/session";
+import { getCurrentUser } from "@/lib/api/auth";
 import styles from "./LegalShell.module.css";
 
 /**
@@ -17,7 +17,7 @@ export async function LegalShell({
   children: ReactNode;
 }) {
   // Legal pages must be readable whether or not anything else is working.
-  const signedIn = Boolean(await readSession());
+  const signedIn = Boolean(await getCurrentUser());
 
   return (
     <div className={styles.page}>

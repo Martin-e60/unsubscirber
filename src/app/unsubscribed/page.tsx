@@ -3,6 +3,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { UnsubscribedView } from "@/components/unsubscribed/UnsubscribedView";
 import { getCurrentUser, getPrimaryAccount } from "@/lib/api/auth";
 import { cleanupHref, unconfirmedStatus } from "@/lib/navigation";
+import { loginHref } from "@/lib/auth/next";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +23,7 @@ export default async function UnsubscribedPage({
   if (moved) redirect(cleanupHref("", { status: moved }));
 
   const user = await getCurrentUser();
-  if (!user) redirect("/login");
+  if (!user) redirect(loginHref("/unsubscribed"));
   if (!(await getPrimaryAccount(user.id))) redirect("/connect");
 
   return (

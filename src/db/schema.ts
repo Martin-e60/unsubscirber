@@ -45,8 +45,33 @@ export const users = sqliteTable("users", {
   image: text("image"),
   passwordHash: text("password_hash"),
   googleSub: text("google_sub").unique(),
+  /**
+   * When the password last changed. Sessions issued before it are no longer
+   * accepted, so a reset signs out every other browser.
+   */
+  passwordChangedAt: integer("password_changed_at", { mode: "timestamp_ms" }),
   createdAt: createdAt(),
 });
+
+/**
+ * One password reset link. Only a SHA-256 hash of the token is stored, so a
+ * copy of the database cannot be used to reset anyone's password. Each link
+ * works once and expires.
+ */
+export const passwordResetTokens = sqliteTable(
+  "password_reset_tokens",
+  {
+    id: id(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull().unique(),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+    usedAt: integer("used_at", { mode: "timestamp_ms" }),
+    createdAt: createdAt(),
+  },
+  (t) => [index("password_reset_tokens_user_idx").on(t.userId)],
+);
 
 /** Persistent counters for password authentication; keys contain hashed emails. */
 export const authAttempts = sqliteTable("auth_attempts", {

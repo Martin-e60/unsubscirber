@@ -5,12 +5,13 @@ import { SettingsView } from "@/components/views/SettingsView";
 import { getCurrentUser, getPrimaryAccount } from "@/lib/api/auth";
 import { countByStatus } from "@/lib/api/senders";
 import { SENDER_STATUS, scopeAccess } from "@/lib/constants";
+import { loginHref } from "@/lib/auth/next";
 
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
   const user = await getCurrentUser();
-  if (!user) redirect("/login");
+  if (!user) redirect(loginHref("/settings"));
 
   const account = await getPrimaryAccount(user.id);
   if (!account) redirect("/connect");

@@ -99,7 +99,7 @@ export const GET = route(async (request: NextRequest) => {
   await setSessionCookie(await createSession(user.id));
 
   stage = "redirect_to_dashboard";
-  const response = NextResponse.redirect(`${env.appUrl}/dashboard`);
+  const response = NextResponse.redirect(`${env.appUrl}${context.next ?? "/dashboard"}`);
   response.cookies.delete("oauth_state");
   return response;
   } catch (cause) {

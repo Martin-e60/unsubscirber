@@ -13,7 +13,7 @@ import { Outcomes } from "@/components/landing/Outcomes";
 import { AccessDetails } from "@/components/landing/AccessDetails";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import theme from "@/components/landing/theme.module.css";
-import { readSession } from "@/lib/session";
+import { getCurrentUser } from "@/lib/api/auth";
 import { authErrorMessage } from "@/lib/auth-flow";
 import { SITE_DESCRIPTION } from "@/lib/site";
 import styles from "./page.module.css";
@@ -63,7 +63,7 @@ export default async function HomePage({
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
-  if (await readSession()) redirect("/dashboard");
+  if (await getCurrentUser()) redirect("/dashboard");
 
   // Google sign-in failures land back here with ?error=… — keep showing them.
   const error = authErrorMessage((await searchParams).error);
