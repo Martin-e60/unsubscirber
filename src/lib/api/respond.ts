@@ -11,14 +11,16 @@ export function json<T>(data: T, status = 200): NextResponse {
   return NextResponse.json(data, { status });
 }
 
-export function apiError(message: string, status = 400): NextResponse {
-  return NextResponse.json({ error: message }, { status });
+export function apiError(message: string, status = 400, code?: string): NextResponse {
+  return NextResponse.json(code ? { error: message, code } : { error: message }, { status });
 }
 
 export class HttpError extends Error {
   constructor(
     message: string,
     public readonly status: number,
+    /** A stable reason the browser can react to, e.g. "mailbox_not_found". */
+    public readonly code?: string,
   ) {
     super(message);
     this.name = "HttpError";
@@ -69,7 +71,7 @@ export function route<Args extends unknown[]>(
       return await handler(...args);
     } catch (error) {
       if (error instanceof HttpError) {
-        return apiError(error.message, error.status);
+        return apiError(error.message, error.status, error.code);
       }
       if (error instanceof ZodError) {
         return apiError("Invalid request parameters.", 400);

@@ -17,6 +17,7 @@ import {
 // The short serif accent in the title — the same face Home and Cleanup use.
 import "@fontsource-variable/newsreader/wght-italic.css";
 import { useApp } from "@/components/layout/AppShell";
+import { reconnectHref } from "@/lib/mailbox/shared";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import {
   useActionRunner,
@@ -140,7 +141,7 @@ const ACCESS_MESSAGES: Record<string, { tone: "success" | "warning"; text: strin
 };
 
 export function ClearOutView() {
-  const { demo, basePath, accountEmail } = useApp();
+  const { demo, basePath, accountEmail, mailbox } = useApp();
 
   /* --- Filters: all of them in the URL ------------------------------------------ */
 
@@ -415,8 +416,11 @@ export function ClearOutView() {
         title={reconnect ? "Reconnect Gmail to continue" : "Couldn’t load your emails"}
         body={list.error.message}
       >
-        {reconnect && !demo ? (
-          <a className={`${buttons.primary} ${buttons.small}`} href="/api/auth/google/start?mode=connect">
+        {reconnect && !demo && mailbox ? (
+          <a
+            className={`${buttons.primary} ${buttons.small}`}
+            href={reconnectHref(mailbox.id, { next: "/clear-out" })}
+          >
             Reconnect Gmail
           </a>
         ) : (

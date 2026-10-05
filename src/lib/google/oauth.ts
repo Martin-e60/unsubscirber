@@ -43,10 +43,12 @@ export type GoogleUserInfo = {
  * `extraScopes` asks for more than the base set — Clear out's organise
  * permission — and `loginHint` steers Google to the mailbox already
  * connected, so a reconnect does not quietly connect a different one.
+ * `selectAccount` shows Google's account chooser even when the browser is
+ * signed in to one account: adding a second mailbox needs a choice.
  */
 export function getAuthorizationUrl(
   state: string,
-  options: { extraScopes?: string[]; loginHint?: string | null } = {},
+  options: { extraScopes?: string[]; loginHint?: string | null; selectAccount?: boolean } = {},
 ): string {
   const params = new URLSearchParams({
     client_id: env.googleClientId,
@@ -58,7 +60,7 @@ export function getAuthorizationUrl(
     access_type: "offline",
     // Forces the consent screen so we reliably receive a refresh token, even
     // for a user who has authorised this app before.
-    prompt: "consent",
+    prompt: options.selectAccount ? "select_account consent" : "consent",
     // Keeps every permission already granted, so asking for one more never
     // takes away what the app could already do.
     include_granted_scopes: "true",

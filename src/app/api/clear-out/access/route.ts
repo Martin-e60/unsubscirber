@@ -1,4 +1,4 @@
-import { requireAccount, requireUser } from "@/lib/api/auth";
+import { requireUserAndMailbox } from "@/lib/api/auth";
 import { json, route } from "@/lib/api/respond";
 import type { ClearOutAccessDto } from "@/lib/api/types";
 import { accessFor } from "@/lib/clearout/server";
@@ -11,8 +11,7 @@ import { accessFor } from "@/lib/clearout/server";
 
 export const dynamic = "force-dynamic";
 
-export const GET = route(async () => {
-  const user = await requireUser();
-  const account = await requireAccount(user.id);
+export const GET = route(async (request: Request) => {
+  const { account } = await requireUserAndMailbox(request);
   return json<ClearOutAccessDto>(accessFor(account));
 });

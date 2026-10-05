@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
 import { UnsubscribedView } from "@/components/unsubscribed/UnsubscribedView";
-import { getCurrentUser, getPrimaryAccount } from "@/lib/api/auth";
+import { getCurrentUser, hasMailbox } from "@/lib/api/auth";
 import { cleanupHref, unconfirmedStatus } from "@/lib/navigation";
 import { loginHref } from "@/lib/auth/next";
 
@@ -24,7 +24,7 @@ export default async function UnsubscribedPage({
 
   const user = await getCurrentUser();
   if (!user) redirect(loginHref("/unsubscribed"));
-  if (!(await getPrimaryAccount(user.id))) redirect("/connect");
+  if (!(await hasMailbox(user.id))) redirect("/connect");
 
   return (
     <AppShell>

@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { z } from "zod";
-import { requireAccount, requireUser } from "@/lib/api/auth";
+import { requireUserAndMailbox } from "@/lib/api/auth";
 import { json, route } from "@/lib/api/respond";
 import { listArchive } from "@/lib/api/unsubscribed";
 import type { UnsubscribedResponse } from "@/lib/api/types";
@@ -17,8 +17,7 @@ const querySchema = z.object({
 });
 
 export const GET = route(async (request: NextRequest) => {
-  const user = await requireUser();
-  const account = await requireAccount(user.id);
+  const { account } = await requireUserAndMailbox(request);
   const query = querySchema.parse(Object.fromEntries(new URL(request.url).searchParams));
 
   return json<UnsubscribedResponse>(await listArchive({ account, ...query }));

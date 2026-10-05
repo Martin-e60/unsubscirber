@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { requireAccount, requireUser } from "@/lib/api/auth";
+import { requireUserAndMailbox } from "@/lib/api/auth";
 import { HttpError, json, readJsonRequest, route } from "@/lib/api/respond";
 import type { ClearOutRunDto } from "@/lib/api/types";
 import { CLEAR_OUT_ACTIONS, MAX_SELECTION } from "@/lib/clearout/actions";
@@ -24,9 +24,8 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export const GET = route(async () => {
-  const user = await requireUser();
-  const account = await requireAccount(user.id);
+export const GET = route(async (request: Request) => {
+  const { account } = await requireUserAndMailbox(request);
   return json<ClearOutRunDto[]>((await listRuns(account.id)).map(toRunDto));
 });
 
@@ -37,8 +36,7 @@ const bodySchema = z.object({
 });
 
 export const POST = route(async (request: Request) => {
-  const user = await requireUser();
-  const account = await requireAccount(user.id);
+  const { account } = await requireUserAndMailbox(request);
   requireOrganise(account);
 
   const body = bodySchema.parse(await readJsonRequest(request));

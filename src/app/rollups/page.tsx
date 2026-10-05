@@ -4,7 +4,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { SenderWorkspace } from "@/components/senders/SenderWorkspace";
 import { Notice } from "@/components/ui/Notice";
-import { getCurrentUser, getPrimaryAccount } from "@/lib/api/auth";
+import { getCurrentUser, hasMailbox } from "@/lib/api/auth";
 import { SENDER_STATUS } from "@/lib/constants";
 import { loginHref } from "@/lib/auth/next";
 
@@ -23,7 +23,7 @@ export const dynamic = "force-dynamic";
 export default async function RollupsPage() {
   const user = await getCurrentUser();
   if (!user) redirect(loginHref("/rollups"));
-  if (!(await getPrimaryAccount(user.id))) redirect("/connect");
+  if (!(await hasMailbox(user.id))) redirect("/connect");
 
   return (
     <AppShell>

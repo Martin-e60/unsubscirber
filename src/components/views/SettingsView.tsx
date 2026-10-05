@@ -1,102 +1,70 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Eye, Layers, Mail, Trash2, Unplug } from "lucide-react";
+import { Eye, Layers, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
-import { useApp } from "@/components/layout/AppShell";
-import { SECONDS_SAVED_PER_EMAIL } from "@/lib/constants";
+import { useMailboxes } from "@/components/layout/MailboxContext";
+import { MailboxesSection } from "@/components/views/MailboxesSection";
+import { useApi } from "@/lib/api/context";
+import type { SendersResponse } from "@/lib/api/types";
+import { SECONDS_SAVED_PER_EMAIL, SENDER_STATUS } from "@/lib/constants";
+import { mailboxTitle } from "@/lib/mailbox/shared";
 import styles from "./SettingsView.module.css";
 
 /**
- * The connected mailbox, what the app can actually see, and how to remove it.
+ * The connected mailboxes, what the app can actually see, and how to remove
+ * things.
  *
- * The two removals are separate cards because they are different things, and
- * each says exactly what it leaves behind. The previous single button promised
- * to delete "everything we stored about you" while leaving the account record
- * in place; a promise the app does not keep is worse than a smaller promise.
+ * Disconnecting one mailbox and deleting the Tidely account are separate
+ * because they are different things, and each says exactly what it leaves
+ * behind. The previous single button promised to delete "everything we
+ * stored about you" while leaving the account record in place; a promise the
+ * app does not keep is worse than a smaller promise.
  */
 
-type Removal = "mailbox" | "account";
-
-export function SettingsView({
-  connectedAt,
-  accountEmail,
-  userEmail,
-  rolledUpCount,
-  canOrganise,
-}: {
-  connectedAt: string;
-  accountEmail: string;
-  userEmail: string;
-  rolledUpCount: number;
-  /** Whether Clear out's organise permission has been granted. */
-  canOrganise: boolean;
-}) {
-  const { stats } = useApp();
-  const [confirming, setConfirming] = useState<Removal | null>(null);
-  const [working, setWorking] = useState<Removal | null>(null);
+export function SettingsView({ userEmail }: { userEmail: string }) {
+  const api = useApi();
+  const { active, mailboxes } = useMailboxes();
+  const canOrganise = active?.canOrganise ?? false;
+  const [confirming, setConfirming] = useState(false);
+  const [working, setWorking] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function remove(kind: Removal) {
-    setWorking(kind);
+  // Only shown if this mailbox actually has senders marked from the days
+  // when Rollups was in the interface, so nobody new meets a dead end.
+  const [rolledUpCount, setRolledUpCount] = useState(0);
+  useEffect(() => {
+    if (!active) return;
+    let live = true;
+    api
+      .get<SendersResponse>(`/api/senders?status=${SENDER_STATUS.ROLLED_UP}&limit=1`)
+      .then((data) => {
+        if (live) setRolledUpCount(data.counts[SENDER_STATUS.ROLLED_UP] ?? 0);
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [api, active]);
+
+  async function deleteAccount() {
+    setWorking(true);
     setError(null);
     try {
-      const response = await fetch(
-        kind === "account" ? "/api/account?scope=user" : "/api/account",
-        { method: "DELETE" },
-      );
-      if (!response.ok) {
-        throw new Error(
-          kind === "account"
-            ? "Could not delete the account. Nothing was removed."
-            : "Could not disconnect the mailbox. Nothing was removed.",
-        );
-      }
-      // Disconnecting keeps you signed in, so it goes back to the connect step.
-      window.location.href = kind === "account" ? "/" : "/connect";
+      const response = await fetch("/api/account?scope=user", { method: "DELETE" });
+      if (!response.ok) throw new Error("Could not delete the account. Nothing was removed.");
+      window.location.href = "/";
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Something went wrong.");
-      setWorking(null);
+      setWorking(false);
     }
   }
 
   return (
     <div className={styles.page}>
-      <section className={styles.card}>
-        <div className={styles.cardHeader}>
-          <span className={styles.icon}>
-            <Mail size={18} strokeWidth={1.75} aria-hidden />
-          </span>
-          <div>
-            <h2 className={styles.cardTitle}>Connected mailbox</h2>
-            <p className={styles.cardSubtitle}>
-              {accountEmail} · connected {new Date(connectedAt).toLocaleDateString()}
-            </p>
-          </div>
-          <a className={styles.link} href="/api/auth/google/start">
-            Reconnect
-          </a>
-        </div>
-
-        {stats ? (
-          <dl className={styles.facts}>
-            <div>
-              <dt>Senders found</dt>
-              <dd>{stats.totalSenders.toLocaleString()}</dd>
-            </div>
-            <div>
-              <dt>Still undecided</dt>
-              <dd>{stats.activeSenders.toLocaleString()}</dd>
-            </div>
-            <div>
-              <dt>Emails handled</dt>
-              <dd>{stats.emailsHandled.toLocaleString()}</dd>
-            </div>
-          </dl>
-        ) : null}
-      </section>
+      <MailboxesSection />
 
       <section className={styles.card}>
         <div className={styles.cardHeader}>
@@ -138,6 +106,7 @@ export function SettingsView({
           </li>
           <li>
             <strong>Organising changes only what you select.</strong>{" "}
+            {active && mailboxes.length > 1 ? <>{mailboxTitle(active)} — </> : null}
             {canOrganise ? (
               <>
                 You&rsquo;ve allowed Tidely to archive, move to Trash, label and
@@ -191,75 +160,35 @@ export function SettingsView({
 
       {error ? <Notice tone="warning">{error}</Notice> : null}
 
-      <section className={styles.card}>
-        <div className={styles.cardHeader}>
-          <span className={styles.icon}>
-            <Unplug size={18} strokeWidth={1.75} aria-hidden />
-          </span>
-          <div>
-            <h2 className={styles.cardTitle}>Disconnect mailbox</h2>
-            <p className={styles.cardSubtitle}>
-              Revokes Tidely&rsquo;s access with Google and deletes every sender,
-              scan, attempt and Clear out History entry stored for {accountEmail}. Your Tidely login stays,
-              so you can connect a mailbox again later. Emails you already
-              unsubscribed from are not resubscribed.
-            </p>
-          </div>
-        </div>
-
-        <div className={styles.dangerActions}>
-          {confirming === "mailbox" ? (
-            <>
-              <Button variant="ghost" onClick={() => setConfirming(null)}>
-                Cancel
-              </Button>
-              <Button
-                variant="danger"
-                loading={working === "mailbox"}
-                onClick={() => void remove("mailbox")}
-              >
-                Yes, disconnect and delete the scan data
-              </Button>
-            </>
-          ) : (
-            <Button variant="secondary" onClick={() => setConfirming("mailbox")}>
-              Disconnect
-            </Button>
-          )}
-        </div>
-      </section>
-
-      <section className={`${styles.card} ${styles.danger}`}>
+      <section className={`${styles.card} ${styles.danger}`} id="delete-account">
         <div className={styles.cardHeader}>
           <span className={`${styles.icon} ${styles.dangerIcon}`}>
             <Trash2 size={18} strokeWidth={1.75} aria-hidden />
           </span>
           <div>
-            <h2 className={styles.cardTitle}>Delete account</h2>
+            <h2 className={styles.cardTitle}>Delete Tidely account</h2>
             <p className={styles.cardSubtitle}>
-              Everything above, plus the account record itself — {userEmail}, your
-              name, and the link to your Google account. You are signed out and
-              nothing of yours is left in the database. This cannot be undone.
+              Not the same as disconnecting a mailbox. This disconnects every
+              mailbox above and deletes all of their data, plus the account record
+              itself — {userEmail}, your name, and the link to your Google sign-in.
+              You are signed out and nothing of yours is left in the database. This
+              cannot be undone.
             </p>
           </div>
         </div>
 
         <div className={styles.dangerActions}>
-          {confirming === "account" ? (
+          {confirming ? (
             <>
-              <Button variant="ghost" onClick={() => setConfirming(null)}>
+              <Button variant="ghost" onClick={() => setConfirming(false)}>
                 Cancel
               </Button>
-              <Button
-                variant="danger"
-                loading={working === "account"}
-                onClick={() => void remove("account")}
-              >
-                Yes, delete my account
+              <Button variant="danger" loading={working} onClick={() => void deleteAccount()}>
+                Yes, delete my Tidely account
               </Button>
             </>
           ) : (
-            <Button variant="secondary" onClick={() => setConfirming("account")}>
+            <Button variant="secondary" onClick={() => setConfirming(true)}>
               Delete account
             </Button>
           )}

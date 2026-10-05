@@ -3,7 +3,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { scans } from "@/db/schema";
-import { requireAccount, requireUser } from "@/lib/api/auth";
+import { requireUserAndMailbox } from "@/lib/api/auth";
 import { HttpError, json, readJson, route } from "@/lib/api/respond";
 import { runScanStep, toProgress } from "@/lib/scan/engine";
 import type { ScanProgressDto } from "@/lib/api/types";
@@ -20,8 +20,7 @@ export const dynamic = "force-dynamic";
 const bodySchema = z.object({ scanId: z.string().optional() });
 
 export const POST = route(async (request: NextRequest) => {
-  const user = await requireUser();
-  const account = await requireAccount(user.id);
+  const { account } = await requireUserAndMailbox(request);
 
   const body = bodySchema.parse(await readJson(request, { allowEmpty: true }));
 

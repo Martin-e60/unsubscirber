@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo } from "react";
-import { CircleAlert, CircleCheck, FlaskConical } from "lucide-react";
+import { CircleAlert, FlaskConical, Mail } from "lucide-react";
 // The short serif accent (the person's name) — the same face as the landing page.
 import "@fontsource-variable/newsreader/wght-italic.css";
 import { useApp } from "@/components/layout/AppShell";
@@ -26,7 +26,7 @@ import styles from "./HomeView.module.css";
  * account's data. No figure from the design mock-up is carried over.
  */
 export function HomeView() {
-  const { stats, refreshStats, userName, accountConnected, basePath, demo } = useApp();
+  const { stats, refreshStats, userName, accountConnected, accountEmail, mailbox, basePath, demo } = useApp();
   const history = useHistory();
 
   const afterScan = useCallback(() => {
@@ -69,7 +69,10 @@ export function HomeView() {
           </p>
         </div>
 
-        <p className={styles.status} data-state={demo ? "demo" : accountConnected ? "on" : "off"}>
+        <p
+          className={styles.status}
+          data-state={demo ? "demo" : mailbox?.needsReconnect ? "off" : accountConnected ? "on" : "off"}
+        >
           {demo ? (
             <>
               <FlaskConical size={17} strokeWidth={1.75} aria-hidden />
@@ -77,10 +80,17 @@ export function HomeView() {
             </>
           ) : accountConnected === null ? (
             <span className={styles.statusLoading}>Checking Gmail…</span>
+          ) : accountConnected && mailbox?.needsReconnect ? (
+            <>
+              <CircleAlert size={17} strokeWidth={1.75} aria-hidden />
+              <span className="srOnly">Needs reconnecting: </span>
+              <span className={styles.statusText}>{accountEmail}</span>
+            </>
           ) : accountConnected ? (
             <>
-              <CircleCheck size={17} strokeWidth={1.75} aria-hidden />
-              Gmail connected
+              <Mail size={17} strokeWidth={1.75} aria-hidden />
+              <span className="srOnly">Gmail connected: </span>
+              <span className={styles.statusText}>{accountEmail}</span>
             </>
           ) : (
             <>

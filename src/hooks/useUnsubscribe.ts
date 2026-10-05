@@ -2,6 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { useApi } from "@/lib/api/context";
+import { useMailboxOperation } from "@/components/layout/MailboxContext";
 import { PROTECTED_UNSUBSCRIBE_STATUSES, SENDER_STATUS } from "@/lib/constants";
 import type { SenderDto, UnsubscribeResultDto } from "@/lib/api/types";
 
@@ -20,6 +21,7 @@ export function useUnsubscribe(options: {
   onResult: (id: string, patch: Partial<SenderDto>) => void;
 }) {
   const api = useApi();
+  const beginOperation = useMailboxOperation();
   const [pending, setPending] = useState<Set<string>>(new Set());
   const [results, setResults] = useState<UnsubscribeResultDto[]>([]);
   const [running, setRunning] = useState(false);
@@ -33,6 +35,8 @@ export function useUnsubscribe(options: {
     setRunning(true);
     setResults([]);
     setPending(new Set(ids));
+    // Unsubscribing in bulk makes the mailbox switcher ask before switching away.
+    const endOperation = beginOperation();
 
     const collected: UnsubscribeResultDto[] = [];
     let cursor = 0;
@@ -79,10 +83,14 @@ export function useUnsubscribe(options: {
       }
     });
 
-    await Promise.all(workers);
+    try {
+      await Promise.all(workers);
+    } finally {
+      endOperation();
+    }
     setRunning(false);
     return collected;
-  }, [api]);
+  }, [api, beginOperation]);
 
   const summary = {
     requested: results.filter((r) => r.status === SENDER_STATUS.REQUESTED).length,

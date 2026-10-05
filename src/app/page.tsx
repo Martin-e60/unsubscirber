@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowRight, ArrowUpRight, ChevronDown } from "lucide-react";
 // The serif italic used for a few short phrases in the large headings.
 // Imported here rather than in the root layout, so only this page loads it.
 import "@fontsource-variable/newsreader/wght-italic.css";
 import { LandingNav } from "@/components/landing/LandingNav";
-import { HeroPreview } from "@/components/landing/HeroPreview";
+import { InboxScene } from "@/components/landing/InboxScene";
 import { Reveal } from "@/components/landing/Reveal";
 import { ConnectArt, FindArt, ChooseArt } from "@/components/landing/StepArt";
 import { Outcomes } from "@/components/landing/Outcomes";
@@ -27,7 +27,8 @@ import styles from "./page.module.css";
  *
  * Everything visual is scoped to this page through the landing tokens in
  * src/components/landing/theme.module.css. The signed-in app and the other
- * public pages keep their own styles.
+ * public pages keep their own styles. The hero, and the header above it,
+ * swap those tokens for a monochrome set of their own.
  *
  * A server component: the session cookie is read first, so a signed-in visitor
  * goes straight to the dashboard without a flash of this page. Only the cookie
@@ -74,36 +75,49 @@ export default async function HomePage({
 
       <main>
         {/* --- Hero -------------------------------------------------------- */}
-        <section className={`${theme.container} ${styles.hero}`}>
-          <div className={styles.heroCopy}>
-            <p className={theme.eyebrow}>A little less inbox noise</p>
-            <h1 className={styles.heroTitle}>
-              Your inbox.
-              <br />
-              Minus <span className={theme.serif}>the junk.</span>
-            </h1>
-            <p className={styles.heroLede}>
-              Find your Gmail subscriptions. Keep the ones you love. Unsubscribe
-              from the rest.
-            </p>
-
-            <div className={styles.heroAction}>
-              <Link href="/demo" className={styles.primary}>
-                Try the demo
-                <ArrowUpRight size={20} strokeWidth={2} aria-hidden />
-              </Link>
-              <p className={styles.note}>Sample data. No account needed.</p>
-            </div>
-
-            {error ? (
-              <p className={styles.error} role="alert">
-                {error}
+        <section className={styles.hero}>
+          <div className={styles.heroInner}>
+            <div className={styles.heroCopy}>
+              <p className={`${theme.eyebrow} ${styles.heroEyebrow}`}>A little less inbox noise</p>
+              <h1 className={styles.heroTitle}>
+                Your inbox.
+                <br />
+                Minus
+                <br />
+                <span className={theme.serif}>the junk.</span>
+              </h1>
+              <p className={styles.heroLede}>
+                Find your Gmail subscriptions. Keep the ones you love. Unsubscribe
+                from the rest.
               </p>
-            ) : null}
+
+              <div className={styles.heroAction}>
+                <Link href="/demo" className={styles.primary}>
+                  Try the demo
+                  <ArrowRight size={22} strokeWidth={2} aria-hidden />
+                </Link>
+                <p className={styles.note}>Sample data. No account needed.</p>
+              </div>
+
+              {error ? (
+                <p className={styles.error} role="alert">
+                  {error}
+                </p>
+              ) : null}
+            </div>
           </div>
 
-          <div className={styles.heroVisual}>
-            <HeroPreview />
+          <div className={styles.heroScene}>
+            <InboxScene />
+          </div>
+
+          <div className={styles.heroFoot} aria-hidden="true">
+            <span className={styles.heroFootLine} />
+            <span className={styles.heroFootText}>
+              Your inbox. Your choice.
+              <ChevronDown size={20} strokeWidth={1.75} />
+            </span>
+            <span className={styles.heroFootLine} />
           </div>
         </section>
 

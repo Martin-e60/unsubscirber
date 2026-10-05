@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiRequestError } from "@/lib/api/client";
 import { useApi } from "@/lib/api/context";
+import { useMailboxOperation } from "@/components/layout/MailboxContext";
 import type {
   ClearOutAccessDto,
   ClearOutChunkResponse,
@@ -245,6 +246,7 @@ export type RunProgress = { action: ClearOutAction; done: number; total: number 
  */
 export function useActionRunner() {
   const api = useApi();
+  const beginOperation = useMailboxOperation();
   const [progress, setProgress] = useState<RunProgress | null>(null);
   const busy = useRef(false);
   const stop = useRef(false);
@@ -274,6 +276,8 @@ export function useActionRunner() {
         errorMessage: null,
       };
       setProgress({ action: input.action, done: 0, total: ids.length });
+      // An action in progress makes the mailbox switcher ask before switching away.
+      const endOperation = beginOperation();
 
       try {
         if (!outcome.run) {
@@ -323,12 +327,13 @@ export function useActionRunner() {
         outcome.stoppedBy = status === 403 ? "permission" : "error";
         outcome.errorMessage = cause instanceof Error ? cause.message : null;
       } finally {
+        endOperation();
         busy.current = false;
         setProgress(null);
       }
       return outcome;
     },
-    [api],
+    [api, beginOperation],
   );
 
   return {

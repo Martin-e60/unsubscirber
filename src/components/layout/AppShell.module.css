@@ -22,6 +22,68 @@
   display: none;
 }
 
+/* Before the session has loaded, the page waits to know which mailbox it is
+   for rather than fetching for one it might not be showing. */
+.loading {
+  padding-block: var(--space-10);
+  color: var(--color-text-muted);
+}
+
+/* The outcome of adding, reconnecting or removing a mailbox. */
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  max-inline-size: 78rem;
+  margin: var(--space-4) clamp(var(--space-4), 4vw, var(--space-12)) 0;
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  line-height: var(--leading-relaxed);
+}
+
+.notice[data-tone="success"] > svg {
+  flex-shrink: 0;
+  margin-block-start: 0.2rem;
+  color: var(--color-success-text);
+}
+
+.notice[data-tone="warning"] {
+  border-color: color-mix(in srgb, var(--color-warning) 45%, var(--color-border));
+  background: var(--color-warning-soft);
+}
+
+.notice[data-tone="warning"] > svg {
+  flex-shrink: 0;
+  margin-block-start: 0.2rem;
+  color: var(--color-warning-text);
+}
+
+.notice p {
+  flex: 1 1 auto;
+}
+
+.notice button {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  inline-size: 2rem;
+  block-size: 2rem;
+  margin: -0.25rem -0.5rem -0.25rem 0;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.notice button:hover,
+.notice button:focus-visible {
+  background: var(--color-surface-sunken);
+  color: var(--color-text);
+}
+
 @media (max-width: 44rem) {
   .mobileBar {
     display: flex;
@@ -55,6 +117,18 @@
     font-size: 1.3125rem;
     font-weight: 800;
     letter-spacing: -0.035em;
+  }
+
+  /* The mailbox takes whatever room the brand and the avatar leave. */
+  .mobileMailbox {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .mobileMailbox > * {
+    max-inline-size: 100%;
   }
 
   .main {
@@ -93,5 +167,12 @@
 @media (min-width: 60rem) and (min-height: 36rem) and (max-height: 60rem) {
   .main:has(> [data-clearout-workspace]) {
     padding-block: var(--space-2);
+  }
+}
+
+/* Narrow phones: the logo mark alone leaves the mailbox readable. */
+@media (max-width: 22.5rem) {
+  .mobileWord {
+    display: none;
   }
 }

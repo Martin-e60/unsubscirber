@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { requireAccount, requireUser } from "@/lib/api/auth";
+import { requireUserAndMailbox } from "@/lib/api/auth";
 import { HttpError, json, readJsonRequest, route } from "@/lib/api/respond";
 import type { ClearOutChunkResponse } from "@/lib/api/types";
 import { CHUNK_SIZE, isMessageId } from "@/lib/clearout/actions";
@@ -26,8 +26,7 @@ const bodySchema = z.object({
 });
 
 export const POST = route(async (request: Request, context: { params: Promise<{ id: string }> }) => {
-  const user = await requireUser();
-  const account = await requireAccount(user.id);
+  const { account } = await requireUserAndMailbox(request);
   requireOrganise(account);
 
   const { id } = await context.params;

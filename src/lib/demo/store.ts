@@ -9,14 +9,19 @@ import {
   type UnsubscribeMethod,
 } from "@/lib/constants";
 import {
+  DEMO_ACCOUNT,
   DEMO_FOLLOW_UPS,
+  DEMO_MAILBOXES,
   DEMO_SCAN_TOTAL,
   DEMO_SENDERS,
   demoManualUrl,
+  type DemoFollowUpSeed,
+  type DemoMailboxId,
   type DemoOutcome,
   type DemoSenderSeed,
 } from "@/lib/demo/data";
 import { demoMailboxSeeds, type DemoMessageSeed } from "@/lib/demo/mailbox";
+import { DEMO_WORK_SCAN_TOTAL, DEMO_WORK_SENDERS, demoWorkMailboxSeeds } from "@/lib/demo/work";
 import type { ClearOutAction } from "@/lib/clearout/actions";
 
 /**
@@ -28,9 +33,43 @@ import type { ClearOutAction } from "@/lib/clearout/actions";
  * unavailable — private windows, blocked site data — the same state is held in
  * memory for the tab instead, so the demo still works; it just forgets on
  * reload.
+ *
+ * Each sample mailbox has its own state under its own key, exactly as each
+ * real mailbox has its own rows: nothing done in one is visible in the other.
+ * Every function takes the mailbox it acts on; without one, it is the first.
  */
 
 const STORAGE_KEY = "tidely.demo.v1";
+const DEFAULT_BOX: DemoMailboxId = DEMO_ACCOUNT.id as DemoMailboxId;
+
+/** The personal mailbox keeps the original key, so a visitor's demo carries on. */
+function storageKey(box: DemoMailboxId): string {
+  return box === DEFAULT_BOX ? STORAGE_KEY : `${STORAGE_KEY}.${box}`;
+}
+
+/** What each sample mailbox starts with. */
+const SEEDS: Record<
+  DemoMailboxId,
+  {
+    senders: DemoSenderSeed[];
+    followUps: DemoFollowUpSeed[];
+    scanTotal: number;
+    messages: () => DemoMessageSeed[];
+  }
+> = {
+  "demo-mailbox": {
+    senders: DEMO_SENDERS,
+    followUps: DEMO_FOLLOW_UPS,
+    scanTotal: DEMO_SCAN_TOTAL,
+    messages: demoMailboxSeeds,
+  },
+  "demo-work": {
+    senders: DEMO_WORK_SENDERS,
+    followUps: [],
+    scanTotal: DEMO_WORK_SCAN_TOTAL,
+    messages: demoWorkMailboxSeeds,
+  },
+};
 /**
  * Bumped when the stored shape changes. Version 2 added scan timestamps for
  * the Home screen; version 3 added mail received after an unsubscribe;
@@ -172,8 +211,9 @@ export function attemptDetail(
 }
 
 /** The seed state: a mailbox that has already been scanned once. */
-export function initialState(): DemoState {
-  const senders = DEMO_SENDERS.filter((seed) => !seed.reserve).map(toSender);
+export function initialState(box: DemoMailboxId = DEFAULT_BOX): DemoState {
+  const seeds = SEEDS[box];
+  const senders = seeds.senders.filter((seed) => !seed.reserve).map(toSender);
 
   const attempts: DemoAttempt[] = [];
   for (const sender of senders) {
@@ -226,9 +266,9 @@ export function initialState(): DemoState {
     scanId: "demo-scan-seed",
     status: SCAN_STATUS.DONE,
     lookbackDays: DEMO_DEFAULT_LOOKBACK_DAYS,
-    processedMessages: DEMO_SCAN_TOTAL,
+    processedMessages: seeds.scanTotal,
     matchedMessages: senders.reduce((total, s) => total + s.messageCount, 0),
-    totalEstimate: DEMO_SCAN_TOTAL,
+    totalEstimate: seeds.scanTotal,
     error: null,
     // The sample mailbox was "scanned" a few minutes before the visit began.
     startedAt: new Date(Date.now() - 9 * 60_000).toISOString(),
@@ -239,7 +279,7 @@ export function initialState(): DemoState {
     version: STATE_VERSION,
     senders,
     attempts: attempts.sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
-    followUps: DEMO_FOLLOW_UPS.map((seed) => ({
+    followUps: seeds.followUps.map((seed) => ({
       id: seed.id,
       senderId: seed.senderId,
       subject: seed.subject,
@@ -248,7 +288,7 @@ export function initialState(): DemoState {
     scan: seedScan,
     lastDone: { ...seedScan },
     revealed: [],
-    mailbox: demoMailboxSeeds().map(({ daysAgo, ...seed }) => ({
+    mailbox: seeds.messages().map(({ daysAgo, ...seed }) => ({
       ...seed,
       receivedAt: new Date(Date.now() - daysAgo * dayMs).toISOString(),
     })),
@@ -259,7 +299,7 @@ export function initialState(): DemoState {
 
 // --- Persistence ------------------------------------------------------------
 
-let memoryState: DemoState | null = null;
+const memoryState = new Map<DemoMailboxId, DemoState>();
 
 function storage(): Storage | null {
   if (typeof window === "undefined") return null;
@@ -274,13 +314,14 @@ function storage(): Storage | null {
   }
 }
 
-export function loadState(): DemoState {
-  if (memoryState) return memoryState;
+export function loadState(box: DemoMailboxId = DEFAULT_BOX): DemoState {
+  const held = memoryState.get(box);
+  if (held) return held;
 
   const store = storage();
   if (store) {
     try {
-      const raw = store.getItem(STORAGE_KEY);
+      const raw = store.getItem(storageKey(box));
       if (raw) {
         const parsed = JSON.parse(raw) as DemoState;
         if (
@@ -291,7 +332,7 @@ export function loadState(): DemoState {
           Array.isArray(parsed.clearOutRuns) &&
           "lastDone" in parsed
         ) {
-          memoryState = parsed;
+          memoryState.set(box, parsed);
           return parsed;
         }
       }
@@ -300,43 +341,48 @@ export function loadState(): DemoState {
     }
   }
 
-  memoryState = initialState();
-  saveState(memoryState);
-  return memoryState;
+  const fresh = initialState(box);
+  saveState(fresh, box);
+  return fresh;
 }
 
-export function saveState(state: DemoState): void {
-  memoryState = state;
+export function saveState(state: DemoState, box: DemoMailboxId = DEFAULT_BOX): void {
+  memoryState.set(box, state);
   const store = storage();
   if (!store) return;
   try {
-    store.setItem(STORAGE_KEY, JSON.stringify(state));
+    store.setItem(storageKey(box), JSON.stringify(state));
   } catch {
     // Quota or a blocked write; the in-memory copy is still correct.
   }
 }
 
-export function mutate(change: (state: DemoState) => void): DemoState {
-  const state = loadState();
+export function mutate(
+  change: (state: DemoState) => void,
+  box: DemoMailboxId = DEFAULT_BOX,
+): DemoState {
+  const state = loadState(box);
   change(state);
-  saveState(state);
+  saveState(state, box);
   return state;
 }
 
-/** Throws the demo back to its starting point. */
+/** Throws the demo — both sample mailboxes — back to its starting point. */
 export function clearState(): void {
-  memoryState = null;
+  memoryState.clear();
   const store = storage();
-  try {
-    store?.removeItem(STORAGE_KEY);
-  } catch {
-    // Nothing to clear.
+  for (const mailbox of DEMO_MAILBOXES) {
+    try {
+      store?.removeItem(storageKey(mailbox.id));
+    } catch {
+      // Nothing to clear.
+    }
   }
 }
 
 // --- Scanning ---------------------------------------------------------------
 
-export function startDemoScan(lookbackDays: number): DemoScan {
+export function startDemoScan(lookbackDays: number, box: DemoMailboxId = DEFAULT_BOX): DemoScan {
   const scan: DemoScan = {
     scanId: `demo-scan-${Date.now()}`,
     status: SCAN_STATUS.RUNNING,
@@ -345,7 +391,7 @@ export function startDemoScan(lookbackDays: number): DemoScan {
     matchedMessages: 0,
     totalEstimate: Math.max(
       SCAN_STEP_MESSAGES * 3,
-      Math.round(DEMO_SCAN_TOTAL * Math.min(4, lookbackDays / DEMO_DEFAULT_LOOKBACK_DAYS)),
+      Math.round(SEEDS[box].scanTotal * Math.min(4, lookbackDays / DEMO_DEFAULT_LOOKBACK_DAYS)),
     ),
     error: null,
     startedAt: new Date().toISOString(),
@@ -353,7 +399,7 @@ export function startDemoScan(lookbackDays: number): DemoScan {
   };
   mutate((state) => {
     state.scan = scan;
-  });
+  }, box);
   return scan;
 }
 
@@ -364,8 +410,8 @@ export function startDemoScan(lookbackDays: number): DemoScan {
  * turns up the senders held in reserve — so changing the lookback has a visible
  * consequence rather than being a decorative control.
  */
-export function stepDemoScan(): DemoScan {
-  const state = loadState();
+export function stepDemoScan(box: DemoMailboxId = DEFAULT_BOX): DemoScan {
+  const state = loadState(box);
   const scan = state.scan;
   if (!scan) throw new Error("No scan to continue. Start one first.");
   if (scan.status !== SCAN_STATUS.RUNNING) return scan;
@@ -378,7 +424,7 @@ export function stepDemoScan(): DemoScan {
 
   if (scan.processedMessages >= scan.totalEstimate) {
     if (scan.lookbackDays > DEMO_DEFAULT_LOOKBACK_DAYS) {
-      for (const seed of DEMO_SENDERS) {
+      for (const seed of SEEDS[box].senders) {
         if (!seed.reserve) continue;
         if (state.revealed.includes(seed.id)) continue;
         if (seed.lastSeenDaysAgo > scan.lookbackDays) continue;
@@ -392,6 +438,6 @@ export function stepDemoScan(): DemoScan {
     state.lastDone = { ...scan };
   }
 
-  saveState(state);
+  saveState(state, box);
   return scan;
 }

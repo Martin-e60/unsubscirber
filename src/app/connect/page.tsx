@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowRight, Mail } from "lucide-react";
-import { getCurrentUser, getPrimaryAccount } from "@/lib/api/auth";
+import { getCurrentUser, hasMailbox } from "@/lib/api/auth";
 import { authErrorMessage } from "@/lib/auth-flow";
+import { safeNextPath } from "@/lib/auth/next";
+import { mailboxErrorMessage } from "@/lib/mailbox/shared";
 import { Logo } from "@/components/layout/Logo";
 import { SignOutButton } from "@/components/auth/SignOutButton";
 import styles from "@/components/auth/AuthPage.module.css";
@@ -11,11 +13,13 @@ import styles from "@/components/auth/AuthPage.module.css";
 export const metadata: Metadata = { title: "Connect your inbox — Tidely" };
 
 /**
- * The one screen between signing up and a scan.
+ * The one screen between signing up and a scan — and, with ?add=1, the
+ * screen before connecting another Gmail to the same Tidely profile.
  *
  * Google's own consent screen names the permissions but not what they are for,
  * so they are spelled out here first — before the redirect, while the person can
- * still change their mind at no cost.
+ * still change their mind at no cost. Each mailbox is asked separately, so the
+ * explanation is the same for the second one as for the first.
  */
 
 const PERMISSIONS = [
@@ -36,13 +40,21 @@ const PERMISSIONS = [
 export default async function ConnectPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; mailbox_error?: string; add?: string; next?: string }>;
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (await getPrimaryAccount(user.id)) redirect("/dashboard");
 
-  const error = authErrorMessage((await searchParams).error);
+  const params = await searchParams;
+  const connected = await hasMailbox(user.id);
+  // With a mailbox already connected, this page is only for adding another.
+  const adding = connected && params.add === "1";
+  if (connected && !adding) redirect("/dashboard");
+
+  const next = safeNextPath(params.next);
+  const error = mailboxErrorMessage(params.mailbox_error) ?? authErrorMessage(params.error);
+  const startParams = new URLSearchParams({ mode: "add" });
+  if (next && !next.startsWith("/connect")) startParams.set("next", next);
 
   return (
     <main className={styles.connectPage}>
@@ -54,12 +66,27 @@ export default async function ConnectPage({
         <div className={styles.icon}>
           <Mail size={27} aria-hidden />
         </div>
-        <p className={styles.eyebrow}>One step left</p>
-        <h1>Connect Gmail to find your mailing lists.</h1>
-        <p className={styles.description}>
-          Signed in as <strong>{user.email}</strong>. Next, Google will ask you to
-          approve the permissions below. Here is what each one is actually for.
-        </p>
+        {adding ? (
+          <>
+            <p className={styles.eyebrow}>Add a mailbox</p>
+            <h1>Connect another Gmail account.</h1>
+            <p className={styles.description}>
+              Signed in to Tidely as <strong>{user.email}</strong>. Google will ask
+              which account to connect, then for the permissions below — the same
+              ones, for that mailbox only. Your Tidely sign-in doesn’t change, and
+              your other mailboxes stay as they are.
+            </p>
+          </>
+        ) : (
+          <>
+            <p className={styles.eyebrow}>One step left</p>
+            <h1>Connect Gmail to find your mailing lists.</h1>
+            <p className={styles.description}>
+              Signed in as <strong>{user.email}</strong>. Next, Google will ask you to
+              approve the permissions below. Here is what each one is actually for.
+            </p>
+          </>
+        )}
 
         {error && (
           <p className={styles.error} role="alert">
@@ -76,7 +103,7 @@ export default async function ConnectPage({
           ))}
         </ul>
 
-        <a className={styles.google} href="/api/auth/google/start?mode=connect">
+        <a className={styles.google} href={`/api/auth/google/start?${startParams}`}>
           Continue to Google <ArrowRight size={18} aria-hidden />
         </a>
 
@@ -93,12 +120,26 @@ export default async function ConnectPage({
           <Link href="/privacy">How your data is handled</Link>.
         </p>
 
-        <p className={styles.permissions}>
-          Not ready? <Link href="/demo">Look around the demo first</Link> — sample
-          data, no mailbox involved.
-        </p>
+        {adding ? (
+          <p className={styles.permissions}>
+            Changed your mind? <Link href={next ?? "/dashboard"}>Go back</Link> —
+            nothing has been connected.
+          </p>
+        ) : (
+          <>
+            <p className={styles.permissions}>
+              Not ready? <Link href="/demo">Look around the demo first</Link> — sample
+              data, no mailbox involved.
+            </p>
 
-        <SignOutButton />
+            <p className={styles.permissions}>
+              Want to remove your Tidely account instead?{" "}
+              <Link href="/settings#delete-account">Go to Settings</Link>.
+            </p>
+
+            <SignOutButton />
+          </>
+        )}
       </div>
     </main>
   );

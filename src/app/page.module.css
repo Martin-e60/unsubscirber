@@ -1,51 +1,111 @@
 /* The landing page layout. Colours, type and motion come from the landing
    tokens (src/components/landing/theme.module.css), never from the app's. */
 
-/* --- Hero ---------------------------------------------------------------- */
+/* --- Hero ----------------------------------------------------------------
+   The one monochrome part of the page, from the approved design: the landing
+   tokens are swapped for grayscale ones inside it, so nothing below changes.
+   On a wide screen the hero runs up under the header, letting the faint cards
+   of the scene show behind it; the header carries the same palette
+   (LandingNav.module.css). */
 
 .hero {
+  --lp-bg: #ffffff;
+  --lp-text: #0e0e10;
+  --lp-text-2: #5b5d63;
+  --lp-accent: #0e0e10;
+  --lp-soft: #ececee;
+  --lp-line: #e4e4e7;
+  --lp-panel: #ffffff;
+  --lp-on-accent: #ffffff;
+  --lp-shadow-lift: 0 12px 24px -12px rgb(0 0 0 / 40%);
+
+  /* Header height (LandingNav.module.css) and gutters wider than the rest of
+     the page, as in the design. */
+  --hero-nav: 4.75rem;
+  --hero-max: 104rem;
+  --hero-gutter: clamp(1rem, 3.4vw, 3.5rem);
+  /* The scene takes what the copy leaves: at least 36% of the width for the
+     copy (more on very wide screens), and never wider than 80rem. */
+  --hero-scene: clamp(
+    0px,
+    100vw - max(36vw, (100vw - var(--hero-max)) / 2 + 38rem),
+    80rem
+  );
+
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  /* Tall enough for the whole scene (1072 × 880) plus the divider. */
+  min-block-size: calc(var(--hero-scene) * 880 / 1072 + 3.75rem);
+  margin-block-start: calc(-1 * var(--hero-nav));
+  padding-block-start: var(--hero-nav);
+  overflow: clip;
+  background: var(--lp-bg);
+  color: var(--lp-text);
+}
+
+.heroInner {
+  position: relative;
+  z-index: 2;
   display: grid;
-  grid-template-columns: minmax(0, 45fr) minmax(0, 55fr);
+  flex: 1;
   align-items: center;
-  column-gap: clamp(2.5rem, 5vw, 5rem);
-  padding-block: clamp(3.5rem, 7vw, 6.5rem) clamp(4rem, 8vw, 7rem);
+  inline-size: 100%;
+  max-inline-size: var(--hero-max);
+  margin-inline: auto;
+  padding: 2.5rem var(--hero-gutter);
 }
 
 .heroCopy {
+  max-inline-size: min(38rem, 40vw);
   animation: heroIn 520ms var(--lp-ease) both;
 }
 
+.hero .heroEyebrow {
+  color: #26272b;
+  font-size: clamp(0.75rem, 0.55rem + 0.35vw, 0.9375rem);
+  font-weight: 500;
+  letter-spacing: 0.22em;
+}
+
 .heroTitle {
-  margin-block-start: 1.25rem;
-  font-size: clamp(2.75rem, 1.1rem + 4vw, 4.75rem);
-  font-weight: 800;
-  letter-spacing: -0.045em;
-  line-height: 1.02;
+  margin-block-start: clamp(1rem, 1.6vw, 1.75rem);
+  font-size: clamp(3.25rem, 6.1vw, 6.5rem);
+  font-weight: 750;
+  letter-spacing: -0.055em;
+  line-height: 0.98;
+}
+
+/* "the junk." — the serif italic, at its natural weight. */
+.heroTitle span {
+  font-weight: 400;
+  letter-spacing: -0.03em;
 }
 
 .heroLede {
-  max-inline-size: 30rem;
-  margin-block-start: 1.5rem;
-  color: var(--lp-text-2);
-  font-size: var(--lp-size-lede);
-  line-height: 1.65;
+  max-inline-size: 33rem;
+  margin-block-start: clamp(1.5rem, 2.4vw, 2.5rem);
+  color: #45474d;
+  font-size: clamp(1.0625rem, 0.55rem + 0.95vw, 1.5rem);
+  line-height: 1.45;
 }
 
 .heroAction {
-  margin-block-start: 2.25rem;
+  margin-block-start: clamp(2rem, 3.4vw, 3.5rem);
 }
 
 .primary {
   display: inline-flex;
   align-items: center;
-  gap: 2.25rem;
-  min-block-size: 3.5rem;
-  padding-inline: 1.75rem 1.5rem;
-  border-radius: var(--lp-radius-button);
+  gap: 0.875rem;
+  min-block-size: clamp(3.5rem, 3.9vw, 4.125rem);
+  padding-inline: clamp(2rem, 3vw, 3.125rem);
+  border-radius: 999px;
   background: var(--lp-accent);
   color: var(--lp-on-accent);
-  font-size: var(--lp-size-body);
-  font-weight: 700;
+  font-size: clamp(1.0625rem, 0.7rem + 0.5vw, 1.3125rem);
+  font-weight: 600;
   text-decoration: none;
   transition:
     transform var(--lp-fast) var(--lp-ease),
@@ -64,7 +124,10 @@
   box-shadow: var(--lp-shadow-lift);
 }
 
-.primary:hover svg,
+.primary:hover svg {
+  transform: translateX(3px);
+}
+
 .cream:hover svg {
   transform: translate(2px, -2px);
 }
@@ -77,7 +140,7 @@
 
 .note {
   margin-block-start: 1rem;
-  color: var(--lp-text-2);
+  color: #6b6d73;
   font-size: var(--lp-size-small);
 }
 
@@ -92,23 +155,45 @@
   font-size: var(--lp-size-small);
 }
 
-/* The product panel, with a powder-pink disc behind it. */
-.heroVisual {
-  position: relative;
-  animation: heroIn 560ms var(--lp-ease) 120ms both;
+/* The animated inbox (src/components/landing/InboxScene.tsx). Pinned to the
+   top-right corner, under the header, behind the copy. */
+.heroScene {
+  position: absolute;
+  z-index: 1;
+  inset-block-start: 0;
+  inset-inline-end: 0;
+  inline-size: var(--hero-scene);
+  aspect-ratio: 1072 / 880;
+  animation: sceneIn 900ms var(--lp-ease) 120ms both;
 }
 
-/* An ellipse narrower than the panel and taller than it, so only a soft arc
-   shows above and below — never a bulge at the sides, and never anything
-   wider than the column (which would scroll the page on a phone). */
-.heroVisual::before {
-  content: "";
-  position: absolute;
-  z-index: 0;
-  inset-block: -2.75rem;
-  inset-inline: 12% 6%;
-  border-radius: 50%;
-  background: var(--lp-soft);
+/* The divider at the foot of the first screen. */
+.heroFoot {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: start;
+  column-gap: 1.5rem;
+  inline-size: 100%;
+  max-inline-size: var(--hero-max);
+  margin-inline: auto;
+  padding: 0 var(--hero-gutter) 0.75rem;
+  color: #2c2d31;
+}
+
+.heroFootLine {
+  margin-block-start: 0.75rem;
+  block-size: 1px;
+  background: var(--lp-line);
+}
+
+.heroFootText {
+  display: grid;
+  justify-items: center;
+  gap: 0.125rem;
+  font-size: 1rem;
+  white-space: nowrap;
 }
 
 /* --- Shared section furniture -------------------------------------------- */
@@ -308,18 +393,47 @@
   }
 }
 
+@keyframes sceneIn {
+  from {
+    opacity: 0;
+  }
+}
+
 /* --- Tablet -------------------------------------------------------------- */
 
-@media (max-width: 60rem) {
+/* The hero stacks a little earlier than the rest: below this width the copy
+   and the scene no longer fit side by side. InboxScene.module.css uses the
+   same breakpoint to crop the scene. */
+@media (max-width: 64rem) {
   .hero {
-    grid-template-columns: minmax(0, 1fr);
-    row-gap: 3.5rem;
+    min-block-size: 0;
+    margin-block-start: 0;
+    padding-block-start: 0;
   }
 
-  .heroVisual {
+  .heroInner {
+    padding-block: clamp(2.75rem, 7vw, 4rem) 1.5rem;
+  }
+
+  .heroCopy {
     max-inline-size: 38rem;
   }
 
+  /* Full width; the height follows the scene's scale (InboxScene.module.css). */
+  .heroScene {
+    position: relative;
+    inset: auto;
+    inline-size: 100%;
+    block-size: min(100vw * 800 / 760, 720px);
+    aspect-ratio: auto;
+  }
+
+  .heroFoot {
+    padding-block-start: 0.5rem;
+  }
+}
+
+@media (max-width: 60rem) {
   .choice {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -376,12 +490,8 @@
 }
 
 @media (max-width: 30rem) {
-  .hero {
-    padding-block-start: 2.75rem;
-  }
-
   .heroTitle {
-    font-size: clamp(2.5rem, 11vw, 2.75rem);
+    font-size: clamp(2.75rem, 14vw, 3.25rem);
   }
 
   .primary,
@@ -402,15 +512,11 @@
     grid-template-columns: 6.5rem minmax(0, 1fr);
     gap: 1rem;
   }
-
-  .heroVisual::before {
-    inset-block: -1.75rem;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .heroCopy,
-  .heroVisual {
+  .heroScene {
     animation: none;
   }
 

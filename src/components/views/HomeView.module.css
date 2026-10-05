@@ -55,14 +55,24 @@
   font-size: var(--text-base);
   font-weight: var(--weight-medium);
   white-space: nowrap;
+  max-inline-size: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .status svg {
+  flex-shrink: 0;
   color: var(--color-primary);
 }
 
 .status[data-state="off"] svg {
   color: var(--color-warning-text);
+}
+
+.statusText {
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .statusLoading {

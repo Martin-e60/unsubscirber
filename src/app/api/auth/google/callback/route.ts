@@ -1,23 +1,23 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { db } from "@/db";
-import { mailAccounts } from "@/db/schema";
-import { encrypt } from "@/lib/crypto";
 import { env } from "@/lib/env";
 import { exchangeCodeForTokens, fetchUserInfo } from "@/lib/google/oauth";
 import { createSession, setSessionCookie } from "@/lib/session";
 import { route } from "@/lib/api/respond";
-import { readOAuthState } from "@/lib/auth/oauth-state";
-import { authFailure } from "@/lib/auth/redirect";
-import { resolveGoogleUser, GoogleAccountError } from "@/lib/auth/google-user";
-import { getCurrentUser, getPrimaryAccount } from "@/lib/api/auth";
-import { scopeAccess } from "@/lib/constants";
-import { and, eq } from "drizzle-orm";
+import { readOAuthState, type OAuthContext } from "@/lib/auth/oauth-state";
+import { authFailure, mailboxReturn } from "@/lib/auth/redirect";
+import { GoogleAccountError } from "@/lib/auth/google-user";
+import { completeMailboxConsent, completeSignIn, mailboxFailure } from "@/lib/auth/google-consent";
+import { getCurrentUser } from "@/lib/api/auth";
+import type { User } from "@/db/schema";
 
 /**
- * Step 2 of sign-in: Google sends the user back here with a code.
+ * Step 2: Google sends the person back here with a code.
  *
- * We verify the state, swap the code for tokens, create or find the user,
- * store the mailbox with its tokens encrypted, and start a session.
+ * The signed state cookie says what the trip was for — signing in, adding a
+ * mailbox, or reconnecting one named mailbox — and the callback does only
+ * that. Adding and reconnecting require the same signed-in person who started
+ * the trip; signing in requires nobody to be signed in. Everything after the
+ * calls to Google lives in src/lib/auth/google-consent.ts.
  */
 
 export const dynamic = "force-dynamic";
@@ -49,113 +49,63 @@ export const GET = route(async (request: NextRequest) => {
 
   const context = await readOAuthState(request.cookies.get("oauth_state")?.value, state);
   if (!context) return authFailure("login", "expired");
-  if (context.access === "organise") return organiseCallback(code, error, context.userId);
-  if (error) return authFailure(context.mode, error === "access_denied" ? "cancelled" : "failed");
-  if (!code) return authFailure(context.mode, "incomplete");
+
+  // The person finishing the trip must be the one who started it.
   const currentUser = await getCurrentUser();
   if ((currentUser?.id ?? null) !== context.userId) return authFailure("login", "expired");
 
-  let stage = "exchange_google_code";
-  try {
-  const tokens = await exchangeCodeForTokens(code);
-  stage = "fetch_google_profile";
-  const profile = await fetchUserInfo(tokens.accessToken);
-
-  stage = "resolve_user";
-  const email = profile.email.toLowerCase();
-
-  const user = await resolveGoogleUser(profile, context.mode === "connect" ? context.userId : null);
-
-  stage = "encrypt_and_store_mailbox";
-  // Store the mailbox. Re-connecting an existing mailbox refreshes its tokens
-  // rather than creating a duplicate.
-  await db
-    .insert(mailAccounts)
-    .values({
-      userId: user.id,
-      provider: "gmail",
-      email,
-      accessTokenEnc: encrypt(tokens.accessToken),
-      refreshTokenEnc: tokens.refreshToken ? encrypt(tokens.refreshToken) : null,
-      expiresAt: tokens.expiresAt,
-      scope: tokens.scope,
-    })
-    .onConflictDoUpdate({
-      target: [mailAccounts.userId, mailAccounts.provider, mailAccounts.email],
-      set: {
-        accessTokenEnc: encrypt(tokens.accessToken),
-        // Google only returns a refresh token on first consent, so never
-        // overwrite a stored one with null.
-        ...(tokens.refreshToken
-          ? { refreshTokenEnc: encrypt(tokens.refreshToken) }
-          : {}),
-        expiresAt: tokens.expiresAt,
-        scope: tokens.scope,
-        updatedAt: new Date(),
-      },
-    });
-
-  stage = "create_session";
-  await setSessionCookie(await createSession(user.id));
-
-  stage = "redirect_to_dashboard";
-  const response = NextResponse.redirect(`${env.appUrl}${context.next ?? "/dashboard"}`);
-  response.cookies.delete("oauth_state");
-  return response;
-  } catch (cause) {
-    console.error("[auth/google/callback] sign-in failed", {
-      stage,
-      reason: failureReason(cause),
-    });
-    return authFailure(context.mode, cause instanceof GoogleAccountError ? cause.code : "failed");
+  if (context.intent === "add" || context.intent === "reconnect") {
+    return mailboxCallback(context, currentUser!, code, error);
   }
+  return signInCallback(context.intent, context.next, code, error);
 });
 
-/**
- * The end of Clear out's "organise" reconnect.
- *
- * Only for the person who started it, and only for the mailbox they already
- * connected: a different Google account is refused and nothing is stored.
- * Google lets people untick individual permissions, so whether organising
- * was actually granted is read from what Google returned, not assumed.
- * The page then says plainly which happened.
- */
-async function organiseCallback(code: string | null, error: string | null, userId: string | null) {
-  const back = (outcome: "granted" | "declined" | "cancelled" | "wrong_account" | "failed") => {
-    const response = NextResponse.redirect(`${env.appUrl}/clear-out?access=${outcome}`);
-    response.cookies.delete("oauth_state");
-    return response;
-  };
+async function signInCallback(
+  mode: "login" | "register",
+  next: string | null,
+  code: string | null,
+  error: string | null,
+) {
+  if (error) return authFailure(mode, error === "access_denied" ? "cancelled" : "failed");
+  if (!code) return authFailure(mode, "incomplete");
 
-  const user = await getCurrentUser();
-  if (!user || user.id !== userId) return authFailure("login", "expired");
-  if (error) return back(error === "access_denied" ? "cancelled" : "failed");
-  if (!code) return back("failed");
-
-  const account = await getPrimaryAccount(user.id);
-  if (!account) return back("failed");
-
+  let stage = "exchange_google_code";
   try {
     const tokens = await exchangeCodeForTokens(code);
+    stage = "fetch_google_profile";
     const profile = await fetchUserInfo(tokens.accessToken);
-    if (profile.email.toLowerCase() !== account.email.toLowerCase()) {
-      return back("wrong_account");
-    }
 
-    await db
-      .update(mailAccounts)
-      .set({
-        accessTokenEnc: encrypt(tokens.accessToken),
-        ...(tokens.refreshToken ? { refreshTokenEnc: encrypt(tokens.refreshToken) } : {}),
-        expiresAt: tokens.expiresAt,
-        scope: tokens.scope,
-        updatedAt: new Date(),
-      })
-      .where(and(eq(mailAccounts.id, account.id), eq(mailAccounts.userId, user.id)));
+    stage = "resolve_user_and_mailbox";
+    const { user, destination } = await completeSignIn({ tokens, profile, next });
 
-    return back(scopeAccess(tokens.scope).canOrganise ? "granted" : "declined");
+    stage = "create_session";
+    await setSessionCookie(await createSession(user.id));
+
+    const response = NextResponse.redirect(`${env.appUrl}${destination}`);
+    response.cookies.delete("oauth_state");
+    return response;
   } catch (cause) {
-    console.error("[auth/google/callback] organise reconnect failed", { reason: failureReason(cause) });
-    return back("failed");
+    console.error("[auth/google/callback] sign-in failed", { stage, reason: failureReason(cause) });
+    return authFailure(mode, cause instanceof GoogleAccountError ? cause.code : "failed");
+  }
+}
+
+async function mailboxCallback(context: OAuthContext, user: User, code: string | null, error: string | null) {
+  const finish = (outcome: { path: string; params: Record<string, string> }) =>
+    mailboxReturn(outcome.path, outcome.params);
+
+  if (error) return finish(await mailboxFailure(context, user, error === "access_denied" ? "cancelled" : "failed"));
+  if (!code) return finish(await mailboxFailure(context, user, "failed"));
+
+  let stage = "exchange_google_code";
+  try {
+    const tokens = await exchangeCodeForTokens(code);
+    stage = "fetch_google_profile";
+    const profile = await fetchUserInfo(tokens.accessToken);
+    stage = context.intent === "reconnect" ? "reconnect_mailbox" : "store_mailbox";
+    return finish(await completeMailboxConsent({ context, user, tokens, profile }));
+  } catch (cause) {
+    console.error("[auth/google/callback] mailbox consent failed", { stage, reason: failureReason(cause) });
+    return finish(await mailboxFailure(context, user, "failed"));
   }
 }

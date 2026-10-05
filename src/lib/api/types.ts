@@ -21,9 +21,34 @@ export type MailAccountDto = {
   provider: string;
 };
 
+/** One connected mailbox, as the switcher and Settings show it. */
+export type MailboxDto = MailAccountDto & {
+  /** A name the person gave it, e.g. "Work"; null when they gave none. */
+  label: string | null;
+  /** Google stopped accepting the stored grant; a reconnect fixes it. */
+  needsReconnect: boolean;
+  /** Clear out's organise permission has been granted for this mailbox. */
+  canOrganise: boolean;
+  /** ISO timestamp. */
+  connectedAt: string;
+};
+
 export type SessionDto = {
   user: UserDto | null;
+  /** Every connected mailbox, oldest first. Empty when none is connected. */
+  mailboxes: MailboxDto[];
+  /**
+   * The mailbox last chosen on any device, or the newest one. Only where a
+   * tab starts: each tab then keeps its own choice.
+   */
+  activeMailboxId: string | null;
+  /** That same mailbox, for screens that only ever need one. */
   account: MailAccountDto | null;
+};
+
+export type MailboxesResponse = {
+  mailboxes: MailboxDto[];
+  activeMailboxId: string | null;
 };
 
 export type SenderDto = {
@@ -174,7 +199,8 @@ export type UnsubscribedResponse = {
   checkLookbackDays: number;
 };
 
-export type ApiError = { error: string };
+/** `code` is a stable machine-readable reason, set for the cases a screen reacts to. */
+export type ApiError = { error: string; code?: string };
 
 /** Sorting options offered by GET /api/senders. */
 export type SenderSort = "count" | "recent" | "name";

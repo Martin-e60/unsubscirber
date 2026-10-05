@@ -1,9 +1,16 @@
 import "server-only";
-import { and, desc, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { mailAccounts, users, type MailAccount, type User } from "@/db/schema";
+import { users, type MailAccount, type User } from "@/db/schema";
 import { readSession } from "@/lib/session";
 import { issuedBeforePasswordChange } from "@/lib/auth/session-rules";
+import {
+  findOwnedMailbox,
+  hasMailbox,
+  mailboxForRequest,
+  mailboxNotFound,
+  rememberedMailbox,
+} from "@/lib/mailbox/server";
 import { HttpError } from "./respond";
 
 /**
@@ -36,29 +43,24 @@ export async function requireUser(): Promise<User> {
 }
 
 /**
- * The mailbox we act on.
+ * The signed-in user and the mailbox this request is about.
  *
- * v1 works with one connected mailbox, so this returns the most recently
- * connected one. When multi-account arrives, routes take an accountId and this
- * becomes a lookup by id scoped to the user.
+ * The mailbox comes from the request's X-Tidely-Mailbox header and must be
+ * one of the user's own — see mailboxForRequest. Every route that reads or
+ * changes mail goes through this, so none of them can reach another user's
+ * mailbox, or a different one of the user's mailboxes than the browser named.
  */
-export async function getPrimaryAccount(userId: string): Promise<MailAccount | null> {
-  const [account] = await db
-    .select()
-    .from(mailAccounts)
-    .where(eq(mailAccounts.userId, userId))
-    .orderBy(desc(mailAccounts.createdAt))
-    .limit(1);
-
-  return account ?? null;
+export async function requireUserAndMailbox(
+  request: Request,
+): Promise<{ user: User; account: MailAccount }> {
+  const user = await requireUser();
+  const account = await mailboxForRequest(request, user);
+  return { user, account };
 }
 
-export async function requireAccount(userId: string): Promise<MailAccount> {
-  const account = await getPrimaryAccount(userId);
-  if (!account) {
-    throw new HttpError("No mailbox is connected to this account.", 409);
-  }
-  return account;
+/** The mailbox a new tab opens on, or null when none is connected. */
+export async function getActiveAccount(user: User): Promise<MailAccount | null> {
+  return rememberedMailbox(user);
 }
 
 /** Loads an account by id, refusing accounts belonging to somebody else. */
@@ -66,12 +68,9 @@ export async function requireOwnedAccount(
   userId: string,
   accountId: string,
 ): Promise<MailAccount> {
-  const [account] = await db
-    .select()
-    .from(mailAccounts)
-    .where(and(eq(mailAccounts.id, accountId), eq(mailAccounts.userId, userId)))
-    .limit(1);
-
-  if (!account) throw new HttpError("Mailbox not found.", 404);
+  const account = await findOwnedMailbox(userId, accountId);
+  if (!account) throw mailboxNotFound();
   return account;
 }
+
+export { hasMailbox };

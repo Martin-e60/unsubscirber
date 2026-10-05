@@ -19,8 +19,9 @@ import styles from "./Sidebar.module.css";
 /**
  * Primary navigation for the signed-in app and the demo.
  *
- * Wide screens: a light sidebar — workspace links at the top, Settings and
- * Help below a divider, and the account at the foot. Below 64rem it becomes
+ * Wide screens: a light sidebar — the mailbox switcher under the logo,
+ * workspace links below it, Settings and Help below a divider, and the
+ * account at the foot. Below 64rem it becomes
  * an icon rail; below 44rem a bottom tab bar, with the account moving to the
  * small top bar that AppShell shows on phones. All of that is stylesheet work;
  * the links are rendered once.
@@ -49,12 +50,15 @@ export function Sidebar({
   items = NAV,
   cleanupCount = null,
   account,
+  switcher,
 }: {
   basePath?: string;
   items?: NavItem[];
   /** Senders waiting on a decision — shown beside Cleanup when above zero. */
   cleanupCount?: number | null;
   account: SidebarAccount;
+  /** The mailbox switcher, under the logo. Its menu opens over the navigation. */
+  switcher?: React.ReactNode;
 }) {
   const pathname = usePathname();
   const main = items.filter((item) => item.id !== "settings");
@@ -97,6 +101,8 @@ export function Sidebar({
         </span>
         <span className={styles.word}>tidely.</span>
       </Link>
+
+      {switcher ? <div className={styles.switcher}>{switcher}</div> : null}
 
       <p className={styles.section}>Your workspace</p>
 

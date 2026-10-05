@@ -1,7 +1,7 @@
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { scans } from "@/db/schema";
-import { requireAccount, requireUser } from "@/lib/api/auth";
+import { requireUserAndMailbox } from "@/lib/api/auth";
 import { json, route } from "@/lib/api/respond";
 import { toProgress } from "@/lib/scan/engine";
 import type { ScanProgressDto } from "@/lib/api/types";
@@ -15,9 +15,8 @@ import type { ScanProgressDto } from "@/lib/api/types";
 
 export const dynamic = "force-dynamic";
 
-export const GET = route(async () => {
-  const user = await requireUser();
-  const account = await requireAccount(user.id);
+export const GET = route(async (request: Request) => {
+  const { account } = await requireUserAndMailbox(request);
 
   const [scan] = await db
     .select()

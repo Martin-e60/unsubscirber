@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { z } from "zod";
-import { requireAccount, requireUser } from "@/lib/api/auth";
+import { requireUserAndMailbox } from "@/lib/api/auth";
 import { json, readJson, route } from "@/lib/api/respond";
 import { changeSenderStatus } from "@/lib/api/senders";
 import { SENDER_STATUS } from "@/lib/constants";
@@ -22,8 +22,7 @@ const bodySchema = z.object({
 
 export const PATCH = route(
   async (request: NextRequest, context: { params: Promise<{ id: string }> }) => {
-    const user = await requireUser();
-    const account = await requireAccount(user.id);
+    const { account } = await requireUserAndMailbox(request);
     const { id } = await context.params;
 
     const body = bodySchema.parse(await readJson(request));

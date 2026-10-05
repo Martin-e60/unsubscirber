@@ -6,6 +6,7 @@ import { ArrowDown, ArrowUpRight, CircleAlert, RefreshCw, Search, Square } from 
 // The short serif accent in the title — the same face Home and Cleanup use.
 import "@fontsource-variable/newsreader/wght-italic.css";
 import { useApp } from "@/components/layout/AppShell";
+import { reconnectHref } from "@/lib/mailbox/shared";
 import { useArchive } from "@/hooks/useArchive";
 import { useScan } from "@/hooks/useScan";
 import { DEFAULT_LOOKBACK_DAYS, SCAN_STATUS } from "@/lib/constants";
@@ -36,7 +37,7 @@ function needsReconnect(message: string): boolean {
 }
 
 export function UnsubscribedView() {
-  const { refreshStats, demo, basePath } = useApp();
+  const { refreshStats, demo, basePath, mailbox } = useApp();
   const archive = useArchive({ pageSize: PAGE_SIZE });
 
   // What this page's own "Check again" did, so a stop or failure is reported
@@ -267,8 +268,8 @@ export function UnsubscribedView() {
               The check didn’t finish, so nothing below changed. <span className={styles.alertDetail}>{failed}</span>
             </p>
             <div className={styles.alertActions}>
-              {needsReconnect(failed) && !demo ? (
-                <Link href="/connect" className={styles.textButton}>
+              {needsReconnect(failed) && !demo && mailbox ? (
+                <Link href={reconnectHref(mailbox.id, { next: "/unsubscribed" })} className={styles.textButton}>
                   Reconnect Gmail
                 </Link>
               ) : null}

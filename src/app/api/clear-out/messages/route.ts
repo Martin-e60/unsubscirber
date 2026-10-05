@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { z } from "zod";
-import { requireAccount, requireUser } from "@/lib/api/auth";
+import { requireUserAndMailbox } from "@/lib/api/auth";
 import { HttpError, json, route } from "@/lib/api/respond";
 import type { ClearOutListResponse } from "@/lib/api/types";
 import { gmailSearch, MAX_UNSUBSCRIBED_CLAUSES } from "@/lib/clearout/filters";
@@ -32,8 +32,7 @@ const pageSchema = z.object({
 });
 
 export const GET = route(async (request: NextRequest) => {
-  const user = await requireUser();
-  const account = await requireAccount(user.id);
+  const { account } = await requireUserAndMailbox(request);
   requireRead(account);
 
   const params = new URL(request.url).searchParams;

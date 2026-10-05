@@ -43,6 +43,13 @@
       "when": 1790964001343,
       "tag": "0005_password_reset",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1791041500149,
+      "tag": "0006_multi_mailbox",
+      "breakpoints": true
     }
   ]
 }

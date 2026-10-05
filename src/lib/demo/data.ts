@@ -43,11 +43,27 @@ export const DEMO_USER = {
   email: "sam.rivers@example.com",
 };
 
+/**
+ * The demo's two sample mailboxes. Their names are sample data, shown the way
+ * a person's own names would be — the real app never invents one.
+ */
+export const DEMO_MAILBOXES = [
+  { id: "demo-mailbox", email: "sam.rivers@example.com", provider: "gmail", label: "Personal" },
+  { id: "demo-work", email: "sam@northwind.example.com", provider: "gmail", label: "Work" },
+] as const;
+
+export type DemoMailboxId = (typeof DEMO_MAILBOXES)[number]["id"];
+
+/** The mailbox the demo opens on. */
 export const DEMO_ACCOUNT = {
-  id: "demo-mailbox",
-  email: "sam.rivers@example.com",
+  id: DEMO_MAILBOXES[0].id,
+  email: DEMO_MAILBOXES[0].email,
   provider: "gmail",
 };
+
+export function isDemoMailboxId(value: unknown): value is DemoMailboxId {
+  return DEMO_MAILBOXES.some((mailbox) => mailbox.id === value);
+}
 
 /** Messages the simulated scan reports having read. */
 export const DEMO_SCAN_TOTAL = 3_840;

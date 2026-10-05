@@ -1,6 +1,8 @@
-import { ApiRequestError, type ApiClient } from "@/lib/api/client";
+import { ApiRequestError, type ApiClient, type RequestOptions } from "@/lib/api/client";
 import type {
   HistoryItemDto,
+  MailboxDto,
+  MailboxesResponse,
   SenderCountsDto,
   SenderDto,
   SendersResponse,
@@ -24,7 +26,15 @@ import {
 } from "@/lib/constants";
 import { emailsPerMonth } from "@/lib/senders/derive";
 import { RECENT_WINDOW_DAYS, summariseStats } from "@/lib/stats/summarise";
-import { DEMO_ACCOUNT, DEMO_USER, demoManualUrl } from "@/lib/demo/data";
+import {
+  DEMO_ACCOUNT,
+  DEMO_MAILBOXES,
+  DEMO_USER,
+  demoManualUrl,
+  isDemoMailboxId,
+  type DemoMailboxId,
+} from "@/lib/demo/data";
+import { MAILBOX_NOT_FOUND } from "@/lib/mailbox/shared";
 import { handleClearOut } from "@/lib/demo/clearout";
 import {
   attemptDetail,
@@ -86,14 +96,14 @@ function toDto(sender: DemoSender): SenderDto {
   };
 }
 
-function toProgress(scan: NonNullable<ReturnType<typeof loadState>["scan"]>): ScanProgressDto {
+function toProgress(box: DemoMailboxId, scan: NonNullable<ReturnType<typeof loadState>["scan"]>): ScanProgressDto {
   const done = scan.status !== SCAN_STATUS.RUNNING;
   return {
     scanId: scan.scanId,
     status: scan.status,
     processedMessages: scan.processedMessages,
     matchedMessages: scan.matchedMessages,
-    foundSenders: loadState().senders.length,
+    foundSenders: loadState(box).senders.length,
     totalEstimate: scan.totalEstimate,
     fraction: scan.totalEstimate
       ? Math.min(1, scan.processedMessages / scan.totalEstimate)
@@ -115,8 +125,8 @@ function countByStatus(senders: DemoSender[]): SenderCountsDto {
   return counts;
 }
 
-function listSenders(params: URLSearchParams): SendersResponse {
-  const { senders } = loadState();
+function listSenders(box: DemoMailboxId, params: URLSearchParams): SendersResponse {
+  const { senders } = loadState(box);
   const status = params.get("status") ?? SENDER_STATUS.ACTIVE;
   const search = (params.get("search") ?? "").trim().toLowerCase();
   const sort = params.get("sort") ?? "count";
@@ -153,8 +163,8 @@ function listSenders(params: URLSearchParams): SendersResponse {
   };
 }
 
-function computeDemoStats(): StatsDto {
-  const { senders } = loadState();
+function computeDemoStats(box: DemoMailboxId): StatsDto {
+  const { senders } = loadState(box);
   const cutoff = Date.now() - RECENT_WINDOW_DAYS * 86_400_000;
   const previousCutoff = Date.now() - RECENT_WINDOW_DAYS * 2 * 86_400_000;
 
@@ -196,8 +206,8 @@ function computeDemoStats(): StatsDto {
   });
 }
 
-function history(): HistoryItemDto[] {
-  const { senders, attempts } = loadState();
+function history(box: DemoMailboxId): HistoryItemDto[] {
+  const { senders, attempts } = loadState(box);
   const byId = new Map(senders.map((sender) => [sender.id, sender]));
 
   return attempts
@@ -218,8 +228,8 @@ function history(): HistoryItemDto[] {
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
-function changeStatus(id: string, status: SenderStatus): SenderDto {
-  const state = loadState();
+function changeStatus(box: DemoMailboxId, id: string, status: SenderStatus): SenderDto {
+  const state = loadState(box);
   const sender = state.senders.find((candidate) => candidate.id === id);
   if (!sender) throw new ApiRequestError("Sender not found.", 404);
 
@@ -236,13 +246,13 @@ function changeStatus(id: string, status: SenderStatus): SenderDto {
     row.status = status;
     row.decidedAt = status === SENDER_STATUS.ACTIVE ? null : new Date().toISOString();
     if (status !== SENDER_STATUS.MANUAL) row.manualUrl = null;
-  });
+  }, box);
 
-  return toDto(loadState().senders.find((candidate) => candidate.id === id)!);
+  return toDto(loadState(box).senders.find((candidate) => candidate.id === id)!);
 }
 
-async function unsubscribe(id: string): Promise<UnsubscribeResultDto> {
-  const sender = loadState().senders.find((candidate) => candidate.id === id);
+async function unsubscribe(box: DemoMailboxId, id: string): Promise<UnsubscribeResultDto> {
+  const sender = loadState(box).senders.find((candidate) => candidate.id === id);
   if (!sender) throw new ApiRequestError("Sender not found.", 404);
 
   if (PROTECTED_UNSUBSCRIBE_STATUSES.includes(sender.status)) {
@@ -300,7 +310,7 @@ async function unsubscribe(id: string): Promise<UnsubscribeResultDto> {
       detail: manualUrl ?? detail,
       createdAt: now,
     });
-  });
+  }, box);
 
   return { senderId: id, status, method, manualUrl, detail };
 }
@@ -310,8 +320,8 @@ async function unsubscribe(id: string): Promise<UnsubscribeResultDto> {
  * the server uses. Sample messages get no Gmail link: there is nothing real
  * for one to open.
  */
-function archive(params: URLSearchParams): UnsubscribedResponse {
-  const { senders, attempts, followUps, lastDone: scan } = loadState();
+function archive(box: DemoMailboxId, params: URLSearchParams): UnsubscribedResponse {
+  const { senders, attempts, followUps, lastDone: scan } = loadState(box);
   const search = (params.get("search") ?? "").trim().toLowerCase();
   const senderId = params.get("senderId");
   const limit = Number(params.get("limit") ?? 10);
@@ -389,66 +399,130 @@ function archive(params: URLSearchParams): UnsubscribedResponse {
   };
 }
 
+/** Which sample mailbox a fresh demo tab opens on: the one picked last. */
+const ACTIVE_KEY = "tidely.demo.v1.active";
+let rememberedBox: DemoMailboxId | null = null;
+
+function remembered(): DemoMailboxId {
+  if (rememberedBox) return rememberedBox;
+  try {
+    const stored = typeof window === "undefined" ? null : window.localStorage.getItem(ACTIVE_KEY);
+    if (isDemoMailboxId(stored)) rememberedBox = stored;
+  } catch {
+    // Storage blocked: start on the first mailbox.
+  }
+  return rememberedBox ?? (DEMO_ACCOUNT.id as DemoMailboxId);
+}
+
+function remember(box: DemoMailboxId): void {
+  rememberedBox = box;
+  try {
+    window.localStorage.setItem(ACTIVE_KEY, box);
+  } catch {
+    // Kept in memory for this tab.
+  }
+}
+
+/** A fixed, plausible connection date: the sample mailboxes were connected months ago. */
+const CONNECTED_AT = ["2026-03-14T09:20:00.000Z", "2026-06-02T13:05:00.000Z"];
+
+function mailboxes(): MailboxDto[] {
+  return DEMO_MAILBOXES.map((mailbox, index) => ({
+    id: mailbox.id,
+    email: mailbox.email,
+    provider: mailbox.provider,
+    label: mailbox.label,
+    needsReconnect: false,
+    canOrganise: true,
+    connectedAt: CONNECTED_AT[index] ?? CONNECTED_AT[0],
+  }));
+}
+
 function session(): SessionDto {
+  const active = DEMO_MAILBOXES.find((mailbox) => mailbox.id === remembered()) ?? DEMO_MAILBOXES[0];
   return {
     user: { id: DEMO_USER.id, email: DEMO_USER.email, name: DEMO_USER.name, image: null },
-    account: DEMO_ACCOUNT,
+    mailboxes: mailboxes(),
+    activeMailboxId: active.id,
+    account: { id: active.id, email: active.email, provider: active.provider },
   };
 }
 
 async function handle(
-  method: "GET" | "POST" | "PATCH",
+  method: "GET" | "POST" | "PATCH" | "DELETE",
   path: string,
   body?: unknown,
+  options: RequestOptions = {},
 ): Promise<unknown> {
   const url = new URL(path, BASE);
   const route = `${method} ${url.pathname}`;
   const payload = (body ?? {}) as Record<string, unknown>;
 
+  // Like the real API: a request names its mailbox, and only the demo's own
+  // two exist. Without one it is the mailbox the demo opens on.
+  if (options.mailboxId != null && !isDemoMailboxId(options.mailboxId)) {
+    throw new ApiRequestError("That mailbox is no longer connected to your account.", 404, MAILBOX_NOT_FOUND);
+  }
+  const box: DemoMailboxId = options.mailboxId ?? (DEMO_ACCOUNT.id as DemoMailboxId);
+
   switch (route) {
     case "GET /api/me":
       return session();
 
+    case "GET /api/mailboxes":
+      return { mailboxes: mailboxes(), activeMailboxId: session().activeMailboxId } satisfies MailboxesResponse;
+
+    case "POST /api/mailboxes/active": {
+      if (!isDemoMailboxId(payload.mailboxId)) {
+        throw new ApiRequestError("That mailbox is no longer connected to your account.", 404, MAILBOX_NOT_FOUND);
+      }
+      remember(payload.mailboxId);
+      return { activeMailboxId: payload.mailboxId };
+    }
+
     case "GET /api/stats":
-      return computeDemoStats();
+      return computeDemoStats(box);
 
     case "GET /api/senders":
-      return listSenders(url.searchParams);
+      return listSenders(box, url.searchParams);
 
     case "GET /api/history":
-      return history();
+      return history(box);
 
     case "GET /api/unsubscribed":
-      return archive(url.searchParams);
+      return archive(box, url.searchParams);
 
     case "GET /api/scan": {
-      const { scan } = loadState();
-      return scan ? toProgress(scan) : null;
+      const { scan } = loadState(box);
+      return scan ? toProgress(box, scan) : null;
     }
 
     case "POST /api/scan/start": {
       const lookbackDays = Number(payload.lookbackDays ?? 30);
-      return toProgress(startDemoScan(lookbackDays));
+      return toProgress(box, startDemoScan(lookbackDays, box));
     }
 
     case "POST /api/scan/step":
       // Long enough that the progress bar reads as work, short enough not to drag.
       await delay(220);
-      return toProgress(stepDemoScan());
+      return toProgress(box, stepDemoScan(box));
 
     case "POST /api/unsubscribe":
-      return unsubscribe(String(payload.senderId ?? ""));
+      return unsubscribe(box, String(payload.senderId ?? ""));
 
     case "POST /api/auth/logout":
       return { ok: true };
 
     default: {
-      const clearOut = await handleClearOut(method, url, payload);
+      if (method === "DELETE") throw new ApiRequestError("That is not part of the demo.", 404);
+
+      const clearOut = await handleClearOut(method, url, payload, box);
       if (clearOut !== undefined) return clearOut;
 
       const patchSender = /^\/api\/senders\/([^/]+)$/.exec(url.pathname);
       if (method === "PATCH" && patchSender) {
         return changeStatus(
+          box,
           decodeURIComponent(patchSender[1]),
           payload.status as SenderStatus,
         );
@@ -459,13 +533,23 @@ async function handle(
 }
 
 export const demoClient: ApiClient = {
-  get: <T>(path: string) => handle("GET", path) as Promise<T>,
-  post: <T>(path: string, json?: unknown) => handle("POST", path, json) as Promise<T>,
-  patch: <T>(path: string, json?: unknown) => handle("PATCH", path, json) as Promise<T>,
+  get: <T>(path: string, options?: RequestOptions) => handle("GET", path, undefined, options) as Promise<T>,
+  post: <T>(path: string, json?: unknown, options?: RequestOptions) =>
+    handle("POST", path, json, options) as Promise<T>,
+  patch: <T>(path: string, json?: unknown, options?: RequestOptions) =>
+    handle("PATCH", path, json, options) as Promise<T>,
+  del: <T>(path: string, options?: RequestOptions) => handle("DELETE", path, undefined, options) as Promise<T>,
 };
 
-/** Puts the demo back to how the visitor found it. */
+/** Puts the demo back to how the visitor found it — both sample mailboxes. */
 export function resetDemo(): void {
   clearState();
+  rememberedBox = null;
+  try {
+    window.localStorage.removeItem(ACTIVE_KEY);
+    window.sessionStorage.removeItem("tidely.demo.mailbox");
+  } catch {
+    // Nothing stored.
+  }
   if (typeof window !== "undefined") window.location.reload();
 }

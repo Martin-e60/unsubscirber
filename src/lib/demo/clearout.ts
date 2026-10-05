@@ -21,6 +21,7 @@ import { matchesQuery, readQuery, type ClearOutQuery, type UnsubscribedList } fr
 import { SENDER_STATUS } from "@/lib/constants";
 import { DEMO_LABELS, DEMO_ME } from "@/lib/demo/mailbox";
 import { loadState, mutate, type DemoMessage } from "@/lib/demo/store";
+import type { DemoMailboxId } from "@/lib/demo/data";
 
 /**
  * Clear out in the demo.
@@ -59,15 +60,15 @@ function toDto(message: DemoMessage): ClearOutMessageDto {
 }
 
 /** Confirmed unsubscribes in the demo, by exact address, as Cleanup recorded them. */
-function unsubscribedLists(): UnsubscribedList[] {
-  return loadState()
+function unsubscribedLists(box: DemoMailboxId): UnsubscribedList[] {
+  return loadState(box)
     .senders.filter((sender) => sender.status === SENDER_STATUS.UNSUBSCRIBED)
     .map((sender) => ({ address: sender.address.toLowerCase(), listIds: [] }));
 }
 
-function matching(query: ClearOutQuery): DemoMessage[] {
-  const lists = query.unsubscribed ? unsubscribedLists() : [];
-  return loadState()
+function matching(box: DemoMailboxId, query: ClearOutQuery): DemoMessage[] {
+  const lists = query.unsubscribed ? unsubscribedLists(box) : [];
+  return loadState(box)
     .mailbox.filter((message) =>
       matchesQuery(
         {
@@ -104,17 +105,17 @@ function offsetOf(token: string | null | undefined): number {
   return Number.isInteger(n) && n >= 0 ? n : 0;
 }
 
-function list(params: URLSearchParams): ClearOutListResponse {
+function list(box: DemoMailboxId, params: URLSearchParams): ClearOutListResponse {
   const query = parse(params);
   if (query.label && !labelNames.has(query.label)) {
     throw new ApiRequestError("That label no longer exists.", 404);
   }
-  const rows = matching(query);
+  const rows = matching(box, query);
   const start = offsetOf(params.get("pageToken"));
   const size = Math.min(50, Math.max(1, Number(params.get("pageSize") ?? 20) || 20));
   const page = rows.slice(start, start + size);
   const notes =
-    query.unsubscribed && unsubscribedLists().length === 0
+    query.unsubscribed && unsubscribedLists(box).length === 0
       ? ["You haven’t confirmed an unsubscribe from any list yet."]
       : [];
   return {
@@ -126,15 +127,15 @@ function list(params: URLSearchParams): ClearOutListResponse {
   };
 }
 
-function preview(id: string): ClearOutPreviewDto {
-  const message = loadState().mailbox.find((candidate) => candidate.id === id);
+function preview(box: DemoMailboxId, id: string): ClearOutPreviewDto {
+  const message = loadState(box).mailbox.find((candidate) => candidate.id === id);
   if (!message || message.labelIds.includes("TRASH")) {
     throw new ApiRequestError("That email is no longer in your mailbox.", 404);
   }
   return { ...toDto(message), cc: null };
 }
 
-function suggestions(term: string): SenderSuggestionDto[] {
+function suggestions(box: DemoMailboxId, term: string): SenderSuggestionDto[] {
   const needle = term.trim().toLowerCase();
   const seen = new Map<string, SenderSuggestionDto>();
   const add = (name: string | null, address: string) => {
@@ -143,7 +144,7 @@ function suggestions(term: string): SenderSuggestionDto[] {
     if (needle && !key.includes(needle) && !(name ?? "").toLowerCase().includes(needle)) return;
     seen.set(key, { name, address: key });
   };
-  const { mailbox, senders } = loadState();
+  const { mailbox, senders } = loadState(box);
   for (const message of [...mailbox].sort((a, b) => b.receivedAt.localeCompare(a.receivedAt))) {
     add(message.fromName, message.fromAddress);
   }
@@ -156,7 +157,7 @@ function runDto(run: ReturnType<typeof loadState>["clearOutRuns"][number]): Clea
   return rest;
 }
 
-function startRun(payload: Record<string, unknown>): ClearOutRunDto {
+function startRun(box: DemoMailboxId, payload: Record<string, unknown>): ClearOutRunDto {
   const action = payload.action;
   const requested = Number(payload.requested);
   if (!isClearOutAction(action) || !Number.isInteger(requested) || requested < 1 || requested > MAX_SELECTION) {
@@ -184,7 +185,7 @@ function startRun(payload: Record<string, unknown>): ClearOutRunDto {
   mutate((state) => {
     state.clearOutRuns.unshift(run);
     state.clearOutRuns = state.clearOutRuns.slice(0, 50);
-  });
+  }, box);
   return runDto(run);
 }
 
@@ -193,8 +194,12 @@ function startRun(payload: Record<string, unknown>): ClearOutRunDto {
  * their conversations. One sample message is set up to fail its first
  * attempt, so the partial-failure and retry path can be tried for real.
  */
-async function applyChunk(runId: string, payload: Record<string, unknown>): Promise<ClearOutChunkResponse> {
-  const run = loadState().clearOutRuns.find((candidate) => candidate.id === runId);
+async function applyChunk(
+  box: DemoMailboxId,
+  runId: string,
+  payload: Record<string, unknown>,
+): Promise<ClearOutChunkResponse> {
+  const run = loadState(box).clearOutRuns.find((candidate) => candidate.id === runId);
   if (!run) throw new ApiRequestError("Action not found.", 404);
 
   const raw = Array.isArray(payload.ids) ? payload.ids : [];
@@ -241,9 +246,9 @@ async function applyChunk(runId: string, payload: Record<string, unknown>): Prom
         : Math.min(stored.requested - stored.succeeded, stored.failed + failed.length);
       stored.updatedAt = new Date().toISOString();
     }
-  });
+  }, box);
 
-  const stored = loadState().clearOutRuns.find((candidate) => candidate.id === runId)!;
+  const stored = loadState(box).clearOutRuns.find((candidate) => candidate.id === runId)!;
   return { run: runDto(stored), succeeded, failed };
 }
 
@@ -252,6 +257,8 @@ export async function handleClearOut(
   method: "GET" | "POST" | "PATCH",
   url: URL,
   payload: Record<string, unknown>,
+  /** The sample mailbox the request named. Each has its own messages and History. */
+  box: DemoMailboxId,
 ): Promise<unknown> {
   const path = url.pathname;
   if (!path.startsWith("/api/clear-out/")) return undefined;
@@ -261,28 +268,28 @@ export async function handleClearOut(
   }
   if (method === "GET" && path === "/api/clear-out/messages") {
     await delay(160);
-    return list(url.searchParams);
+    return list(box, url.searchParams);
   }
   if (method === "GET" && path === "/api/clear-out/labels") {
     return DEMO_LABELS satisfies ClearOutLabelDto[];
   }
   if (method === "GET" && path === "/api/clear-out/senders") {
-    return suggestions(url.searchParams.get("q") ?? "");
+    return suggestions(box, url.searchParams.get("q") ?? "");
   }
   if (method === "GET" && path === "/api/clear-out/runs") {
-    return loadState().clearOutRuns.map(runDto);
+    return loadState(box).clearOutRuns.map(runDto);
   }
   if (method === "POST" && path === "/api/clear-out/runs") {
-    return startRun(payload);
+    return startRun(box, payload);
   }
   if (method === "POST" && path === "/api/clear-out/summaries") {
     const ids = Array.isArray(payload.ids) ? payload.ids.filter(isMessageId).slice(0, 50) : [];
-    const byId = new Map(loadState().mailbox.map((message) => [message.id, message]));
+    const byId = new Map(loadState(box).mailbox.map((message) => [message.id, message]));
     return ids.map((id) => byId.get(id)).filter((m): m is DemoMessage => Boolean(m)).map(toDto);
   }
   if (method === "POST" && path === "/api/clear-out/resolve") {
     const query = parse((payload.query ?? {}) as Record<string, unknown>);
-    const rows = matching(query);
+    const rows = matching(box, query);
     const start = offsetOf(payload.pageToken as string | null);
     // Small pages and a pause, so the progress a large mailbox shows is visible here too.
     await delay(220);
@@ -295,10 +302,10 @@ export async function handleClearOut(
   }
 
   const one = /^\/api\/clear-out\/messages\/([^/]+)$/.exec(path);
-  if (method === "GET" && one) return preview(decodeURIComponent(one[1]));
+  if (method === "GET" && one) return preview(box, decodeURIComponent(one[1]));
 
   const chunk = /^\/api\/clear-out\/runs\/([^/]+)$/.exec(path);
-  if (method === "POST" && chunk) return applyChunk(decodeURIComponent(chunk[1]), payload);
+  if (method === "POST" && chunk) return applyChunk(box, decodeURIComponent(chunk[1]), payload);
 
   return undefined;
 }

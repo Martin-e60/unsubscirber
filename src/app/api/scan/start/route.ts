@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { z } from "zod";
-import { requireAccount, requireUser } from "@/lib/api/auth";
+import { requireUserAndMailbox } from "@/lib/api/auth";
 import { DEFAULT_LOOKBACK_DAYS } from "@/lib/constants";
 import { json, readJson, route } from "@/lib/api/respond";
 import { startScan, toProgress } from "@/lib/scan/engine";
@@ -20,8 +20,7 @@ const bodySchema = z.object({
 });
 
 export const POST = route(async (request: NextRequest) => {
-  const user = await requireUser();
-  const account = await requireAccount(user.id);
+  const { account } = await requireUserAndMailbox(request);
 
   const body = bodySchema.parse(await readJson(request, { allowEmpty: true }));
   const scan = await startScan(account, body.lookbackDays);

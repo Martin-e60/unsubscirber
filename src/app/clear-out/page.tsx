@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
 import { ClearOutView } from "@/components/clearout/ClearOutView";
-import { getCurrentUser, getPrimaryAccount } from "@/lib/api/auth";
+import { getCurrentUser, hasMailbox } from "@/lib/api/auth";
 import { loginHref } from "@/lib/auth/next";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +16,7 @@ export const metadata: Metadata = { title: "Clear out — Tidely" };
 export default async function ClearOutPage() {
   const user = await getCurrentUser();
   if (!user) redirect(loginHref("/clear-out"));
-  if (!(await getPrimaryAccount(user.id))) redirect("/connect");
+  if (!(await hasMailbox(user.id))) redirect("/connect");
 
   return (
     <AppShell>

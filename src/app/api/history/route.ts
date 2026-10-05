@@ -3,7 +3,7 @@ import { desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { senders, unsubscribeAttempts } from "@/db/schema";
-import { requireAccount, requireUser } from "@/lib/api/auth";
+import { requireUserAndMailbox } from "@/lib/api/auth";
 import { json, route } from "@/lib/api/respond";
 import type { HistoryItemDto } from "@/lib/api/types";
 
@@ -16,8 +16,7 @@ const querySchema = z.object({
 });
 
 export const GET = route(async (request: NextRequest) => {
-  const user = await requireUser();
-  const account = await requireAccount(user.id);
+  const { account } = await requireUserAndMailbox(request);
 
   const query = querySchema.parse(
     Object.fromEntries(new URL(request.url).searchParams),

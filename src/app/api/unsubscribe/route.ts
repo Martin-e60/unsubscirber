@@ -3,7 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { senders } from "@/db/schema";
-import { requireAccount, requireUser } from "@/lib/api/auth";
+import { requireUserAndMailbox } from "@/lib/api/auth";
 import { HttpError, json, readJson, route } from "@/lib/api/respond";
 import { unsubscribeSender } from "@/lib/unsubscribe/engine";
 import type { UnsubscribeResultDto } from "@/lib/api/types";
@@ -23,8 +23,7 @@ export const maxDuration = 60;
 const bodySchema = z.object({ senderId: z.string().min(1) });
 
 export const POST = route(async (request: NextRequest) => {
-  const user = await requireUser();
-  const account = await requireAccount(user.id);
+  const { account } = await requireUserAndMailbox(request);
 
   const body = bodySchema.parse(await readJson(request));
 

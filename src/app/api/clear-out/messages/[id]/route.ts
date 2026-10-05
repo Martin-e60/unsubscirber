@@ -1,4 +1,4 @@
-import { requireAccount, requireUser } from "@/lib/api/auth";
+import { requireUserAndMailbox } from "@/lib/api/auth";
 import { HttpError, json, route } from "@/lib/api/respond";
 import type { ClearOutPreviewDto } from "@/lib/api/types";
 import { isMessageId } from "@/lib/clearout/actions";
@@ -12,9 +12,8 @@ import { requireRead, userLabels, withOrganiser } from "@/lib/clearout/server";
 
 export const dynamic = "force-dynamic";
 
-export const GET = route(async (_request: Request, context: { params: Promise<{ id: string }> }) => {
-  const user = await requireUser();
-  const account = await requireAccount(user.id);
+export const GET = route(async (request: Request, context: { params: Promise<{ id: string }> }) => {
+  const { account } = await requireUserAndMailbox(request);
   requireRead(account);
 
   const { id } = await context.params;

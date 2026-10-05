@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { requireAccount, requireUser } from "@/lib/api/auth";
+import { requireUserAndMailbox } from "@/lib/api/auth";
 import { json, readJsonRequest, route } from "@/lib/api/respond";
 import type { ClearOutMessageDto } from "@/lib/api/types";
 import { isMessageId } from "@/lib/clearout/actions";
@@ -18,8 +18,7 @@ const bodySchema = z.object({
 });
 
 export const POST = route(async (request: Request) => {
-  const user = await requireUser();
-  const account = await requireAccount(user.id);
+  const { account } = await requireUserAndMailbox(request);
   requireRead(account);
 
   const { ids } = bodySchema.parse(await readJsonRequest(request));

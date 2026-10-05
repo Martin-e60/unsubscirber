@@ -1,8 +1,14 @@
-import { getCurrentUser, getPrimaryAccount } from "@/lib/api/auth";
+import { getCurrentUser } from "@/lib/api/auth";
 import { json, route } from "@/lib/api/respond";
 import type { SessionDto } from "@/lib/api/types";
+import { listMailboxes, rememberedMailbox, toMailboxDto } from "@/lib/mailbox/server";
 
-/** Who am I, and which mailbox is connected? The app's first request. */
+/**
+ * Who am I, and which mailboxes are connected? The app's first request.
+ *
+ * `activeMailboxId` is only where a new tab starts. The tab then names its
+ * mailbox on every request, so switching in one tab never moves another.
+ */
 
 export const dynamic = "force-dynamic";
 
@@ -10,10 +16,10 @@ export const GET = route(async () => {
   const user = await getCurrentUser();
 
   if (!user) {
-    return json<SessionDto>({ user: null, account: null });
+    return json<SessionDto>({ user: null, mailboxes: [], activeMailboxId: null, account: null });
   }
 
-  const account = await getPrimaryAccount(user.id);
+  const [rows, active] = await Promise.all([listMailboxes(user.id), rememberedMailbox(user)]);
 
   return json<SessionDto>({
     user: {
@@ -22,8 +28,10 @@ export const GET = route(async () => {
       name: user.name,
       image: user.image,
     },
-    account: account
-      ? { id: account.id, email: account.email, provider: account.provider }
+    mailboxes: rows.map(toMailboxDto),
+    activeMailboxId: active?.id ?? null,
+    account: active
+      ? { id: active.id, email: active.email, provider: active.provider }
       : null,
   });
 });

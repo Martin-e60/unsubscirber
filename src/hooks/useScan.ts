@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useApi } from "@/lib/api/context";
+import { useMailboxOperation } from "@/components/layout/MailboxContext";
 import type { ScanProgressDto } from "@/lib/api/types";
 
 /**
@@ -27,6 +28,7 @@ export function useScan(
 ) {
   const resume = options.resume ?? true;
   const api = useApi();
+  const beginOperation = useMailboxOperation();
   const [progress, setProgress] = useState<ScanProgressDto | null>(null);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,6 +48,8 @@ export function useScan(
     busy.current = true;
     setRunning(true);
     cancelled.current = false;
+    // A running scan makes the mailbox switcher ask before switching away.
+    const endOperation = beginOperation();
 
     try {
       // Hard ceiling so a provider bug can never spin forever.
@@ -61,11 +65,12 @@ export function useScan(
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Scan failed");
     } finally {
+      endOperation();
       busy.current = false;
       setRunning(false);
       onFinished.current?.();
     }
-  }, [api]);
+  }, [api, beginOperation]);
 
   const start = useCallback(
     async (lookbackDays: number) => {

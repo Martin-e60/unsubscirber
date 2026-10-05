@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import { and, desc, eq, like, or } from "drizzle-orm";
 import { db } from "@/db";
 import { senders } from "@/db/schema";
-import { requireAccount, requireUser } from "@/lib/api/auth";
+import { requireUserAndMailbox } from "@/lib/api/auth";
 import { json, route } from "@/lib/api/respond";
 import type { SenderSuggestionDto } from "@/lib/api/types";
 import { isSenderAddress } from "@/lib/clearout/filters";
@@ -23,8 +23,7 @@ export const dynamic = "force-dynamic";
 const GMAIL_SAMPLE = 15;
 
 export const GET = route(async (request: NextRequest) => {
-  const user = await requireUser();
-  const account = await requireAccount(user.id);
+  const { account } = await requireUserAndMailbox(request);
   requireRead(account);
 
   // Letters, digits and address punctuation only: nothing that Gmail would

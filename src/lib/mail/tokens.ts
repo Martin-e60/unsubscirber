@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { mailAccounts, type MailAccount } from "@/db/schema";
 import { decrypt, encrypt } from "@/lib/crypto";
 import { refreshAccessToken, TokenRefreshError } from "@/lib/google/oauth";
+import { markNeedsReconnect } from "@/lib/mailbox/server";
 
 /**
  * Access token management.
@@ -21,13 +22,26 @@ export async function getValidAccessToken(account: MailAccount): Promise<string>
   if (stillValid) return decrypt(account.accessTokenEnc);
 
   if (!account.refreshTokenEnc) {
+    await markNeedsReconnect(account.id);
     throw new TokenRefreshError(
       "This mailbox has no refresh token stored. Reconnect the account.",
       "no_refresh_token",
     );
   }
 
-  const refreshed = await refreshAccessToken(decrypt(account.refreshTokenEnc));
+  let refreshed;
+  try {
+    refreshed = await refreshAccessToken(decrypt(account.refreshTokenEnc));
+  } catch (error) {
+    // invalid_grant: revoked in Google, or expired after long disuse. Only a
+    // reconnect fixes it, so the switcher and Settings say so for this
+    // mailbox. A network blip or a Google outage is not that, and is left
+    // to the next attempt.
+    if (error instanceof TokenRefreshError && error.reason === "invalid_grant") {
+      await markNeedsReconnect(account.id);
+    }
+    throw error;
+  }
 
   await db
     .update(mailAccounts)

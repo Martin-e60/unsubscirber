@@ -52,7 +52,8 @@ test("organising needs the modify grant; reading does not", () => {
   assert.deepEqual(server.accessFor(sam), {
     canRead: true,
     canOrganise: false,
-    grantUrl: "/api/auth/google/start?mode=connect&access=organise",
+    // A reconnect for this very mailbox, by id, that returns to Clear out.
+    grantUrl: `/api/auth/google/start?mode=reconnect&mailbox=${sam.id}&access=organise&next=%2Fclear-out`,
   });
   assert.throws(() => server.requireOrganise(sam), (error: Error & { status?: number }) => error.status === 403);
   assert.doesNotThrow(() => server.requireRead(sam));

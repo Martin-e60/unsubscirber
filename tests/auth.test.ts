@@ -78,12 +78,18 @@ test("cross-site credential submissions are rejected", () => {
 
 test("OAuth state is signed, audience-bound, and rejects tampering or mismatched state", async () => {
   const { createOAuthState, readOAuthState } = await import("../src/lib/auth/oauth-state");
-  const cookie = await createOAuthState("random-state", "connect", "user-123");
-  assert.deepEqual(await readOAuthState(cookie, "random-state"), { mode: "connect", userId: "user-123", access: null, next: null });
-  // Clear out's organise reconnect is carried in the signed state, and only for a connect.
-  const organise = await createOAuthState("random-state", "connect", "user-123", "organise");
-  assert.equal((await readOAuthState(organise, "random-state"))?.access, "organise");
-  const login = await createOAuthState("random-state", "login", null, "organise");
+  const cookie = await createOAuthState("random-state", { intent: "add", userId: "user-123" });
+  assert.deepEqual(await readOAuthState(cookie, "random-state"), {
+    intent: "add", userId: "user-123", mailboxId: null, access: null, next: null,
+  });
+  // Clear out's organise permission is carried in the signed state, and only for a reconnect.
+  const organise = await createOAuthState("random-state", {
+    intent: "reconnect", userId: "user-123", mailboxId: "mailbox-1", access: "organise",
+  });
+  assert.deepEqual(await readOAuthState(organise, "random-state"), {
+    intent: "reconnect", userId: "user-123", mailboxId: "mailbox-1", access: "organise", next: null,
+  });
+  const login = await createOAuthState("random-state", { intent: "login", userId: null, access: "organise" });
   assert.equal((await readOAuthState(login, "random-state"))?.access, null);
   assert.equal(await readOAuthState(cookie, "other-state"), null);
   assert.equal(await readOAuthState(`tampered.${cookie}`, "random-state"), null);
@@ -91,18 +97,51 @@ test("OAuth state is signed, audience-bound, and rejects tampering or mismatched
   assert.equal(await readOAuthState(await createSession("user-123"), "random-state"), null);
 });
 
+test("OAuth state binds each purpose to the right person and mailbox", async () => {
+  const { createOAuthState, readOAuthState } = await import("../src/lib/auth/oauth-state");
+  const read = async (context: Parameters<typeof createOAuthState>[1]) =>
+    readOAuthState(await createOAuthState("s", context), "s");
+  // Adding or reconnecting needs the signed-in person who started it.
+  assert.equal(await read({ intent: "add", userId: null }), null);
+  assert.equal(await read({ intent: "reconnect", userId: null, mailboxId: "m1" }), null);
+  // A reconnect is always for one named mailbox.
+  assert.equal(await read({ intent: "reconnect", userId: "u1" }), null);
+  assert.equal(await read({ intent: "reconnect", userId: "u1", mailboxId: "../other" }), null);
+  // Signing in starts signed out.
+  assert.equal(await read({ intent: "login", userId: "u1" }), null);
+  // An add never carries a mailbox to overwrite.
+  assert.equal((await read({ intent: "add", userId: "u1", mailboxId: "m1" }))?.mailboxId, null);
+});
+
 test("Google never links to a password signup based only on an email match", async () => {
   const profile = { sub: "google-alex", email: "alex@example.com", email_verified: true };
-  await assert.rejects(google.resolveGoogleUser(profile, null), { code: "account_exists" });
+  await assert.rejects(google.resolveGoogleUser(profile), { code: "account_exists" });
   const [local] = await db.select().from(schema.users).where(eq(schema.users.email, profile.email));
-  const linked = await google.resolveGoogleUser(profile, local.id);
-  assert.equal(linked.id, local.id);
-  assert.equal((await google.resolveGoogleUser(profile, null)).id, local.id);
-  await assert.rejects(google.resolveGoogleUser(profile, "someone-else"), { code: "account_linked" });
+  // Signed in with the password, connecting that same address adds Google sign-in.
+  assert.equal(await google.linkGoogleSignInIfUnset(local.id, profile), true);
+  const { user, created } = await google.resolveGoogleUser(profile);
+  assert.equal(user.id, local.id);
+  assert.equal(created, false);
+});
+
+test("connecting another Gmail never replaces or borrows a Google sign-in", async () => {
+  const [alex] = await db.select().from(schema.users).where(eq(schema.users.email, "alex@example.com"));
+  // Alex already signs in with google-alex: a second Google account stays a mailbox only.
+  assert.equal(await google.linkGoogleSignInIfUnset(alex.id, { sub: "google-work", email: "alex@work.example", email_verified: true }), false);
+  const [after] = await db.select().from(schema.users).where(eq(schema.users.id, alex.id));
+  assert.equal(after.googleSub, "google-alex");
+
+  // A profile without Google sign-in does not gain one from a different address…
+  const id = await credentials.registerWithPassword({ name: "Kim", email: "kim@example.com", password });
+  assert.equal(await google.linkGoogleSignInIfUnset(id, { sub: "google-kim-work", email: "kim@work.example", email_verified: true }), false);
+  // …nor from a Google account another profile already signs in with.
+  assert.equal(await google.linkGoogleSignInIfUnset(id, { sub: "google-alex", email: "kim@example.com", email_verified: true }), false);
+  const [kim] = await db.select().from(schema.users).where(eq(schema.users.id, id));
+  assert.equal(kim.googleSub, null);
 });
 
 test("unverified Google identities cannot create users", async () => {
-  await assert.rejects(google.resolveGoogleUser({ sub: "unverified", email: "unverified@example.com", email_verified: false }, null), { code: "failed" });
+  await assert.rejects(google.resolveGoogleUser({ sub: "unverified", email: "unverified@example.com", email_verified: false }), { code: "failed" });
 });
 
 test("OAuth failures return safe error codes and clear the state cookie", async () => {

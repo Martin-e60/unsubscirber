@@ -50,6 +50,14 @@ export const users = sqliteTable("users", {
    * accepted, so a reset signs out every other browser.
    */
   passwordChangedAt: integer("password_changed_at", { mode: "timestamp_ms" }),
+  /**
+   * The mailbox last chosen in the switcher, so the next visit opens on it.
+   * Only a default: every mailbox request names its mailbox explicitly, so
+   * two tabs on two mailboxes never borrow each other's choice. Not a foreign
+   * key — it is re-checked against the user's own mailboxes on every read,
+   * and a removed mailbox simply falls back to another one.
+   */
+  activeMailAccountId: text("active_mail_account_id"),
   createdAt: createdAt(),
 });
 
@@ -81,7 +89,10 @@ export const authAttempts = sqliteTable("auth_attempts", {
 });
 
 /**
- * One connected mailbox.
+ * One connected mailbox. A user can have several.
+ *
+ * A mailbox is not a way to sign in: `users.googleSub` is the sign-in
+ * identity, and connecting another Gmail here never changes it.
  *
  * Today this is always Gmail, but nothing above this layer knows that — see
  * src/lib/mail/provider.ts. Adding Outlook means adding a row with
@@ -96,6 +107,19 @@ export const mailAccounts = sqliteTable(
       .references(() => users.id, { onDelete: "cascade" }),
     provider: text("provider").notNull().default("gmail"),
     email: text("email").notNull(),
+    /**
+     * The provider's stable id for this mailbox's account (Google's `sub`).
+     * A reconnect must come back with the same one. Null for mailboxes
+     * connected before it was recorded; filled on their next reconnect.
+     */
+    providerAccountId: text("provider_account_id"),
+    /** A name the person chose, e.g. "Work". Never guessed by the app. */
+    label: text("label"),
+    /**
+     * Set when the provider stops accepting the stored grant (revoked, or
+     * expired after long disuse). Cleared by a successful reconnect.
+     */
+    needsReconnect: integer("needs_reconnect", { mode: "boolean" }).notNull().default(false),
 
     /** OAuth tokens, AES-256-GCM encrypted at rest. See src/lib/crypto.ts. */
     accessTokenEnc: text("access_token_enc").notNull(),

@@ -80,9 +80,9 @@ test("the sign-in link carries a return path only when it is safe", () => {
 
 test("Google sign-in keeps a safe return path in its signed state, and drops a hostile one", async () => {
   const { createOAuthState, readOAuthState } = await import("../src/lib/auth/oauth-state");
-  const kept = await createOAuthState("s1", "login", null, null, "/clear-out?unread=1");
+  const kept = await createOAuthState("s1", { intent: "login", userId: null, next: "/clear-out?unread=1" });
   assert.equal((await readOAuthState(kept, "s1"))?.next, "/clear-out?unread=1");
-  const dropped = await createOAuthState("s2", "login", null, null, "//evil.example");
+  const dropped = await createOAuthState("s2", { intent: "login", userId: null, next: "//evil.example" });
   assert.equal((await readOAuthState(dropped, "s2"))?.next, null);
 });
 

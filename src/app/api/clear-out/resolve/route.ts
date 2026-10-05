@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { requireAccount, requireUser } from "@/lib/api/auth";
+import { requireUserAndMailbox } from "@/lib/api/auth";
 import { json, readJsonRequest, route } from "@/lib/api/respond";
 import type { ClearOutResolveResponse } from "@/lib/api/types";
 import { gmailSearch } from "@/lib/clearout/filters";
@@ -24,8 +24,7 @@ const bodySchema = z.object({
 const PAGE = 500;
 
 export const POST = route(async (request: Request) => {
-  const user = await requireUser();
-  const account = await requireAccount(user.id);
+  const { account } = await requireUserAndMailbox(request);
   requireRead(account);
 
   const body = bodySchema.parse(await readJsonRequest(request));

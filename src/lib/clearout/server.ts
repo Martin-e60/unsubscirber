@@ -11,6 +11,7 @@ import {
 import { HttpError } from "@/lib/api/respond";
 import type { ClearOutAccessDto, ClearOutRunDto } from "@/lib/api/types";
 import { SENDER_STATUS, scopeAccess } from "@/lib/constants";
+import { reconnectHref } from "@/lib/mailbox/shared";
 import { normaliseListId } from "@/lib/followup/match";
 import { TokenRefreshError } from "@/lib/google/oauth";
 import { GmailApiError } from "@/lib/mail/gmail";
@@ -25,12 +26,17 @@ import { QueryError, readQuery, type UnsubscribedList } from "./filters";
  * loaded for the signed-in user, so nothing here can reach another account.
  */
 
-/** Where the reconnect for organising starts. */
-export const GRANT_URL = "/api/auth/google/start?mode=connect&access=organise";
+/**
+ * Where the reconnect for organising starts — for this mailbox, by id, so
+ * the permission is added to the mailbox on screen and no other.
+ */
+export function grantUrlFor(account: Pick<MailAccount, "id">): string {
+  return reconnectHref(account.id, { organise: true, next: "/clear-out" });
+}
 
 export function accessFor(account: MailAccount): ClearOutAccessDto {
   const { canRead, canOrganise } = scopeAccess(account.scope);
-  return { canRead, canOrganise, grantUrl: canOrganise ? null : GRANT_URL };
+  return { canRead, canOrganise, grantUrl: canOrganise ? null : grantUrlFor(account) };
 }
 
 export function requireRead(account: MailAccount): void {
