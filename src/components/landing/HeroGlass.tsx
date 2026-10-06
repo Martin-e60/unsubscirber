@@ -31,7 +31,7 @@ function GlassSide({ side }: { side: "left" | "right" }) {
         <rect width="460" height="900" fill={ref("haze")} />
         <path d="M0 0 H300 C403 144 421 278 377 428 C355 519 405 605 368 744 C348 823 290 865 255 900 H0 Z" fill={ref("body")} />
         <g fill="none">
-          <path d={back} stroke="#9da4ad" strokeOpacity=".22" strokeWidth="44" filter={ref("wide")} />
+          <path data-glass-surface d={back} stroke="#9da4ad" strokeOpacity=".22" strokeWidth="44" filter={ref("wide")} />
           <path d={back} stroke="#fff" strokeOpacity=".92" strokeWidth="15" filter={ref("soft")} transform="translate(19 0)" />
           <path d={inner} stroke="#a4aab2" strokeOpacity=".3" strokeWidth="46" filter={ref("wide")} />
           <path d={inner} stroke="#fff" strokeOpacity=".96" strokeWidth="20" filter={ref("soft")} transform="translate(-16 0)" />

@@ -54,13 +54,14 @@ export function HeroStreams() {
     <>
       <div className={styles.streams} ref={ref} data-streams>
         <PaperArt id={art} />
+        <PaperArt id={`${art}-reflection`} reflection />
         {/* What the glass reflects: a faint mirror of each envelope near it, and
             the soft highlight it casts as it passes. Driven by the same
             envelopes, one pair each. */}
         {(["left", "right"] as const).map((side) => (
           <div key={side} className={styles.mirrors} data-mirrors data-side={side} aria-hidden="true">
             {Array.from({ length: POOL_PER_SIDE }, (_, i) => (
-              <Reflection key={i} art={art} />
+              <Reflection key={i} art={`${art}-reflection`} />
             ))}
           </div>
         ))}
@@ -93,10 +94,10 @@ export function HeroStreams() {
  * outlines alone. Vector folds avoid raster sprites; rotated edge and label
  * quality still needs native browser inspection.
  */
-function PaperArt({ id }: { id: string }) {
+function PaperArt({ id, reflection = false }: { id: string; reflection?: boolean }) {
   const g = (name: string) => `${name}-${id}`;
   return (
-    <svg className={styles.art} width="0" height="0" aria-hidden="true" focusable="false">
+    <svg className={`${styles.art} ${reflection ? styles.reflectionArt : ""}`} width="0" height="0" aria-hidden="true" focusable="false">
       <defs>
         <linearGradient id={g("back")} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" className={styles.stopBackHi} />
@@ -205,8 +206,6 @@ function Reflection({ art }: { art: string }) {
       <span className={styles.mirror} data-mirror>
         <svg className={styles.folds} viewBox="0 0 400 152" preserveAspectRatio="none" focusable="false">
           <use href={`#paper-${art}`} />
-          <rect className={styles.line} x="112" y="31" width="132" height="12" rx="6" />
-          <rect className={styles.line} x="112" y="54" width="104" height="7" rx="3.5" />
         </svg>
       </span>
     </>

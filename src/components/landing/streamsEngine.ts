@@ -26,6 +26,7 @@
  */
 
 import { edgeFade, laneLean, laneOffset, paperTilt, protectLaneX } from "./laneGeometry";
+import { reflectionPose } from "./reflectionGeometry";
 
 export type Side = "left" | "right";
 export type Sample = { sender: string; subject: string; time: string };
@@ -105,7 +106,7 @@ const REF = {
 const BAND = 3 / 19;
 
 /** How much of an envelope's brightness its reflection keeps. */
-const MIRROR = 0.2;
+const MIRROR = 0.36;
 const SPEC = 0.36;
 
 // --- Small helpers ------------------------------------------------------------
@@ -219,6 +220,7 @@ type Lane = {
   strip: HTMLElement | null;
   /** Where the strip's left edge is on the page (for the right lane). */
   stripX: number;
+  surface: Point[];
 };
 
 type Particle = {
@@ -304,6 +306,7 @@ class Streams {
   private layers: GlassLayer[] = [];
   private light = { x: 0, y: 0, s: 0, tx: 0, ty: 0, ts: 0, applied: false };
   private heroTop = 0;
+  private glassShift: Point = { x: 0, y: 0 };
 
   private pulseOn = false;
   private pulseSince = 0;
@@ -360,6 +363,7 @@ class Streams {
         })),
         strip,
         stripX: 0,
+        surface: [],
       };
       const els = streams.querySelectorAll<HTMLElement>(`[data-env][data-side="${side}"]`);
       els.forEach((el, i) => lane.envs.push(this.adopt(el, lane, mirrors[i] ?? null, glows[i] ?? null)));
@@ -735,11 +739,26 @@ class Streams {
       lane.minGap = pitch * 0.95;
     }
 
-    this.reach = narrow ? 0 : REF.glass * u;
+    const glassSide = this.root.querySelector<HTMLElement>("[data-glass-side='left']");
+    this.reach = narrow ? 0 : glassSide?.clientWidth || REF.glass * u;
     for (const lane of this.lanes) {
       if (!lane.strip) continue;
       lane.strip.style.inlineSize = `${this.reach.toFixed(1)}px`;
       lane.stripX = lane.side === "left" ? 0 : width - this.reach;
+      // Sample the existing curved surface on resize, in source coordinates.
+      // No geometry/layout reads are needed in the animation loop.
+      const path = this.root.querySelector<SVGPathElement>(`[data-glass-side='${lane.side}'] [data-glass-surface]`);
+      const matrix = path?.getScreenCTM();
+      lane.surface = [];
+      if (path && matrix) {
+        const length = path.getTotalLength();
+        for (let i = 0; i <= 64; i++) {
+          const point = path.getPointAtLength(length * i / 64);
+          const mapped = new DOMPoint(point.x, point.y).matrixTransform(matrix);
+          const x = mapped.x - streamsRect.left - this.glassShift.x;
+          lane.surface.push({ x: lane.dir > 0 ? x : width - x, y: mapped.y - streamsRect.top - this.glassShift.y });
+        }
+      }
     }
 
     const resized = !this.envW || Math.abs(envW - this.envW) / this.envW > 0.08 || narrow !== this.narrow;
@@ -922,14 +941,15 @@ class Streams {
       const y = (layer.light ? 30 : -7) * l.y * k * u + (layer.light ? -22 : 16) * l.s * k * u;
       layer.el.style.transform = `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0)`;
     }
-    const lift = `translate3d(0, ${(16 * l.s * u).toFixed(2)}px, 0)`;
+    this.glassShift = { x: -5 * l.x * u, y: (-7 * l.y + 16 * l.s) * u };
+    const lift = `translate3d(${this.glassShift.x.toFixed(2)}px, ${this.glassShift.y.toFixed(2)}px, 0)`;
     for (const lane of this.lanes) if (lane.strip) lane.strip.style.transform = lift;
   }
 
   /**
    * An envelope's reflection and the light it casts. Near the glass (the lane
    * bows towards it at mid-height) the paper is mirrored in the surface at its
-   * outer edge: same position and tilt, flipped, squeezed by the curve of the
+   * measured expanded surface: source-linked position and tilt, squeezed by the curve of the
    * glass, softened. It strengthens as the envelope nears the glass, fades as
    * it leaves or dissolves, and is hidden once there is nothing to reflect.
    */
@@ -939,28 +959,18 @@ class Streams {
     if (this.narrow || !this.reach || env.state === "idle") return this.hideMirror(env);
 
     const { x, y, r, k, o } = env.pose;
-    const rad = (r * Math.PI) / 180;
-    // How far the tilted paper reaches sideways from its centre.
-    const hx = ((this.envW * Math.abs(Math.cos(rad)) + this.envH * Math.abs(Math.sin(rad))) * k) / 2;
-    const edge = lane.dir > 0 ? x - hx : x + hx;
-    const away = lane.dir > 0 ? edge : this.width - edge;
-    const contact = REF.contact * this.u;
-    // 1 with the paper at the glass, 0 once it is a full depth of glass away.
-    const near = 1 - smooth((away - contact) / Math.max(1, this.reach - contact));
+    const projected = reflectionPose({
+      x: lane.dir > 0 ? x : this.width - x, y, rotation: r * lane.dir,
+      depth: k, width: this.envW, height: this.envH,
+    }, lane.surface, this.u);
+    if (!projected) return this.hideMirror(env);
+    const near = projected.proximity;
     let live = o;
     if (env.state === "dissolve") live *= clamp(1 - env.progress * 1.5);
     const a = near * live;
     if (a < 0.01) return this.hideMirror(env);
 
-    const u = this.u;
-    // The mirror stands just outside the paper's edge, closer as it comes near.
-    const gap = (3 + 12 * (1 - near)) * u;
-    const axis = lane.dir > 0 ? edge - gap : edge + gap;
-    // A curved surface squeezes what it reflects sideways, more at a graze.
-    const sx = 0.44 + 0.12 * (1 - near);
-    const sy = 1.12 + 0.08 * (1 - near);
-    const cx = axis - sx * (x - axis) - lane.stripX;
-    const blur = (3.2 + 2.8 * (1 - near)) * u;
+    const cx = (lane.dir > 0 ? projected.x : this.width - projected.x) - lane.stripX;
 
     if (!env.mirrored) {
       env.mirrored = true;
@@ -968,17 +978,18 @@ class Streams {
       glow.style.visibility = "visible";
     }
     mirror.style.opacity = (a * MIRROR).toFixed(3);
-    mirror.style.filter = `blur(${blur.toFixed(1)}px)`;
+    mirror.style.filter = `blur(${projected.blur.toFixed(2)}px)`;
     mirror.style.transform =
-      `translate(${(cx - this.envW / 2).toFixed(2)}px, ${(y - this.envH / 2).toFixed(2)}px) ` +
-      `scale(${(-sx).toFixed(3)}, ${sy.toFixed(3)}) rotate(${r.toFixed(2)}deg) scale(${k.toFixed(3)})`;
+      `translate(${(cx - this.envW / 2).toFixed(2)}px, ${(projected.y - this.envH / 2).toFixed(2)}px) ` +
+      `rotate(${(projected.rotation * lane.dir).toFixed(2)}deg) skewY(${(projected.skew * lane.dir).toFixed(2)}deg) ` +
+      `scale(${(-projected.scaleX * k).toFixed(3)}, ${(projected.scaleY * k).toFixed(3)})`;
 
     // Its light on the glass beside it, a little inside the surface.
     const gw = this.envW * 0.5;
     const gh = this.envW * 0.95;
-    const gx = axis - lane.dir * (10 * u) - lane.stripX;
+    const gx = cx - lane.dir * 14 * this.u;
     glow.style.opacity = (near * near * live * SPEC).toFixed(3);
-    glow.style.transform = `translate(${(gx - gw / 2).toFixed(2)}px, ${(y - gh / 2).toFixed(2)}px)`;
+    glow.style.transform = `translate(${(gx - gw / 2).toFixed(2)}px, ${(projected.y - gh / 2).toFixed(2)}px)`;
   }
 
   private hideMirror(env: Envelope) {
