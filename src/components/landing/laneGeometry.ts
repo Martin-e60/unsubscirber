@@ -72,3 +72,25 @@ export function paperTilt(dir: 1 | -1, lean: number, own = 0): number {
 export function edgeFade(top: number, bottom: number, t0: number, t1: number, b0: number, b1: number): number {
   return Math.min(smooth((top - t0) / (t1 - t0)), smooth((b0 - bottom) / (b0 - b1)));
 }
+
+/** Keep a tilted paper's bounding corner outside measured central text.
+ * Approach the guard gradually before entering its vertical band. */
+export function protectLaneX(
+  x: number,
+  y: number,
+  halfWidth: number,
+  halfHeight: number,
+  dir: 1 | -1,
+  regions: ReadonlyArray<{ left: number; right: number; top: number; bottom: number }>,
+  margin: number,
+  falloff: number,
+): number {
+  for (const rect of regions) {
+    const distance = Math.max(rect.top - (y + halfHeight), y - halfHeight - rect.bottom, 0);
+    const weight = 1 - smooth(distance / falloff);
+    const edge = dir > 0 ? rect.left - halfWidth - margin : rect.right + halfWidth + margin;
+    const correction = Math.max(0, (x - edge) * dir);
+    x -= dir * correction * weight;
+  }
+  return x;
+}

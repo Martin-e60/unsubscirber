@@ -1,147 +1,25 @@
-/* The glass at the hero's edges (HeroGlass.tsx). Colours are the hero's glass
-   tokens (.hero in src/app/page.module.css). */
-
 .side {
   position: absolute;
   inset-block: 0;
-  /* As deep as the approved strip (--u as in page.module.css); a third of the
-     width where there is no --u. */
-  inline-size: var(--glass-w, 30%);
+  inline-size: var(--glass-w, 32%);
   overflow: clip;
-  /* Fades out towards the middle, so the glass never ends on a seam. */
-  -webkit-mask-image: linear-gradient(90deg, #000 62%, transparent 100%);
-  mask-image: linear-gradient(90deg, #000 62%, transparent 100%);
+  pointer-events: none;
+  mask-image: linear-gradient(90deg, #000 58%, rgb(0 0 0 / 85%) 78%, transparent);
 }
-
-.left {
-  inset-inline-start: 0;
-}
-
-/* Where the glass is a third of the width each side and sits behind the copy,
-   it is held back so the text stays easy to read. */
-@media (max-width: 64rem) {
-  .side {
-    opacity: 0.6;
-  }
-}
-
-/* The right side is a mirror of the same strip. */
-.right {
-  inset-inline-end: 0;
-  scale: -1 1;
-}
-
-/* The drawing, larger than its strip by the margin its viewBox carries (24
-   and 48 of 300 × 900), so the small shifts the engine gives it (depth against
-   the pointer and the scroll) never show an edge. */
+.left { inset-inline-start: 0; }
+.right { inset-inline-end: 0; scale: -1 1; }
 .base {
   position: absolute;
-  inset: -5.34% -8%;
-  inline-size: 116%;
-  block-size: 110.68%;
-  will-change: transform;
+  inset: -2% -3%;
+  inline-size: 106%;
+  block-size: 104%;
 }
-
-/* A broad diagonal sheen across the glass. The engine slides it with the
-   pointer; at rest it is a faint wash. */
 .sheen {
   position: absolute;
-  inset: -5.34% -8%;
-  background: linear-gradient(
-    105deg,
-    transparent 8%,
-    var(--glass-sheen) 34%,
-    transparent 58%
-  );
-  opacity: 0.75;
-  will-change: transform;
+  inset: -5%;
+  background: linear-gradient(112deg, transparent 13%, rgb(255 255 255 / 42%) 36%, transparent 57%);
+  opacity: .6;
 }
-
-.hazeStrong {
-  stop-color: var(--glass-haze-strong);
-}
-
-.hazeSoft {
-  stop-color: var(--glass-haze-soft);
-}
-
-.clear {
-  stop-color: var(--glass-clear);
-}
-
-.bodyCore {
-  stop-color: var(--lens-core);
-}
-
-.bodyEdge {
-  stop-color: var(--lens-body);
-}
-
-.bodyRim {
-  stop-color: var(--lens-band);
-}
-
-.sweep {
-  fill: none;
-  stroke: var(--lens-sweep);
-}
-
-.sweepShade {
-  fill: none;
-  stroke: var(--lens-sweep-shade);
-}
-
-.shade {
-  fill: none;
-  stroke: var(--lens-depth);
-  stroke-width: 36;
-}
-
-.halo {
-  fill: none;
-  stroke: var(--lens-halo);
-  stroke-width: 34;
-}
-
-.inner,
-.echoLine {
-  fill: none;
-  stroke: var(--lens-line);
-  stroke-width: 1.2;
-}
-
-.echo {
-  fill: none;
-  stroke: var(--lens-rim-soft);
-  stroke-width: 2.2;
-}
-
-.hair {
-  fill: none;
-  stroke: var(--lens-hair);
-  stroke-width: 1.1;
-}
-
-.glow {
-  fill: none;
-  stroke: var(--lens-glow);
-  stroke-width: 8;
-}
-
-.rim {
-  fill: none;
-  stroke: var(--lens-rim);
-  stroke-width: 2.6;
-}
-
-.streak {
-  fill: var(--lens-streak);
-}
-
-.streakShade {
-  fill: var(--lens-streak-shade);
-}
-
-.glint {
-  fill: var(--lens-glint);
+@media (max-width: 64rem) {
+  .side { opacity: .55; }
 }

@@ -90,7 +90,8 @@ export function HeroStreams() {
  * across it, the bright front panel the text sits on, a small facet under its
  * lower right corner and a curled-over top corner. Each facet has its own
  * light-to-shade gradient, so the folds read from light rather than from
- * outlines alone. Everything is vector, so it stays sharp at any size and angle.
+ * outlines alone. Vector folds avoid raster sprites; rotated edge and label
+ * quality still needs native browser inspection.
  */
 function PaperArt({ id }: { id: string }) {
   const g = (name: string) => `${name}-${id}`;
@@ -119,21 +120,21 @@ function PaperArt({ id }: { id: string }) {
         </linearGradient>
         <g id={g("paper")}>
           {/* The thickness of the sheet, showing under its lower edge. */}
-          <path className={styles.edge} d="M1 5 H368 L401 38 V157 H1 Z" />
+          <path className={styles.edge} d="M5 4 H368 L401 38 V150 Q401 157 394 157 H6 Q1 157 1 151 V10 Q1 4 5 4 Z" />
           {/* The back sheet: seen in the pocket at lower left. */}
-          <path className={styles.facet} fill={`url(#${g("back")})`} d="M0 0 H366 L400 32 V152 H0 Z" />
+          <path className={styles.facet} fill={`url(#${g("back")})`} d="M5 0 H366 L400 32 V146 Q400 152 394 152 H6 Q0 152 0 146 V6 Q0 0 5 0 Z" />
           {/* The lower right facet, folded up under the front panel. */}
-          <path className={styles.facet} fill={`url(#${g("facet")})`} d="M352 152 L400 100 V152 Z" />
+          <path className={styles.facet} fill={`url(#${g("facet")})`} d="M370 152 L400 115 V146 Q400 152 394 152 Z" />
           {/* The pocket's lower sliver, under the crease. */}
           <path className={styles.facet} fill={`url(#${g("back")})`} d="M0 152 L70 108 L97 152 Z" />
           {/* The front panel the address sits on. */}
           <path
             className={styles.facet}
             fill={`url(#${g("front")})`}
-            d="M0 0 H366 L400 32 V100 L352 152 H97 Z"
+            d="M5 0 H366 L400 32 V111 L378 143 Q372 152 362 152 H102 Q92 152 85 141 L1 8 Q-2 0 5 0 Z"
           />
           {/* The flap folded in from the left, with the pocket crease. */}
-          <path className={styles.facet} fill={`url(#${g("flap")})`} d="M0 0 L70 108 L0 152 Z" />
+          <path className={styles.facet} fill={`url(#${g("flap")})`} d="M3 3 L70 108 L3 149 Q0 147 0 143 V8 Q0 4 3 3 Z" />
           {/* The top right corner, curled over towards the viewer. */}
           <path className={styles.earShadow} d="M366 0 L400 32 L398 40 L362 6 Z" />
           <path className={styles.facet} fill={`url(#${g("ear")})`} d="M366 0 Q380 6 400 32 L384 29 Q373 17 366 0 Z" />

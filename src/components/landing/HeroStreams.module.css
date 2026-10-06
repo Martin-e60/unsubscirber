@@ -5,12 +5,10 @@
    scaled from the width. The page decides where the lanes sit; this file only
    draws them.
 
-   Sharpness: an envelope is moved with a plain 2D transform and nothing here
-   asks the browser to promote it to its own compositor layer (no will-change,
-   no 3D transform, no blend mode, no filter or opacity while it is fully
-   shown). A promoted, rotated layer is rasterised flat and then resampled
-   at an angle, which softens contours and small text; left in the page it is
-   painted at its true angle every frame. */
+   Foreground uses vector folds, HTML labels and 2D movement, with no raster
+   sprites, grain or foreground blur while fully visible. Avoid requesting an
+   extra compositor layer here. Actual edge/text quality must still be checked
+   at native scale on each target DPR; vector art alone does not guarantee it. */
 
 .streams {
   position: absolute;
@@ -94,6 +92,8 @@
 .mirror {
   inline-size: var(--env-w, 22rem);
   block-size: var(--env-h, 8.4rem);
+  /* Only a curved, fading fragment belongs to the reflective surface. */
+  mask-image: radial-gradient(ellipse at 55% 46%, #000 12%, rgb(0 0 0 / 55%) 38%, transparent 71%);
 }
 
 /* The mirror image is white paper on glass: soft edges, quiet contrast. */
@@ -202,7 +202,7 @@
 .text {
   position: absolute;
   inset-block-start: 17%;
-  inset-inline: 27% 5%;
+  inset-inline: 22% 6%;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: baseline;
@@ -219,7 +219,7 @@
 
 .sender {
   font-family: var(--lp-serif);
-  font-size: 1.27em;
+  font-size: 1.34em;
   font-weight: 650;
   letter-spacing: -0.012em;
   line-height: 1.15;
@@ -228,14 +228,14 @@
 .subject {
   grid-column: 1 / -1;
   color: var(--paper-ink-2);
-  font-size: 0.82em;
+  font-size: 0.92em;
   letter-spacing: -0.012em;
   line-height: 1.3;
 }
 
 .time {
   color: var(--paper-time);
-  font-size: 0.78em;
+  font-size: 0.87em;
   white-space: nowrap;
 }
 
@@ -325,6 +325,15 @@
    under the copy instead of beside it. There is no room for reflections. */
 
 @media (max-width: 64rem) {
+  .env {
+    font-size: max(12px, calc(var(--env-w, 22rem) / 19));
+  }
+
+  .subject,
+  .time {
+    font-size: max(11px, 0.92em);
+  }
+
   .streams {
     position: relative;
     inset: auto;

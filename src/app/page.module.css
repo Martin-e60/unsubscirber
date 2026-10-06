@@ -74,10 +74,10 @@
   --paper-edge-strong: #8e9097;
   --paper-seam: #cacdd5;
   --paper-ink: #0b0b0c;
-  --paper-ink-2: #6b789a;
-  --paper-time: #78839f;
-  --paper-shadow: rgb(40 48 72 / 36%);
-  --paper-shadow-near: rgb(40 48 72 / 15%);
+  --paper-ink-2: #737985;
+  --paper-time: #7b808b;
+  --paper-shadow: rgb(40 43 48 / 36%);
+  --paper-shadow-near: rgb(40 43 48 / 15%);
   --unsub-bg: #0e0e10;
   --unsub-fg: #ffffff;
   --paper-grain: none;
@@ -345,7 +345,7 @@
   .hero {
     --u: calc(min(100vw, 160svh) / 1440);
     --hero-nav: max(3.5rem, calc(72 * var(--u)));
-    --glass-w: calc(300 * var(--u));
+    --glass-w: calc(460 * var(--u));
   }
 
   /* The copy block's centre sits a little below the middle of the frame. */
@@ -375,7 +375,7 @@
   .primary {
     gap: calc(22 * var(--u));
     min-block-size: max(2.5rem, calc(48 * var(--u)));
-    padding-inline: calc(50 * var(--u));
+    padding-inline: calc(46.5 * var(--u));
     font-size: max(14px, calc(19 * var(--u)));
   }
 

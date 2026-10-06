@@ -158,3 +158,31 @@ test("the landing page no longer links to the removed free page", () => {
     assert.ok(!source.includes('"/free"'), "no link to /free");
   }
 });
+
+test("a tilted envelope cannot cover central text on either lane", async () => {
+  const { protectLaneX } = await import("../src/components/landing/laneGeometry");
+  const text = [{ left: 445, right: 980, top: 309, bottom: 445 }];
+  // Entering near the headline: the rotated bounding corner can cross it even
+  // when the nominal lane centre is outside the text.
+  const left = protectLaneX(310, 228, 151, 85, 1, text, 12, 24);
+  const right = protectLaneX(1133, 228, 155, 85, -1, text, 12, 24);
+  assert.ok(left + 151 <= text[0].left - 12);
+  assert.ok(right - 155 >= text[0].right + 12);
+  // Paper with plenty of whitespace, and paper past the vertical band, keep
+  // following their original curve.
+  assert.equal(protectLaneX(220, 402, 151, 85, 1, text, 12, 24), 220);
+  assert.equal(protectLaneX(310, 650, 151, 85, 1, text, 12, 24), 310);
+});
+
+test("the copy guard approaches continuously without jumping across a lane", async () => {
+  const { protectLaneX } = await import("../src/components/landing/laneGeometry");
+  const text = [{ left: 445, right: 980, top: 309, bottom: 445 }];
+  let previous = 310;
+  for (let y = 180; y <= 245; y += 0.25) {
+    const x = protectLaneX(310, y, 151, 85, 1, text, 12, 24);
+    assert.ok(x <= previous + 1e-8);
+    assert.ok(previous - x < 0.5);
+    assert.ok(x > 0);
+    previous = x;
+  }
+});

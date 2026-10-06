@@ -25,7 +25,7 @@
  * streams layer; dust is drawn relative to the hero, so it can reach the CTA.
  */
 
-import { edgeFade, laneLean, laneOffset, paperTilt } from "./laneGeometry";
+import { edgeFade, laneLean, laneOffset, paperTilt, protectLaneX } from "./laneGeometry";
 
 export type Side = "left" | "right";
 export type Sample = { sender: string; subject: string; time: string };
@@ -98,15 +98,15 @@ const REF = {
   /** Height away from the apex beyond which the curve carries on straight. */
   reach: 360,
   /** Where the glass ends, and where an envelope touches it. */
-  glass: 190,
+  glass: 420,
   contact: 44,
 };
 /** The dissolve's crumbling band, in envelope widths (3em at width / 19). */
 const BAND = 3 / 19;
 
 /** How much of an envelope's brightness its reflection keeps. */
-const MIRROR = 0.6;
-const SPEC = 0.85;
+const MIRROR = 0.2;
+const SPEC = 0.36;
 
 // --- Small helpers ------------------------------------------------------------
 
@@ -724,11 +724,11 @@ class Streams {
         lane.r0 = REF.apex * u;
         lane.k = REF.bow / u;
         lane.lim = REF.reach * u;
-        lane.y0 = rect.top + rect.height / 2 - 55 * u;
+        lane.y0 = rect.top + rect.height / 2 - 55 * u + (lane.side === "right" ? 44 * u : 0);
         lane.t0 = nav + 6 * u;
         lane.t1 = nav + 62 * u;
         lane.b0 = hint - 6 * u;
-        lane.b1 = lane.b0 - 56 * u;
+        lane.b1 = lane.b0 - 24 * u;
         lane.entry = lane.b0 + envH * 0.9;
         lane.length = lane.entry - (lane.t0 - envH * 0.5);
       }
@@ -777,7 +777,7 @@ class Streams {
 
     for (const lane of this.lanes) {
       const wide = !this.narrow && !!this.copy;
-      const below = lane.side === "left" ? 0 : wide ? 44 * this.u : this.pitch * 0.45;
+      const below = lane.side === "left" || wide ? 0 : this.pitch * 0.45;
       const first0 = wide ? lane.y0 - 184 * this.u : lane.t1 + this.envH * 0.7;
       const ys: number[] = [];
       for (let y = first0 + below; y < lane.b0 + this.envH * 0.15; y += this.pitch * rand(0.97, 1.03)) ys.push(y);
@@ -877,6 +877,15 @@ class Streams {
     // How far the tilted paper reaches up and down from its centre.
     const rad = (pose.r * Math.PI) / 180;
     const half = ((this.envW * Math.abs(Math.sin(rad)) + this.envH * Math.abs(Math.cos(rad))) * pose.k) / 2;
+    if (!this.narrow) {
+      const hx = ((this.envW * Math.abs(Math.cos(rad)) + this.envH * Math.abs(Math.sin(rad))) * pose.k) / 2;
+      // Ease the extreme corner of an entering envelope away from the copy.
+      // This guard includes its own lean/jitter; the nominal lane alone cannot.
+      pose.x = protectLaneX(
+        pose.x + this.offset.x, y + this.offset.y, hx, half,
+        lane.dir, this.keepOut, 12 * this.u, 24 * this.u,
+      ) - this.offset.x;
+    }
     pose.o = this.fade(lane, y, half);
   }
 
@@ -948,10 +957,10 @@ class Streams {
     const gap = (3 + 12 * (1 - near)) * u;
     const axis = lane.dir > 0 ? edge - gap : edge + gap;
     // A curved surface squeezes what it reflects sideways, more at a graze.
-    const sx = 0.72 + 0.16 * (1 - near);
-    const sy = 1.02 + 0.05 * (1 - near);
+    const sx = 0.44 + 0.12 * (1 - near);
+    const sy = 1.12 + 0.08 * (1 - near);
     const cx = axis - sx * (x - axis) - lane.stripX;
-    const blur = (1 + 2.2 * (1 - near)) * u;
+    const blur = (3.2 + 2.8 * (1 - near)) * u;
 
     if (!env.mirrored) {
       env.mirrored = true;
@@ -1287,9 +1296,8 @@ class Streams {
   private place(env: Envelope) {
     const { x, y, r, k, o } = env.pose;
     const el = env.el;
-    // A plain 2D transform, and no opacity or filter while it is fully shown,
-    // so the browser paints the paper at its true angle (see the note at the
-    // top of HeroStreams.module.css).
+    // Keep fully visible foreground free of blur and use 2D movement. Browser
+    // compositing and text quality are verified visually, not inferred here.
     el.style.transform =
       `translate(${(x - this.envW / 2).toFixed(2)}px, ${(y - this.envH / 2).toFixed(2)}px) ` +
       `rotate(${r.toFixed(2)}deg) scale(${k.toFixed(3)})`;
