@@ -68,7 +68,7 @@
   inline-size: 12rem;
   overflow: clip;
   pointer-events: none;
-  mask-image: linear-gradient(90deg, #000 58%, rgb(0 0 0 / 85%) 78%, transparent);
+  /* The engine sets one soft mask following the measured glass curve. */
 }
 
 .mirrors[data-side="left"] {
@@ -77,7 +77,6 @@
 
 .mirrors[data-side="right"] {
   inset-inline-end: 0;
-  mask-image: linear-gradient(270deg, #000 58%, rgb(0 0 0 / 85%) 78%, transparent);
 }
 
 .mirror,
@@ -94,8 +93,8 @@
 .mirror {
   inline-size: var(--env-w, 22rem);
   block-size: var(--env-h, 8.4rem);
-  /* Only a curved, fading fragment belongs to the reflective surface. */
-  mask-image: radial-gradient(ellipse at 32% 38%, #000 10%, rgb(0 0 0 / 75%) 38%, rgb(0 0 0 / 25%) 65%, transparent 88%);
+  /* The surface mask and the foreground paper expose a partial silhouette.
+     No second local mask attenuates the already exposed folds. */
 }
 
 /* The mirror image is white paper on glass: soft edges, quiet contrast. */
@@ -105,19 +104,21 @@
 
 /* Separate paint definitions preserve the foreground art and all its tones.
    Only the partial, compressed reflection uses these neutral darker folds. */
-.reflectionArt {
-  --paper-hi: #d9dde1;
-  --paper-lo: #aeb6bf;
-  --paper-back-hi: #bbc2ca;
-  --paper-back-lo: #8c96a1;
-  --paper-flap-hi: #b4bdc6;
-  --paper-flap-lo: #87939f;
-  --paper-facet-hi: #c6ccd2;
-  --paper-facet-lo: #8a96a1;
-  --paper-thick: #84909c;
-  --paper-fold: #8b96a0;
+.reflectionArt,
+.mirror .folds {
+  --paper-hi: #eef1f3;
+  --paper-lo: #cbd4dc;
+  --paper-back-hi: #bbc6cf;
+  --paper-back-lo: #7f91a1;
+  --paper-flap-hi: #b7c3ce;
+  --paper-flap-lo: #6f8191;
+  --paper-facet-hi: #c3cdd6;
+  --paper-facet-lo: #718392;
+  --paper-thick: #8193a3;
+  --paper-fold: #7f91a1;
+  --paper-seam: #8193a3;
   --paper-shadow-near: rgb(82 93 104 / 25%);
-  --edge: #85909b;
+  --edge: #8193a3;
 }
 
 .mirror .facet,
@@ -127,9 +128,16 @@
 
 /* The highlight a passing envelope casts on the glass beside it. */
 .glow {
-  inline-size: calc(var(--env-w, 22rem) * 0.5);
-  block-size: calc(var(--env-w, 22rem) * 0.95);
-  background: radial-gradient(closest-side, var(--glass-spec), transparent);
+  inline-size: calc(var(--env-w, 22rem) * 0.24);
+  block-size: calc(var(--env-w, 22rem) * 0.7);
+  /* A short light/dark grazing edge stays legible on almost-white glass.
+     The ellipse softens only this light, not the reflected paper folds. */
+  background: linear-gradient(90deg, transparent 20%, rgb(133 142 152 / 35%) 42%, var(--glass-spec) 56%, transparent 80%);
+  mask-image: radial-gradient(ellipse, #000 5%, transparent 70%);
+}
+
+.mirrors[data-side="right"] .glow {
+  background: linear-gradient(270deg, transparent 20%, rgb(133 142 152 / 35%) 42%, var(--glass-spec) 56%, transparent 80%);
 }
 
 /* --- Envelope ---------------------------------------------------------------- */

@@ -26,7 +26,7 @@
  */
 
 import { edgeFade, laneLean, laneOffset, paperTilt, protectLaneX } from "./laneGeometry";
-import { reflectionPose } from "./reflectionGeometry";
+import { reflectionPose, reflectionSurfaceMask } from "./reflectionGeometry";
 
 export type Side = "left" | "right";
 export type Sample = { sender: string; subject: string; time: string };
@@ -759,6 +759,7 @@ class Streams {
           lane.surface.push({ x: lane.dir > 0 ? x : width - x, y: mapped.y - streamsRect.top - this.glassShift.y });
         }
       }
+      lane.strip.style.maskImage = reflectionSurfaceMask(lane.surface, this.reach, height, lane.dir, u);
     }
 
     const resized = !this.envW || Math.abs(envW - this.envW) / this.envW > 0.08 || narrow !== this.narrow;
@@ -956,11 +957,14 @@ class Streams {
   private reflect(env: Envelope) {
     const { mirror, glow, lane } = env;
     if (!mirror || !glow) return;
-    if (this.narrow || !this.reach || env.state === "idle") return this.hideMirror(env);
+    // A reduced-motion unsubscribe has no simulation progress: a resize must
+    // not restore its reflection while the replacement timer is pending.
+    if (this.narrow || !this.reach || env.state === "idle" || (!this.animate && env.state === "dissolve")) return this.hideMirror(env);
 
     const { x, y, r, k, o } = env.pose;
     const projected = reflectionPose({
-      x: lane.dir > 0 ? x : this.width - x, y, rotation: r * lane.dir,
+      x: (lane.dir > 0 ? x : this.width - x) - lane.dir * this.glassShift.x,
+      y: y - this.glassShift.y, rotation: r * lane.dir,
       depth: k, width: this.envW, height: this.envH,
     }, lane.surface, this.u);
     if (!projected) return this.hideMirror(env);
@@ -984,12 +988,13 @@ class Streams {
       `rotate(${(projected.rotation * lane.dir).toFixed(2)}deg) skewY(${(projected.skew * lane.dir).toFixed(2)}deg) ` +
       `scale(${(-projected.scaleX * k).toFixed(3)}, ${(projected.scaleY * k).toFixed(3)})`;
 
-    // Its light on the glass beside it, a little inside the surface.
-    const gw = this.envW * 0.5;
-    const gh = this.envW * 0.95;
-    const gx = cx - lane.dir * 14 * this.u;
+    // A narrow grazing light on the exposed curve, rather than underneath the
+    // paper at the reflected image's centre. It follows the same sampled pose.
+    const gw = this.envW * 0.24;
+    const gh = this.envW * 0.7;
+    const gx = (lane.dir > 0 ? projected.surfaceX + 10 * this.u : this.width - projected.surfaceX - 10 * this.u) - lane.stripX;
     glow.style.opacity = (near * near * live * SPEC).toFixed(3);
-    glow.style.transform = `translate(${(gx - gw / 2).toFixed(2)}px, ${(projected.y - gh / 2).toFixed(2)}px)`;
+    glow.style.transform = `translate(${(gx - gw / 2).toFixed(2)}px, ${(projected.y - gh / 2).toFixed(2)}px) rotate(${(-projected.surfaceAngle * lane.dir).toFixed(2)}deg)`;
   }
 
   private hideMirror(env: Envelope) {

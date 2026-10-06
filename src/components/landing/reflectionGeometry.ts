@@ -37,15 +37,36 @@ export function reflectionPose(source: ReflectionSource, surface: readonly Point
   const distance = Math.abs(source.x + halfWidth - surfaceX);
   const proximity = 1 - smooth(distance / (source.width * 0.78));
   return {
-    // Keep a source-dependent displacement along the surface: neither a
-    // reflection about the offscreen paper edge nor a clamped static patch.
-    x: surfaceX + (source.x - surfaceX) * 0.2,
-    y: source.y + (54 + 20 * proximity) * unit + slope * (source.x - surfaceX) * 0.08,
+    // The trace shares the source's height. Its opposite tilt exposes folds
+    // beside the opaque paper, rather than a miniature card shifted below it.
+    x: surfaceX + (source.x - surfaceX) * 0.45,
+    y: source.y + slope * (source.x - surfaceX) * 0.18,
     rotation: -source.rotation + angle * 0.22,
     skew: Math.max(-10, Math.min(10, angle * 0.2)),
-    scaleX: 0.5 - 0.08 * proximity,
-    scaleY: 0.76 + 0.06 * proximity,
+    scaleX: 0.82 - 0.04 * proximity,
+    scaleY: 0.9 + 0.02 * proximity,
+    surfaceX,
+    surfaceAngle: angle,
     proximity,
     blur: (1.6 + 0.7 * (1 - proximity)) * unit,
   };
+}
+
+/** One soft boundary for the entire reflection composite. The measured back
+ * curve and its broad grazing band define where paper is visible in the glass;
+ * an envelope-local ellipse would erase those same exposed corner folds. */
+export function reflectionSurfaceMask(
+  surface: readonly Point[], width: number, height: number, direction: 1 | -1, unit: number,
+) {
+  if (surface.length < 2 || width <= 0 || height <= 0) return "none";
+  const soft = 11 * unit;
+  const outer = direction > 0 ? 0 : width;
+  const edge = surface.map(point => {
+    // Fade before the strip ends as well as along the curved glass boundary.
+    const x = Math.min(width - 2 * soft, point.x + 42 * unit);
+    return `${(direction > 0 ? x : width - x).toFixed(2)},${point.y.toFixed(2)}`;
+  }).join(" ");
+  const points = `${outer},${surface[0].y.toFixed(2)} ${edge} ${outer},${surface[surface.length - 1].y.toFixed(2)}`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><defs><filter id="fade" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="${soft.toFixed(2)}"/></filter></defs><polygon points="${points}" fill="white" filter="url(#fade)"/></svg>`;
+  return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
 }
