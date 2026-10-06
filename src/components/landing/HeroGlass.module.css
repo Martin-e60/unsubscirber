@@ -1,0 +1,93 @@
+/* The glass at the hero's edges (HeroGlass.tsx). Colours are the hero's
+   glass tokens (.hero in src/app/page.module.css), light and dark. */
+
+.side {
+  position: absolute;
+  inset-block: 0;
+  inline-size: 30%;
+  block-size: 100%;
+  overflow: hidden;
+  /* Fades out towards the middle, so the glass never ends on a seam. */
+  -webkit-mask-image: linear-gradient(90deg, #000 62%, transparent 100%);
+  mask-image: linear-gradient(90deg, #000 62%, transparent 100%);
+}
+
+.left {
+  inset-inline-start: 0;
+}
+
+/* The right side is the same drawing, mirrored. */
+.right {
+  inset-inline-end: 0;
+  scale: -1 1;
+}
+
+.hazeStrong {
+  stop-color: var(--glass-haze-strong);
+}
+
+.hazeSoft {
+  stop-color: var(--glass-haze-soft);
+}
+
+.clear {
+  stop-color: var(--glass-clear);
+}
+
+.bodyCore {
+  stop-color: var(--lens-core);
+}
+
+.bodyEdge {
+  stop-color: var(--lens-body);
+}
+
+.bodyRim {
+  stop-color: var(--lens-band);
+}
+
+.frost {
+  opacity: var(--frost-opacity);
+}
+
+.shade,
+.shadeSoft {
+  fill: none;
+  stroke: var(--lens-depth);
+  stroke-width: 34;
+}
+
+.shadeSoft {
+  stroke-width: 22;
+  opacity: 0.65;
+}
+
+.echo {
+  fill: none;
+  stroke: var(--lens-rim-soft);
+  stroke-width: 1.5;
+  opacity: 0.6;
+}
+
+.glow {
+  fill: none;
+  stroke: var(--lens-glow);
+  stroke-width: 7;
+}
+
+.rim {
+  fill: none;
+  stroke: var(--lens-rim);
+  stroke-width: 2.2;
+}
+
+.rimSoft {
+  fill: none;
+  stroke: var(--lens-rim);
+  stroke-width: 1.4;
+  opacity: 0.8;
+}
+
+.glint {
+  fill: var(--lens-glint);
+}

@@ -35,6 +35,22 @@
   z-index: 4;
 }
 
+/* Distant envelopes: soft, faint silhouettes behind everything else. */
+.distant {
+  position: absolute;
+  inline-size: calc(var(--env-w, 14rem) * 0.32);
+  aspect-ratio: 1.55;
+  border: 1px solid var(--paper-edge);
+  border-radius: 2px;
+  background:
+    linear-gradient(to bottom right, transparent calc(50% - 0.5px), var(--paper-seam) 50%, transparent calc(50% + 0.5px)) left / 50% 100% no-repeat,
+    linear-gradient(to bottom left, transparent calc(50% - 0.5px), var(--paper-seam) 50%, transparent calc(50% + 0.5px)) right / 50% 100% no-repeat,
+    linear-gradient(170deg, var(--paper-hi), var(--paper-lo));
+  opacity: var(--distant-opacity, 0.45);
+  filter: blur(2.5px);
+  translate: -50% -50%;
+}
+
 .lane {
   position: absolute;
   inset: 0;
@@ -51,7 +67,7 @@
   inset-inline-start: 0;
   inline-size: var(--env-w, 22rem);
   block-size: var(--env-h, 8.4rem);
-  font-size: calc(var(--env-w, 22rem) / 21);
+  font-size: calc(var(--env-w, 22rem) / 19);
   pointer-events: auto;
   transform-origin: 50% 50%;
   will-change: transform, opacity;
@@ -74,6 +90,20 @@
   position: absolute;
   inset: 0;
   color: var(--paper-ink);
+}
+
+/* The grain of the paper itself, inside its outline (the top right corner
+   is folded away). */
+.paper::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: var(--paper-grain);
+  background-size: 140px 140px;
+  opacity: var(--paper-grain-opacity, 0.5);
+  mix-blend-mode: multiply;
+  clip-path: polygon(0 0, 91.5% 0, 100% 21%, 100% 100%, 0 100%);
+  pointer-events: none;
 }
 
 .folds {

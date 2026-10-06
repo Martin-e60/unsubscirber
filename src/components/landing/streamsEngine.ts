@@ -55,7 +55,7 @@ const SAMPLES: Sample[] = [
 ];
 
 /** Envelopes rendered per lane; more than are ever visible, so exits can finish. */
-export const POOL_PER_SIDE = 9;
+export const POOL_PER_SIDE = 13;
 
 /** Envelope height as a share of its width. */
 export const ASPECT = 0.38;
@@ -69,12 +69,12 @@ const DISSOLVE = 1.5; // seconds for an envelope to come apart
 const DUST_PER_ENVELOPE = 320;
 const MAX_DUST = 2400;
 const MOTES_PER_LANE = 20;
-/** Gap between the copy and the inner edge of a lane. */
-const COPY_GAP = 12;
-/** Envelope width as a share of the copy's width, from the approved layout. */
-const ENVELOPE_TO_COPY = 0.66;
-/** The dissolve's crumbling band, in envelope widths (3em at width / 21). */
-const BAND = 3 / 21;
+/** The approved layout (approved-hero-light-dark.png) in its own pixels, the
+    reference being 1672 wide and its hero 478 tall (--u in page.module.css):
+    envelope width, and each lane's distance from the middle. */
+const REF = { width: 1672, aspect: 1672 / 560, envelope: 232, lane: 372 };
+/** The dissolve's crumbling band, in envelope widths (3em at width / 19). */
+const BAND = 3 / 19;
 
 // --- Small helpers ------------------------------------------------------------
 
@@ -114,6 +114,8 @@ type Burst = {
   p1: Point;
   p2: Point;
   p3: Point;
+  /** Towards the copy: +1 from the left lane, -1 from the right. */
+  dir: 1 | -1;
 };
 
 type Envelope = {
@@ -148,6 +150,7 @@ type Envelope = {
   interactive: boolean;
   held: boolean;
   z: number;
+  seq: number;
 };
 
 type Mote = { off: number; d: number; v: number; line: boolean; size: number; alpha: number };
@@ -232,6 +235,7 @@ class Streams {
   private running = false;
   private inView = true;
   private deck: Sample[] = [];
+  private seq = 0;
 
   private pulseOn = false;
   private pulseSince = 0;
@@ -272,7 +276,7 @@ class Streams {
           off: rand(-1, 1),
           d: 0,
           v: rand(0.75, 1.25),
-          line: i % 3 === 0,
+          line: i % 2 === 0,
           size: rand(0.8, 2.3),
           alpha: rand(0.25, 0.85),
         })),
@@ -406,6 +410,7 @@ class Streams {
       interactive: false,
       held: false,
       z: 0,
+      seq: 0,
     };
 
     const on = <K extends keyof HTMLElementEventMap>(
@@ -493,7 +498,9 @@ class Streams {
     // Mostly tipped the same way, as in the approved layout, with the odd one
     // leaning back — never two in a row, so neighbours never collide.
     lane.flip = !lane.flip && Math.random() < 0.3;
-    env.tilt = (lane.flip ? rand(-9, -5) : rand(12, 19)) * (this.narrow ? 0.6 : 1);
+    env.tilt = (lane.flip ? rand(-12, -8) : rand(16, 23)) * (this.narrow ? 0.6 : 1);
+    // Each newcomer lies over the one above it, as in the approved layout.
+    env.seq = ++this.seq;
     env.depth = rand(0.94, 1);
     env.hold = 0;
     env.hover = env.focus = false;
@@ -549,14 +556,12 @@ class Streams {
       this.lanes[1].cx = width * 0.74;
       for (const lane of this.lanes) lane.top = 0;
     } else {
-      const copy = relativeRect(this.copy, streamsRect);
-      const gutter = clamp(width * 0.034, 16, 56);
-      const free = Math.min(copy.left, width - copy.right) - COPY_GAP - gutter;
-      // Sized against the copy, as in the approved layout, unless the side
-      // space is too narrow; a tilted envelope plus its sway spans 1.26 widths.
-      envW = clamp(Math.min(copy.width * ENVELOPE_TO_COPY, free / 1.26), 170, 420);
-      this.lanes[0].cx = copy.left - COPY_GAP - envW * 0.6;
-      this.lanes[1].cx = copy.right + COPY_GAP + envW * 0.6;
+      // The approved layout scaled as the copy is, so the lanes keep their
+      // place beside it whatever the window.
+      const u = Math.min(window.innerWidth, window.innerHeight * REF.aspect) / REF.width;
+      envW = REF.envelope * u;
+      this.lanes[0].cx = width / 2 - REF.lane * u;
+      this.lanes[1].cx = width / 2 + REF.lane * u;
       // Envelopes are gone before they reach the header.
       const nav = parseFloat(getComputedStyle(this.root).paddingTop) || 0;
       for (const lane of this.lanes) lane.top = nav + 12 - (streamsRect.top - rootRect.top);
@@ -573,7 +578,8 @@ class Streams {
     this.narrow = narrow;
     this.envW = envW;
     this.envH = envH;
-    this.pitch = envH * (narrow ? 1.8 : 1.72);
+    // Close ranks, as in the approved layout; when narrow, a little looser.
+    this.pitch = envH * (narrow ? 1.8 : 1.45);
     this.streams.style.setProperty("--env-w", `${envW.toFixed(1)}px`);
     this.streams.style.setProperty("--env-h", `${envH.toFixed(1)}px`);
 
@@ -727,6 +733,31 @@ class Streams {
     env.paper.style.setProperty("--mr", "0px");
     env.el.setAttribute("data-dissolving", "");
     this.setInteractive(env, false);
+    this.burstAtControl(env);
+  }
+
+  /**
+   * The first storyboard frame: a dense cloud bursting off the paper around
+   * the control the moment it is used, before the erosion has spread.
+   */
+  private burstAtControl(env: Envelope) {
+    const burst = env.burst;
+    if (!burst) return;
+    const pose = env.pose;
+    const rad = (pose.r * Math.PI) / 180;
+    const cos = Math.cos(rad) * pose.k;
+    const sin = Math.sin(rad) * pose.k;
+    const reach = this.envW * BAND * 1.4;
+    const count = Math.round(burst.expected * 0.28);
+    for (let i = 0; i < count && this.alive < MAX_DUST; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const rr = Math.sqrt(Math.random()) * reach;
+      const cx = env.ox + Math.cos(a) * rr - this.envW / 2;
+      const cy = env.oy + Math.sin(a) * rr - this.envH / 2;
+      const x = pose.x + cx * cos - cy * sin + this.offset.x;
+      const y = pose.y + cx * sin + cy * cos + this.offset.y;
+      this.spawnParticle({ x, y }, Math.cos(a), Math.sin(a), burst);
+    }
   }
 
   /** Keeps keyboard focus in the lanes when the focused envelope goes. */
@@ -793,7 +824,7 @@ class Streams {
    * corner of the button on its own side. Built from the control's position,
    * where the erosion starts.
    */
-  private route(env: Envelope): { p1: Point; p2: Point; p3: Point } {
+  private route(env: Envelope): { p1: Point; p2: Point; p3: Point; dir: 1 | -1 } {
     const cta = this.ctaRect ?? { left: 0, right: 0, top: 0, bottom: 0, width: 0, height: 0 };
     const dir = env.lane.dir;
     const ch = cta.height;
@@ -807,27 +838,27 @@ class Streams {
       x: pose.x + lx * Math.cos(rad) - ly * Math.sin(rad) + this.offset.x,
       y: pose.y + lx * Math.sin(rad) + ly * Math.cos(rad) + this.offset.y,
     };
-    const p3 = { x: edge + dir * ch * 0.55, y: cta.top + ch * 0.8 };
+    // Into the end of the button on the stream's own side, a little below
+    // its middle (approved-particle-sequence.png).
+    const p3 = { x: edge + dir * ch * 0.35, y: cta.top + ch * 0.58 };
 
     if (this.narrow) {
       const outer = Math.max(6, Math.min(maxX, edge - dir * ch));
       return {
         p1: { x: outer, y: start.y + (cta.bottom - start.y) * 0.6 },
-        p2: { x: outer, y: cta.top + ch * 0.75 },
+        p2: { x: outer, y: p3.y + ch * 0.3 },
         p3,
+        dir,
       };
     }
-    // Down the gap between the lane and the copy (clear of the envelopes
-    // below), level with the button by then, so it never crosses the text;
-    // then up into the button's lower corner from below and outside.
-    const approachY = cta.bottom + ch * 0.9;
+    // A long, gently sagging arc through the space beside and below the
+    // description, arriving almost level with the button.
+    const p2 = { x: Math.max(6, Math.min(maxX, edge - dir * ch * 1.5)), y: p3.y + ch * 0.12 };
+    let p1 = { x: start.x + (p2.x - start.x) * 0.35, y: start.y + (p3.y - start.y) * 0.8 + ch * 0.6 };
+    // Never above the button while over the copy.
     const copy = this.copyRect;
-    const x1 = copy ? (dir > 0 ? copy.left : copy.right) : start.x + dir * ch * 0.4;
-    return {
-      p1: { x: x1, y: Math.max(start.y + (approachY - start.y) * 0.7, cta.top) },
-      p2: { x: Math.max(6, Math.min(maxX, edge - dir * ch * 1.1)), y: approachY },
-      p3,
-    };
+    if (copy && (dir > 0 ? p1.x > copy.left : p1.x < copy.right)) p1 = { x: p1.x, y: Math.max(p1.y, cta.top) };
+    return { p1, p2, p3, dir };
   }
 
   private spawnParticle(p0: Point, ux: number, uy: number, burst: Burst) {
@@ -859,23 +890,25 @@ class Streams {
     // Each grain joins its burst's route near the start and keeps to it, so
     // the dust converges into one stream instead of drifting as a cloud.
     const ch = cta.height;
-    const p1 = { x: burst.p1.x + rand(-10, 10), y: burst.p1.y + rand(-10, 10) };
-    const p2 = { x: burst.p2.x + rand(-5, 5), y: burst.p2.y + rand(-4, 4) };
-    const p3 = { x: burst.p3.x + rand(-0.22, 0.22) * ch, y: burst.p3.y + rand(-0.16, 0.16) * ch };
+    const p1 = { x: burst.p1.x + rand(-14, 14), y: burst.p1.y + rand(-14, 14) };
+    const p2 = { x: burst.p2.x + rand(-6, 6), y: burst.p2.y + rand(-5, 5) };
+    const p3 = { x: burst.p3.x + rand(-0.12, 0.12) * ch, y: burst.p3.y + rand(-0.1, 0.1) * ch };
 
     particle.alive = true;
     particle.p0 = p0;
     particle.p1 = p1;
     particle.p2 = p2;
     particle.p3 = p3;
-    const puff = rand(2, 12);
-    particle.puff = { x: ux * puff, y: uy * puff - rand(0, 4) };
-    const spread = rand(2, 9);
+    // First a cloud bursting off the paper towards the copy, as in the first
+    // storyboard frame; it then draws in to the stream.
+    const puff = rand(6, 34);
+    particle.puff = { x: ux * puff + burst.dir * rand(4, 26), y: uy * puff * 0.8 };
+    const spread = rand(4, 22);
     const na = rand(0, Math.PI * 2);
     particle.noise = { x: Math.cos(na) * spread, y: Math.sin(na) * spread };
     particle.age = 0;
-    particle.dur = rand(1.8, 2.4);
-    particle.size = Math.random() < 0.1 ? rand(1.6, 2.2) : rand(0.5, 1.3);
+    particle.dur = rand(1.7, 2.3);
+    particle.size = Math.random() < 0.12 ? rand(1.8, 3) : rand(0.6, 1.6);
     particle.alpha = rand(0.45, 0.95);
     particle.light = Math.random() < 0.35;
     particle.wobble = rand(1.5, 3);
@@ -961,7 +994,7 @@ class Streams {
       `translate3d(${(x - this.envW / 2).toFixed(2)}px, ${(y - this.envH / 2).toFixed(2)}px, 0) ` +
       `rotate(${r.toFixed(2)}deg) scale(${k.toFixed(3)})`;
     if (this.animate || env.state === "flow") el.style.opacity = o.toFixed(3);
-    const z = env.state === "dissolve" || env.held ? 3 : 2;
+    const z = env.state === "dissolve" || env.held ? 100000 : 10 + (env.seq % 50000);
     if (z !== env.z) {
       env.z = z;
       el.style.zIndex = String(z);
@@ -981,13 +1014,15 @@ class Streams {
         const o = this.fade(lane, y + this.envH * 0.4) * mote.alpha;
         if (o <= 0.01) continue;
         const x = lane.cx + mote.off * spread;
-        ctx.globalAlpha = mote.line ? o * 0.35 : o;
-        if (mote.line) ctx.fillRect(x, y, 0.8, 12 + mote.size * 10);
-        else {
-          ctx.beginPath();
-          ctx.arc(x, y, mote.size, 0, Math.PI * 2);
-          ctx.fill();
+        // A grain rising, some trailing a faint thread below them.
+        if (mote.line) {
+          ctx.globalAlpha = o * 0.28;
+          ctx.fillRect(x - 0.4, y, 0.8, 10 + mote.size * 12);
         }
+        ctx.globalAlpha = o;
+        ctx.beginPath();
+        ctx.arc(x, y, mote.size, 0, Math.PI * 2);
+        ctx.fill();
       }
     }
     ctx.globalAlpha = 1;
@@ -1004,7 +1039,8 @@ class Streams {
     const b2 = 3 * u * e * e;
     const b3 = e * e * e;
     const burst = Math.sin(Math.min(1, t * 3) * (Math.PI / 2)) * u * u;
-    const drift = Math.sin(Math.PI * e) * u;
+    // Wide near the paper, narrowing to a fine stream at the button.
+    const drift = Math.pow(u, 1.5) * Math.min(1, t * 4);
     const wobble = Math.sin(age * p.wobble + p.seed) * 1.5 * u;
     out.x = b0 * p.p0.x + b1 * p.p1.x + b2 * p.p2.x + b3 * p.p3.x + p.puff.x * burst + p.noise.x * drift + wobble;
     out.y = b0 * p.p0.y + b1 * p.p1.y + b2 * p.p2.y + b3 * p.p3.y + p.puff.y * burst + p.noise.y * drift;
@@ -1027,7 +1063,8 @@ class Streams {
         this.at(p, Math.max(0, p.age - 0.05), behind);
         // In quickly, then shrinking and fading as it enters the button.
         const end = t > 0.8 ? 1 - (t - 0.8) / 0.2 : 1;
-        const s = p.size * (0.2 + 0.8 * end);
+        const e = 1 - Math.pow(1 - t, 2.2);
+        const s = p.size * (0.45 + 0.55 * (1 - e)) * (0.2 + 0.8 * end);
         const alpha = p.alpha * Math.min(1, t * 25) * end;
         // A faint grain just behind, so moving dust reads as a stream.
         ctx.globalAlpha = alpha * 0.35;

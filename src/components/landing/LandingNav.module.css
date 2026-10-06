@@ -101,6 +101,40 @@
   transform: translateY(1px);
 }
 
+/* Desktop: aligned to the hero's central scene, between the glass at the
+   edges, in the approved proportions (--u as in page.module.css). */
+@media (min-width: 64.0625rem) {
+  .bar {
+    --u: calc(min(100vw, 298.6svh) / 1672);
+  }
+
+  .inner {
+    max-inline-size: calc(1030 * var(--u) + 2 * clamp(1rem, 3.4vw, 3.5rem));
+    min-block-size: max(3.5rem, calc(52 * var(--u)));
+  }
+
+  .word {
+    font-size: max(1.25rem, calc(21 * var(--u)));
+  }
+
+  .nav {
+    gap: calc(14 * var(--u));
+  }
+
+  .link {
+    padding: 0.4em 0.6em;
+    font-size: max(13px, calc(12.5 * var(--u)));
+  }
+
+  .connect {
+    min-block-size: max(2.125rem, calc(31 * var(--u)));
+    margin-inline-start: calc(8 * var(--u));
+    padding-inline: calc(14 * var(--u));
+    border-radius: calc(9 * var(--u));
+    font-size: max(13px, calc(12 * var(--u)));
+  }
+}
+
 /* The hero stops running up underneath (page.module.css), so the header
    brings its own background. */
 @media (max-width: 64rem) {

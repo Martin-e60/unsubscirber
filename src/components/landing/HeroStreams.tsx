@@ -18,6 +18,14 @@ import styles from "./HeroStreams.module.css";
  * start hidden and inert, so if the script never runs the copy and the real
  * CTA are all there is. The changing sample text is never a live region.
  */
+/** Where the distant envelopes sit, as in approved-hero-light-dark.png. */
+const DISTANT = [
+  { x: "30%", y: "9%", r: 14 },
+  { x: "67%", y: "11%", r: -10 },
+  { x: "14%", y: "90%", r: 9 },
+  { x: "84%", y: "91%", r: -14 },
+];
+
 export function HeroStreams() {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -49,6 +57,15 @@ export function HeroStreams() {
   return (
     <>
       <div className={styles.streams} ref={ref} data-streams>
+        {/* A few envelopes far behind the lanes, out of focus, for depth. */}
+        {DISTANT.map((d, i) => (
+          <span
+            key={i}
+            className={styles.distant}
+            aria-hidden="true"
+            style={{ left: d.x, top: d.y, rotate: `${d.r}deg` }}
+          />
+        ))}
         <canvas className={styles.motes} data-motes aria-hidden="true" />
         {(["left", "right"] as const).map((side) => (
           <ul

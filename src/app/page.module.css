@@ -26,10 +26,21 @@
   --hero-eyebrow: #26272b;
   --hero-muted: #6b6d73;
   --hero-ring: rgb(14 14 16 / 42%);
-  /* The glass: broad curved bands of light and shade at the edges. */
-  --glass-light: rgb(255 255 255 / 95%);
-  --glass-shade: rgb(0 0 0 / 4.5%);
-  --glass-deep: rgb(0 0 0 / 5%);
+  --hero-rule: #d3d4d8;
+
+  /* The glass lenses at the edges (.glass below). */
+  --glass-haze-strong: rgb(205 206 212 / 80%);
+  --glass-haze-soft: rgb(236 237 240 / 40%);
+  --glass-clear: rgb(250 250 250 / 0%);
+  --lens-core: rgb(255 255 255 / 25%);
+  --lens-body: rgb(220 221 226 / 50%);
+  --lens-band: rgb(255 255 255 / 85%);
+  --lens-depth: rgb(120 122 132 / 36%);
+  --lens-rim: rgb(255 255 255 / 100%);
+  --lens-rim-soft: rgb(255 255 255 / 70%);
+  --lens-glow: rgb(255 255 255 / 80%);
+  --lens-glint: rgb(255 255 255 / 90%);
+  --frost-opacity: 0.1;
 
   /* Paper envelopes. */
   /* Each fold is lit from the upper left: the front panel brightest, the
@@ -53,6 +64,9 @@
   --paper-shadow-near: rgb(0 0 0 / 6%);
   --unsub-bg: #0e0e10;
   --unsub-fg: #ffffff;
+  --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.52 0 0 0 0.18 0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23p)'/%3E%3C/svg%3E");
+  --paper-grain-opacity: 0.22;
+  --distant-opacity: 0.5;
 
   /* Dust and the motes along the lanes (read by streamsEngine.ts). */
   --hero-dust: #111113;
@@ -91,9 +105,20 @@
   --hero-eyebrow: #d4d4d8;
   --hero-muted: #8d8e94;
   --hero-ring: rgb(242 242 243 / 45%);
-  --glass-light: rgb(255 255 255 / 7%);
-  --glass-shade: rgb(0 0 0 / 40%);
-  --glass-deep: rgb(0 0 0 / 35%);
+  --hero-rule: #3a3b3f;
+
+  --glass-haze-strong: rgb(140 141 146 / 60%);
+  --glass-haze-soft: rgb(70 71 75 / 30%);
+  --glass-clear: rgb(20 20 21 / 0%);
+  --lens-core: rgb(255 255 255 / 6%);
+  --lens-body: rgb(255 255 255 / 18%);
+  --lens-band: rgb(255 255 255 / 35%);
+  --lens-depth: rgb(0 0 0 / 45%);
+  --lens-rim: rgb(255 255 255 / 85%);
+  --lens-rim-soft: rgb(255 255 255 / 35%);
+  --lens-glow: rgb(255 255 255 / 30%);
+  --lens-glint: rgb(255 255 255 / 45%);
+  --frost-opacity: 0.12;
 
   --paper-hi: #f0f0f1;
   --paper-lo: #dcdcdf;
@@ -114,6 +139,8 @@
   --paper-shadow-near: rgb(0 0 0 / 30%);
   --unsub-bg: #111113;
   --unsub-fg: #f2f2f3;
+  --paper-grain-opacity: 0.3;
+  --distant-opacity: 0.14;
 
   --hero-dust: #ededee;
   --hero-dust-2: #8d8e94;
@@ -122,23 +149,23 @@
   color-scheme: dark;
 }
 
-/* Soft architectural glass: a few broad curved refractions at the edges and a
-   clean field in the middle. Static, so it costs nothing per frame. */
-.hero::before {
-  content: "";
+/* The glass at both outer edges (HeroGlass.tsx), behind everything. */
+.glass {
   position: absolute;
   z-index: 0;
   inset: 0;
+  overflow: hidden;
   pointer-events: none;
-  background:
-    radial-gradient(42% 46% at 50% 46%, var(--lp-bg) 35%, transparent 100%),
-    radial-gradient(62% 95% at -8% 20%, transparent 60%, var(--glass-light) 65%, transparent 71%),
-    radial-gradient(66% 100% at -10% 24%, transparent 70%, var(--glass-shade) 74%, transparent 81%),
-    radial-gradient(58% 92% at 108% 86%, transparent 58%, var(--glass-light) 63%, transparent 69%),
-    radial-gradient(62% 98% at 110% 90%, transparent 68%, var(--glass-shade) 72%, transparent 79%),
-    radial-gradient(48% 62% at 104% -6%, var(--glass-deep), transparent 70%),
-    radial-gradient(52% 58% at -6% 108%, var(--glass-deep), transparent 72%),
-    linear-gradient(180deg, transparent 70%, var(--glass-shade));
+}
+
+/* The copy layer spans the hero, but only the copy itself takes input, so
+   pointers reach the envelopes in the space around it. */
+.heroInner {
+  pointer-events: none;
+}
+
+.heroCopy {
+  pointer-events: auto;
 }
 
 .heroInner {
@@ -274,10 +301,12 @@
   text-align: start;
 }
 
-/* What the envelopes are, under the copy. */
+/* What the envelopes are, under the copy. Text only: it lets pointers
+   through to the envelopes passing beside it. */
 .preview {
   position: relative;
   z-index: 2;
+  pointer-events: none;
   display: grid;
   justify-items: center;
   gap: 0.125rem;
@@ -288,7 +317,11 @@
   text-align: center;
 }
 
+/* The hint, between two short rules. */
 .previewHint {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
   color: var(--hero-muted);
   font-size: 0.875rem;
 }
@@ -298,20 +331,17 @@
   position: relative;
   z-index: 2;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: start;
-  column-gap: 1.5rem;
-  inline-size: 100%;
-  max-inline-size: var(--hero-max);
-  margin-inline: auto;
+  justify-items: center;
   padding: 0 var(--hero-gutter) 0.75rem;
   color: var(--lp-text);
+  pointer-events: none;
 }
 
 .heroFootLine {
-  margin-block-start: 0.75rem;
+  flex: none;
+  inline-size: clamp(2.5rem, 12vw, 12rem);
   block-size: 1px;
-  background: var(--lp-line);
+  background: var(--hero-rule);
 }
 
 .heroFootText {
@@ -320,6 +350,86 @@
   gap: 0.125rem;
   font-size: 1rem;
   white-space: nowrap;
+}
+
+/* --- Desktop: the approved proportions ------------------------------------
+   Sizes and gaps in the hero come from approved-hero-light-dark.png, in its
+   own pixels: --u is one of them, the reference being 1672 wide (and its
+   hero 478 tall, so a short window scales down too). The lanes in
+   streamsEngine.ts use the same unit. Small text keeps a readable floor. */
+@media (min-width: 64.0625rem) {
+  .hero {
+    --u: calc(min(100vw, 298.6svh) / 1672);
+    --hero-nav: max(3.5rem, calc(52 * var(--u)));
+  }
+
+  .heroInner {
+    padding-block: calc(24 * var(--u)) calc(12 * var(--u));
+  }
+
+  .hero .heroEyebrow {
+    font-size: max(11px, calc(12 * var(--u)));
+    letter-spacing: 0.24em;
+  }
+
+  .heroTitle {
+    margin-block-start: calc(16 * var(--u));
+    font-size: calc(60 * var(--u));
+    letter-spacing: -0.05em;
+    line-height: 0.96;
+  }
+
+  .heroLede {
+    max-inline-size: 20.6em;
+    margin-block-start: calc(9 * var(--u));
+    font-size: max(14px, calc(16 * var(--u)));
+    line-height: 1.32;
+  }
+
+  .heroAction {
+    margin-block-start: calc(19 * var(--u));
+  }
+
+  .primary {
+    gap: calc(9 * var(--u));
+    min-block-size: max(2.375rem, calc(40 * var(--u)));
+    padding-inline: calc(26 * var(--u));
+    font-size: max(14px, calc(15 * var(--u)));
+  }
+
+  .primary svg {
+    inline-size: 1.1em;
+    block-size: 1.1em;
+  }
+
+  .note {
+    margin-block-start: calc(9 * var(--u));
+    font-size: max(12px, calc(11.5 * var(--u)));
+  }
+
+  .preview {
+    gap: calc(2 * var(--u));
+    padding-block-end: calc(6 * var(--u));
+    font-size: max(12px, calc(12.5 * var(--u)));
+  }
+
+  .previewHint {
+    gap: calc(22 * var(--u));
+    font-size: max(11.5px, calc(12 * var(--u)));
+  }
+
+  .heroFootLine {
+    inline-size: calc(190 * var(--u));
+  }
+
+  .heroFootText {
+    font-size: max(12px, calc(12.5 * var(--u)));
+  }
+
+  .heroFootText svg {
+    inline-size: 1.3em;
+    block-size: 1.3em;
+  }
 }
 
 /* --- Shared section furniture -------------------------------------------- */

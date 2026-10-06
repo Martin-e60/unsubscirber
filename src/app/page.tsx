@@ -9,6 +9,7 @@ import "@fontsource-variable/newsreader/wght-italic.css";
 import "@fontsource-variable/newsreader/wght.css";
 import { LandingNav } from "@/components/landing/LandingNav";
 import { HeroStreams } from "@/components/landing/HeroStreams";
+import { HeroGlass } from "@/components/landing/HeroGlass";
 import { Reveal } from "@/components/landing/Reveal";
 import { ConnectArt, FindArt, ChooseArt } from "@/components/landing/StepArt";
 import { Outcomes } from "@/components/landing/Outcomes";
@@ -79,6 +80,11 @@ export default async function HomePage({
       <main>
         {/* --- Hero -------------------------------------------------------- */}
         <section className={styles.hero} data-hero>
+          {/* The glass: broad lenses at both outer edges, framing the scene. */}
+          <div className={styles.glass} aria-hidden="true">
+            <HeroGlass />
+          </div>
+
           <div className={styles.heroInner}>
             <div className={styles.heroCopy} data-hero-copy>
               <p className={`${theme.eyebrow} ${styles.heroEyebrow}`}>A little less inbox noise</p>
@@ -112,16 +118,18 @@ export default async function HomePage({
 
           <p className={styles.preview}>
             <span>Interactive preview · No real emails</span>
-            <span className={styles.previewHint}>Hover to explore. Click to unsubscribe.</span>
+            <span className={styles.previewHint}>
+              <span className={styles.heroFootLine} aria-hidden="true" />
+              Hover to explore. Click to unsubscribe.
+              <span className={styles.heroFootLine} aria-hidden="true" />
+            </span>
           </p>
 
           <div className={styles.heroFoot} aria-hidden="true">
-            <span className={styles.heroFootLine} />
             <span className={styles.heroFootText}>
               Your inbox. Your choice.
               <ChevronDown size={20} strokeWidth={1.75} />
             </span>
-            <span className={styles.heroFootLine} />
           </div>
         </section>
 
