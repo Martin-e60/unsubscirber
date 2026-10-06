@@ -6,7 +6,7 @@
   --lp-accent: #0e0e10;
   --lp-line: #0e0e10;
   --lp-panel: #ffffff;
-  --bar-bg: #fafafa;
+  --bar-bg: #fdfdfd;
 
   position: relative;
   z-index: 3;
@@ -101,37 +101,45 @@
   transform: translateY(1px);
 }
 
-/* Desktop: aligned to the hero's central scene, between the glass at the
-   edges, in the approved proportions (--u as in page.module.css). */
+/* Desktop: laid out in the approved 1440 × 900 frame (--u as in
+   page.module.css): the logo and the last button sit where the design has
+   them, whatever the window. */
 @media (min-width: 64.0625rem) {
   .bar {
-    --u: calc(min(100vw, 298.6svh) / 1672);
+    --u: calc(min(100vw, 160svh) / 1440);
   }
 
   .inner {
-    max-inline-size: calc(1030 * var(--u) + 2 * clamp(1rem, 3.4vw, 3.5rem));
-    min-block-size: max(3.5rem, calc(52 * var(--u)));
+    max-inline-size: none;
+    min-block-size: max(3.5rem, calc(72 * var(--u)));
+    padding-inline: calc(203 * var(--u)) calc(179 * var(--u));
   }
 
   .word {
-    font-size: max(1.25rem, calc(21 * var(--u)));
+    position: relative;
+    inset-block-start: -0.13em;
+    font-size: max(1.25rem, calc(28.3 * var(--u)));
   }
 
   .nav {
-    gap: calc(14 * var(--u));
+    gap: calc(13 * var(--u));
   }
 
   .link {
-    padding: 0.4em 0.6em;
-    font-size: max(13px, calc(12.5 * var(--u)));
+    padding: 0.25em 0.5em 0.55em;
+    font-size: max(13px, calc(14.4 * var(--u)));
+    font-weight: 500;
+    letter-spacing: -0.01em;
   }
 
   .connect {
-    min-block-size: max(2.125rem, calc(31 * var(--u)));
-    margin-inline-start: calc(8 * var(--u));
-    padding-inline: calc(14 * var(--u));
-    border-radius: calc(9 * var(--u));
-    font-size: max(13px, calc(12 * var(--u)));
+    min-block-size: max(2.125rem, calc(37 * var(--u)));
+    margin-block-end: calc(3 * var(--u));
+    margin-inline-start: calc(2 * var(--u));
+    padding-inline: calc(12.5 * var(--u));
+    border-radius: calc(8 * var(--u));
+    font-size: max(13px, calc(14.4 * var(--u)));
+    letter-spacing: -0.01em;
   }
 }
 

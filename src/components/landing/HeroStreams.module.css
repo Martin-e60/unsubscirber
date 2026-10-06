@@ -1,9 +1,16 @@
 /* The envelope lanes beside the hero copy (HeroStreams.tsx).
 
-   Colours are the hero's tokens (.hero in src/app/page.module.css), so the
-   same rules draw the light and the dark appearance. Envelope size comes from
-   the engine as --env-w / --env-h; everything inside is in em, scaled from
-   the width. The page decides where the lanes sit; this file only draws them. */
+   Colours are the hero's tokens (.hero in src/app/page.module.css). Envelope
+   size comes from the engine as --env-w / --env-h; everything inside is in em,
+   scaled from the width. The page decides where the lanes sit; this file only
+   draws them.
+
+   Sharpness: an envelope is moved with a plain 2D transform and nothing here
+   asks the browser to promote it to its own compositor layer (no will-change,
+   no 3D transform, no blend mode, no filter or opacity while it is fully
+   shown). A promoted, rotated layer is rasterised flat and then resampled
+   at an angle, which softens contours and small text; left in the page it is
+   painted at its true angle every frame. */
 
 .streams {
   position: absolute;
@@ -18,6 +25,14 @@
 
 .streams[data-ready] {
   opacity: 1;
+}
+
+/* The shared paper art (HeroStreams.tsx), drawn nowhere itself. */
+.art {
+  position: absolute;
+  inline-size: 0;
+  block-size: 0;
+  overflow: hidden;
 }
 
 .motes,
@@ -35,28 +50,72 @@
   z-index: 4;
 }
 
-/* Distant envelopes: soft, faint silhouettes behind everything else. */
-.distant {
-  position: absolute;
-  inline-size: calc(var(--env-w, 14rem) * 0.32);
-  aspect-ratio: 1.55;
-  border: 1px solid var(--paper-edge);
-  border-radius: 2px;
-  background:
-    linear-gradient(to bottom right, transparent calc(50% - 0.5px), var(--paper-seam) 50%, transparent calc(50% + 0.5px)) left / 50% 100% no-repeat,
-    linear-gradient(to bottom left, transparent calc(50% - 0.5px), var(--paper-seam) 50%, transparent calc(50% + 0.5px)) right / 50% 100% no-repeat,
-    linear-gradient(170deg, var(--paper-hi), var(--paper-lo));
-  opacity: var(--distant-opacity, 0.45);
-  filter: blur(2.5px);
-  translate: -50% -50%;
-}
-
 .lane {
   position: absolute;
   inset: 0;
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+/* --- Reflections ----------------------------------------------------------
+   One strip per side, as wide as the glass is deep (the engine sets it), and
+   clipped to it: a reflection never leaves the glass. Each envelope has a
+   mirror image of itself in it and a soft highlight, both placed and faded by
+   the engine from the envelope's own pose. They sit under the envelopes. */
+
+.mirrors {
+  position: absolute;
+  inset-block: 0;
+  inline-size: 12rem;
+  overflow: clip;
+  pointer-events: none;
+}
+
+.mirrors[data-side="left"] {
+  inset-inline-start: 0;
+}
+
+.mirrors[data-side="right"] {
+  inset-inline-end: 0;
+}
+
+.mirror,
+.glow {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transform-origin: 50% 50%;
+}
+
+.mirror {
+  inline-size: var(--env-w, 22rem);
+  block-size: var(--env-h, 8.4rem);
+}
+
+/* The mirror image is white paper on glass: soft edges, quiet contrast. */
+.mirror .folds {
+  opacity: 0.9;
+}
+
+.mirror .facet,
+.mirror .crease {
+  stroke: var(--mirror-edge);
+}
+
+.line {
+  fill: var(--mirror-ink);
+  opacity: 0.45;
+}
+
+/* The highlight a passing envelope casts on the glass beside it. */
+.glow {
+  inline-size: calc(var(--env-w, 22rem) * 0.5);
+  block-size: calc(var(--env-w, 22rem) * 0.95);
+  background: radial-gradient(closest-side, var(--glass-spec), transparent);
 }
 
 /* --- Envelope ---------------------------------------------------------------- */
@@ -70,18 +129,18 @@
   font-size: calc(var(--env-w, 22rem) / 19);
   pointer-events: auto;
   transform-origin: 50% 50%;
-  will-change: transform, opacity;
 }
 
 /* The shadow sits apart from the paper, so it can fade with the dissolve
-   instead of being cut off by its mask. Restrained: paper on glass, not a
-   floating card. */
+   instead of being cut off by its mask. Restrained: paper resting near glass,
+   not a floating card. */
 .shade {
   position: absolute;
-  inset: 0.15em 0.1em 0;
+  inset: 0.2em 0.15em 0;
+  border-radius: 0.2em;
   box-shadow:
-    0 1px 1.5px var(--paper-shadow-near),
-    0 0.75em 1.5em -0.75em var(--paper-shadow);
+    0 0.06em 0.15em var(--paper-shadow-near),
+    0 0.9em 1.5em -0.55em var(--paper-shadow);
 }
 
 /* The sheet itself is drawn in the SVG (HeroStreams.tsx); this box only
@@ -92,30 +151,17 @@
   color: var(--paper-ink);
 }
 
-/* The grain of the paper itself, inside its outline (the top right corner
-   is folded away). */
-.paper::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image: var(--paper-grain);
-  background-size: 140px 140px;
-  opacity: var(--paper-grain-opacity, 0.5);
-  mix-blend-mode: multiply;
-  clip-path: polygon(0 0, 91.5% 0, 100% 21%, 100% 100%, 0 100%);
-  pointer-events: none;
-}
-
 .folds {
   position: absolute;
   inset: 0;
   inline-size: 100%;
   block-size: 100%;
   overflow: visible;
+  --edge: var(--paper-edge);
 }
 
 .facet {
-  stroke: var(--paper-edge);
+  stroke: var(--edge, var(--paper-edge));
   stroke-width: 0.8;
   stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
@@ -147,17 +193,21 @@
 .stopEarHi { stop-color: var(--paper-hi); }
 .stopEarLo { stop-color: var(--paper-fold); }
 
-.env[data-held] .facet {
-  stroke: var(--paper-edge-strong);
+.env[data-held] .folds {
+  --edge: var(--paper-edge-strong);
 }
 
-/* The address, on the front panel right of the flap. */
+/* The address, on the front panel right of the flap: the sender and the time
+   share the first line, the subject has the second. */
 .text {
   position: absolute;
-  inset-block-start: 19%;
-  inset-inline: 28% 12%;
+  inset-block-start: 17%;
+  inset-inline: 27% 5%;
   display: grid;
-  gap: 0.15em;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  column-gap: 0.7em;
+  row-gap: 0.25em;
 }
 
 .sender,
@@ -169,27 +219,24 @@
 
 .sender {
   font-family: var(--lp-serif);
-  font-size: 1.42em;
-  font-weight: 620;
-  letter-spacing: -0.015em;
+  font-size: 1.27em;
+  font-weight: 650;
+  letter-spacing: -0.012em;
   line-height: 1.15;
 }
 
 .subject {
+  grid-column: 1 / -1;
   color: var(--paper-ink-2);
-  font-size: 0.86em;
+  font-size: 0.82em;
+  letter-spacing: -0.012em;
   line-height: 1.3;
 }
 
-/* Below the subject line, so a long subject never runs into it. */
 .time {
-  position: absolute;
-  inset-block-start: 61%;
-  inset-inline-end: 11%;
-  color: var(--paper-ink-2);
+  color: var(--paper-time);
   font-size: 0.78em;
   white-space: nowrap;
-  transition: opacity 160ms var(--lp-ease);
 }
 
 /* --- Unsubscribe control ----------------------------------------------------
@@ -239,12 +286,6 @@
   pointer-events: auto;
 }
 
-/* The control takes the timestamp's corner on the left lane. */
-.env[data-side="left"][data-held] .time,
-.env[data-side="left"]:focus-within .time {
-  opacity: 0;
-}
-
 .unsub:focus-visible {
   outline: 2px solid var(--unsub-bg);
   outline-offset: 2px;
@@ -255,7 +296,7 @@
    band where only a grain of specks survives, thinning towards the hole, so
    the sheet crumbles rather than fades. Three mask layers, bottom up: the
    ramp across the band, the grain intersected with it, and the solid paper
-   beyond the band added back. */
+   beyond the band added back. The mask exists only while dissolving. */
 .env {
   --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 9 0 0 0 -4.3'/%3E%3C/filter%3E%3Crect width='96' height='96' filter='url(%23n)'/%3E%3C/svg%3E");
 }
@@ -281,13 +322,17 @@
 
 /* --- Narrow screens -----------------------------------------------------------
    Matches the hero's breakpoint in page.module.css: the lanes run in a band
-   under the copy instead of beside it. */
+   under the copy instead of beside it. There is no room for reflections. */
 
 @media (max-width: 64rem) {
   .streams {
     position: relative;
     inset: auto;
     block-size: clamp(21rem, 88vw, 30rem);
+  }
+
+  .mirrors {
+    display: none;
   }
 }
 

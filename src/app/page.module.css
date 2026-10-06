@@ -2,21 +2,22 @@
    tokens (src/components/landing/theme.module.css), never from the app's. */
 
 /* --- Hero ----------------------------------------------------------------
-   The one monochrome part of the page, from the approved design: the landing
-   tokens are swapped for grayscale ones inside it, so nothing below changes.
-   The copy sits centred in a protected field; two lanes of paper envelopes
-   rise beside it (src/components/landing/HeroStreams.tsx) over a soft glass
-   background. On a wide screen the hero runs up under the header; the header
-   carries the same palette (LandingNav.module.css).
+   The one monochrome part of the page: the landing tokens are swapped for
+   grayscale ones inside it, so nothing below changes. The copy sits centred
+   in a protected field; two curved lanes of paper envelopes rise beside it
+   (src/components/landing/HeroStreams.tsx) in front of sculpted glass at both
+   edges (HeroGlass.tsx), which reflects them. On a wide screen the hero runs
+   up under the header; the header carries the same palette
+   (LandingNav.module.css).
 
-   Light is the default. Any ancestor marked data-appearance="dark" switches
-   the hero, and only the hero and its header, to the graphite variant below. */
+   Only the light appearance is designed. The dark block below is the old
+   one, kept as it was; nothing sets data-appearance="dark". */
 
 .hero {
-  --lp-bg: #fafafa;
-  --lp-text: #0e0e10;
-  --lp-text-2: #4a4c52;
-  --lp-accent: #0e0e10;
+  --lp-bg: #fdfdfd;
+  --lp-text: #08080a;
+  --lp-text-2: #737784;
+  --lp-accent: #121314;
   --lp-soft: #ececee;
   --lp-line: #e2e2e5;
   --lp-panel: #ffffff;
@@ -24,48 +25,63 @@
   --lp-shadow-lift: 0 12px 24px -12px rgb(0 0 0 / 40%);
 
   --hero-eyebrow: #26272b;
-  --hero-muted: #6b6d73;
+  --hero-muted: #858995;
   --hero-ring: rgb(14 14 16 / 42%);
-  --hero-rule: #d3d4d8;
+  --hero-rule: #d6d8dd;
 
-  /* The glass lenses at the edges (.glass below). */
-  --glass-haze-strong: rgb(205 206 212 / 80%);
-  --glass-haze-soft: rgb(236 237 240 / 40%);
-  --glass-clear: rgb(250 250 250 / 0%);
-  --lens-core: rgb(255 255 255 / 25%);
-  --lens-body: rgb(220 221 226 / 50%);
+  /* The glass at the edges (HeroGlass.tsx). Neutral silver: clear body,
+     shaded thickness inside each rim, bright grazing rims, soft haze. */
+  --glass-haze-strong: rgb(172 178 190 / 92%);
+  --glass-haze-soft: rgb(218 222 229 / 55%);
+  --glass-clear: rgb(253 253 253 / 0%);
+  --lens-core: rgb(255 255 255 / 22%);
+  --lens-body: rgb(206 210 218 / 65%);
   --lens-band: rgb(255 255 255 / 85%);
-  --lens-depth: rgb(120 122 132 / 36%);
+  --lens-depth: rgb(70 78 96 / 66%);
   --lens-rim: rgb(255 255 255 / 100%);
   --lens-rim-soft: rgb(255 255 255 / 70%);
   --lens-glow: rgb(255 255 255 / 80%);
   --lens-glint: rgb(255 255 255 / 90%);
   --frost-opacity: 0.1;
+  /* What the engine's reflections and highlights are drawn with. */
+  --mirror-paper: #ffffff;
+  --mirror-edge: rgb(120 126 140 / 55%);
+  --mirror-ink: rgb(60 66 80 / 70%);
+  --glass-spec: rgb(255 255 255 / 85%);
+  --glass-sheen: rgb(255 255 255 / 55%);
+  --lens-sweep: rgb(255 255 255 / 40%);
+  --lens-halo: rgb(255 255 255 / 92%);
+  --lens-streak: rgb(255 255 255 / 55%);
+  --lens-streak-shade: rgb(120 128 146 / 16%);
+  --lens-hair: rgb(84 92 108 / 60%);
+  --lens-line: rgb(84 92 108 / 45%);
+  --lens-sweep-shade: rgb(110 118 136 / 16%);
 
-  /* Paper envelopes. */
-  /* Each fold is lit from the upper left: the front panel brightest, the
-     flap and lower facet a step down, the pocket behind them the darkest. */
+  /* Paper envelopes: white sheet, lit from the upper left. The front panel is
+     the brightest; the flap and the lower facet step down a little and the
+     pocket behind them is the darkest. */
   --paper-hi: #ffffff;
-  --paper-lo: #f2f2f3;
-  --paper-flap-hi: #f9f9fa;
-  --paper-flap-lo: #e2e2e5;
-  --paper-back-hi: #ebebed;
-  --paper-back-lo: #dadadd;
-  --paper-facet-hi: #f7f7f8;
-  --paper-facet-lo: #e4e4e7;
-  --paper-fold: #d4d4d8;
-  --paper-thick: #cdcdd1;
-  --paper-edge: #b8b8bd;
-  --paper-edge-strong: #8e8f94;
-  --paper-seam: #cbcbd0;
-  --paper-ink: #111113;
-  --paper-ink-2: #5f6168;
-  --paper-shadow: rgb(0 0 0 / 30%);
-  --paper-shadow-near: rgb(0 0 0 / 6%);
+  --paper-lo: #f3f4f7;
+  --paper-flap-hi: #f7f8fa;
+  --paper-flap-lo: #dde0e6;
+  --paper-back-hi: #e9ebef;
+  --paper-back-lo: #d5d8de;
+  --paper-facet-hi: #f5f6f8;
+  --paper-facet-lo: #dadde3;
+  --paper-fold: #cdd1d8;
+  --paper-thick: #c6cad2;
+  --paper-edge: #bbbfc7;
+  --paper-edge-strong: #8e9097;
+  --paper-seam: #cacdd5;
+  --paper-ink: #0b0b0c;
+  --paper-ink-2: #6b789a;
+  --paper-time: #78839f;
+  --paper-shadow: rgb(40 48 72 / 36%);
+  --paper-shadow-near: rgb(40 48 72 / 15%);
   --unsub-bg: #0e0e10;
   --unsub-fg: #ffffff;
-  --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.52 0 0 0 0.18 0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23p)'/%3E%3C/svg%3E");
-  --paper-grain-opacity: 0.22;
+  --paper-grain: none;
+  --paper-grain-opacity: 0;
   --distant-opacity: 0.5;
 
   /* Dust and the motes along the lanes (read by streamsEngine.ts). */
@@ -73,8 +89,7 @@
   --hero-dust-2: #85878d;
   --hero-mote: #1a1a1c;
 
-  /* Header height (LandingNav.module.css) and gutters wider than the rest of
-     the page, as in the design. */
+  /* Header height (LandingNav.module.css) and the narrow-screen gutters. */
   --hero-nav: 4.75rem;
   --hero-max: 104rem;
   --hero-gutter: clamp(1rem, 3.4vw, 3.5rem);
@@ -190,52 +205,37 @@
   animation: heroIn 520ms var(--lp-ease) both;
 }
 
-.hero .heroEyebrow {
-  color: var(--hero-eyebrow);
-  font-size: clamp(0.75rem, 0.55rem + 0.35vw, 0.9375rem);
-  font-weight: 500;
-  letter-spacing: 0.22em;
-}
-
 .heroTitle {
-  margin-block-start: clamp(1rem, 1.6vw, 1.75rem);
-  /* Held back a little so the envelopes keep the approved weight beside it. */
-  font-size: clamp(3.25rem, 5.6vw, 6rem);
-  font-weight: 750;
-  letter-spacing: -0.055em;
-  line-height: 0.98;
-}
-
-/* "the junk." — the serif italic, at its natural weight. */
-.heroTitle span {
-  font-weight: 400;
-  letter-spacing: -0.03em;
+  font-size: clamp(2.25rem, 9.2vw, 4.25rem);
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  line-height: 1;
 }
 
 .heroLede {
   max-inline-size: min(31.5rem, 38vw);
-  margin-block-start: clamp(1.25rem, 2vw, 2rem);
+  margin-block-start: clamp(1rem, 1.6vw, 1.5rem);
   color: var(--lp-text-2);
-  font-size: clamp(1.0625rem, 0.55rem + 0.95vw, 1.5rem);
+  font-size: clamp(1.0625rem, 0.55rem + 0.95vw, 1.25rem);
   line-height: 1.45;
 }
 
 .heroAction {
   display: grid;
   justify-items: center;
-  margin-block-start: clamp(1.75rem, 2.8vw, 2.75rem);
+  margin-block-start: clamp(1.75rem, 2.8vw, 2.25rem);
 }
 
 .primary {
   display: inline-flex;
   align-items: center;
   gap: 0.875rem;
-  min-block-size: clamp(3.5rem, 3.9vw, 4.125rem);
+  min-block-size: clamp(3rem, 3.9vw, 3.5rem);
   padding-inline: clamp(2rem, 3vw, 3.125rem);
   border-radius: 999px;
   background: var(--lp-accent);
   color: var(--lp-on-accent);
-  font-size: clamp(1.0625rem, 0.7rem + 0.5vw, 1.3125rem);
+  font-size: clamp(1.0625rem, 0.7rem + 0.5vw, 1.1875rem);
   font-weight: 600;
   text-decoration: none;
   transition:
@@ -284,7 +284,7 @@
 }
 
 .note {
-  margin-block-start: 1rem;
+  margin-block-start: 0.75rem;
   color: var(--hero-muted);
   font-size: var(--lp-size-small);
 }
@@ -301,134 +301,113 @@
   text-align: start;
 }
 
-/* What the envelopes are, under the copy. Text only: it lets pointers
-   through to the envelopes passing beside it. */
+/* The one hint at the foot of the first screen, between two short rules. Text
+   only: it lets pointers through to the envelopes passing beside it. */
 .preview {
   position: relative;
   z-index: 2;
   pointer-events: none;
-  display: grid;
-  justify-items: center;
-  gap: 0.125rem;
-  padding: 0 var(--hero-gutter) 1.5rem;
-  color: var(--lp-text);
-  font-size: 0.9375rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  padding: 0 var(--hero-gutter) 0.5rem;
+  color: var(--hero-muted);
+  font-size: 0.875rem;
   line-height: 1.45;
   text-align: center;
 }
 
-/* The hint, between two short rules. */
-.previewHint {
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
-  color: var(--hero-muted);
-  font-size: 0.875rem;
+.heroFootLine {
+  flex: none;
+  inline-size: clamp(2.5rem, 12vw, 8.25rem);
+  block-size: 1px;
+  background: var(--hero-rule);
 }
 
-/* The divider at the foot of the first screen. */
+/* The discreet downward cue under it. */
 .heroFoot {
   position: relative;
   z-index: 2;
   display: grid;
   justify-items: center;
-  padding: 0 var(--hero-gutter) 0.75rem;
+  padding: 0 var(--hero-gutter) 1rem;
   color: var(--lp-text);
   pointer-events: none;
 }
 
-.heroFootLine {
-  flex: none;
-  inline-size: clamp(2.5rem, 12vw, 12rem);
-  block-size: 1px;
-  background: var(--hero-rule);
-}
-
-.heroFootText {
-  display: grid;
-  justify-items: center;
-  gap: 0.125rem;
-  font-size: 1rem;
-  white-space: nowrap;
-}
-
 /* --- Desktop: the approved proportions ------------------------------------
-   Sizes and gaps in the hero come from approved-hero-light-dark.png, in its
-   own pixels: --u is one of them, the reference being 1672 wide (and its
-   hero 478 tall, so a short window scales down too). The lanes in
-   streamsEngine.ts use the same unit. Small text keeps a readable floor. */
+   Sizes and gaps in the hero come from the approved 1440 × 900 frame, in its
+   own pixels: --u is one of them. The frame is 1440 wide and 900 tall, so a
+   short window scales down too. The lanes in streamsEngine.ts use the same
+   unit. Small text keeps a readable floor. */
 @media (min-width: 64.0625rem) {
   .hero {
-    --u: calc(min(100vw, 298.6svh) / 1672);
-    --hero-nav: max(3.5rem, calc(52 * var(--u)));
+    --u: calc(min(100vw, 160svh) / 1440);
+    --hero-nav: max(3.5rem, calc(72 * var(--u)));
+    --glass-w: calc(300 * var(--u));
   }
 
+  /* The copy block's centre sits a little below the middle of the frame. */
   .heroInner {
-    padding-block: calc(24 * var(--u)) calc(12 * var(--u));
-  }
-
-  .hero .heroEyebrow {
-    font-size: max(11px, calc(12 * var(--u)));
-    letter-spacing: 0.24em;
+    padding-block: calc(65 * var(--u)) calc(10 * var(--u));
   }
 
   .heroTitle {
-    margin-block-start: calc(16 * var(--u));
-    font-size: calc(60 * var(--u));
-    letter-spacing: -0.05em;
-    line-height: 0.96;
+    font-size: calc(68 * var(--u));
+    letter-spacing: -0.055em;
+    line-height: 1;
   }
 
   .heroLede {
-    max-inline-size: 20.6em;
-    margin-block-start: calc(9 * var(--u));
-    font-size: max(14px, calc(16 * var(--u)));
-    line-height: 1.32;
+    max-inline-size: none;
+    margin-block-start: calc(19 * var(--u));
+    font-size: max(14px, calc(18.6 * var(--u)));
+    letter-spacing: -0.018em;
+    line-height: 1.3;
+    white-space: nowrap;
   }
 
   .heroAction {
-    margin-block-start: calc(19 * var(--u));
+    margin-block-start: calc(34 * var(--u));
   }
 
   .primary {
-    gap: calc(9 * var(--u));
-    min-block-size: max(2.375rem, calc(40 * var(--u)));
-    padding-inline: calc(26 * var(--u));
-    font-size: max(14px, calc(15 * var(--u)));
+    gap: calc(22 * var(--u));
+    min-block-size: max(2.5rem, calc(48 * var(--u)));
+    padding-inline: calc(50 * var(--u));
+    font-size: max(14px, calc(19 * var(--u)));
   }
 
   .primary svg {
-    inline-size: 1.1em;
-    block-size: 1.1em;
+    inline-size: 1.05em;
+    block-size: 1.05em;
   }
 
   .note {
-    margin-block-start: calc(9 * var(--u));
-    font-size: max(12px, calc(11.5 * var(--u)));
+    margin-block-start: calc(7 * var(--u));
+    font-size: max(12px, calc(13.7 * var(--u)));
+    letter-spacing: -0.01em;
   }
 
   .preview {
-    gap: calc(2 * var(--u));
-    padding-block-end: calc(6 * var(--u));
-    font-size: max(12px, calc(12.5 * var(--u)));
-  }
-
-  .previewHint {
-    gap: calc(22 * var(--u));
-    font-size: max(11.5px, calc(12 * var(--u)));
+    gap: calc(32 * var(--u));
+    padding-block-end: calc(9 * var(--u));
+    font-size: max(12px, calc(13.4 * var(--u)));
+    letter-spacing: -0.01em;
   }
 
   .heroFootLine {
-    inline-size: calc(190 * var(--u));
+    inline-size: calc(132 * var(--u));
   }
 
-  .heroFootText {
-    font-size: max(12px, calc(12.5 * var(--u)));
+  .heroFoot {
+    padding-block-end: calc(65 * var(--u));
   }
 
-  .heroFootText svg {
-    inline-size: 1.3em;
-    block-size: 1.3em;
+  .heroFoot svg {
+    inline-size: calc(26 * var(--u));
+    block-size: calc(26 * var(--u));
   }
 }
 
@@ -710,9 +689,16 @@
 
 }
 
+@media (max-width: 40rem) {
+  /* The hint wraps on a phone; the rules would be left hanging at the edges. */
+  .heroFootLine {
+    display: none;
+  }
+}
+
 @media (max-width: 30rem) {
   .heroTitle {
-    font-size: clamp(2.75rem, 14vw, 3.25rem);
+    font-size: clamp(1.875rem, 10.2vw, 3.25rem);
   }
 
   .primary,

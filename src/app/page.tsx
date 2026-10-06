@@ -31,8 +31,9 @@ import styles from "./page.module.css";
  * Everything visual is scoped to this page through the landing tokens in
  * src/components/landing/theme.module.css. The signed-in app and the other
  * public pages keep their own styles. The hero, and the header above it,
- * swap those tokens for a monochrome set of their own, with a dark variant
- * that applies under any ancestor marked data-appearance="dark".
+ * swap those tokens for a monochrome set of their own. Only the light
+ * appearance is designed; the old dark variant (data-appearance="dark") is
+ * left as it was and nothing sets it.
  *
  * A server component: the session cookie is read first, so a signed-in visitor
  * goes straight to the dashboard without a flash of this page. Only the cookie
@@ -80,22 +81,21 @@ export default async function HomePage({
       <main>
         {/* --- Hero -------------------------------------------------------- */}
         <section className={styles.hero} data-hero>
-          {/* The glass: broad lenses at both outer edges, framing the scene. */}
-          <div className={styles.glass} aria-hidden="true">
+          {/* The glass: broad sculpted surfaces at both outer edges, framing the
+              scene. The engine in HeroStreams moves its light (data-glass). */}
+          <div className={styles.glass} aria-hidden="true" data-glass>
             <HeroGlass />
           </div>
 
           <div className={styles.heroInner}>
             <div className={styles.heroCopy} data-hero-copy>
-              <p className={`${theme.eyebrow} ${styles.heroEyebrow}`}>A little less inbox noise</p>
-              <h1 className={styles.heroTitle}>
-                Your inbox.
+              <h1 className={styles.heroTitle} data-hero-text>
+                Unsubscribe from
                 <br />
-                Minus <span className={theme.serif}>the junk.</span>
+                unwanted emails.
               </h1>
-              <p className={styles.heroLede}>
-                Find your Gmail subscriptions. Keep the ones you love. Unsubscribe
-                from the rest.
+              <p className={styles.heroLede} data-hero-text>
+                Find your Gmail mailing lists and choose which ones to leave.
               </p>
 
               <div className={styles.heroAction}>
@@ -116,20 +116,14 @@ export default async function HomePage({
 
           <HeroStreams />
 
-          <p className={styles.preview}>
-            <span>Interactive preview · No real emails</span>
-            <span className={styles.previewHint}>
-              <span className={styles.heroFootLine} aria-hidden="true" />
-              Hover to explore. Click to unsubscribe.
-              <span className={styles.heroFootLine} aria-hidden="true" />
-            </span>
+          <p className={styles.preview} data-hero-hint>
+            <span className={styles.heroFootLine} aria-hidden="true" />
+            Click an envelope to preview. Nothing is sent.
+            <span className={styles.heroFootLine} aria-hidden="true" />
           </p>
 
           <div className={styles.heroFoot} aria-hidden="true">
-            <span className={styles.heroFootText}>
-              Your inbox. Your choice.
-              <ChevronDown size={20} strokeWidth={1.75} />
-            </span>
+            <ChevronDown size={20} strokeWidth={1.75} />
           </div>
         </section>
 
