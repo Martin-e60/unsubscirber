@@ -32,14 +32,21 @@
   --glass-deep: rgb(0 0 0 / 5%);
 
   /* Paper envelopes. */
+  /* Each fold is lit from the upper left: the front panel brightest, the
+     flap and lower facet a step down, the pocket behind them the darkest. */
   --paper-hi: #ffffff;
-  --paper-lo: #ebebed;
-  --paper-flap: #f5f5f6;
-  --paper-flap-2: #efeff1;
-  --paper-fold: #e4e4e6;
+  --paper-lo: #f2f2f3;
+  --paper-flap-hi: #f9f9fa;
+  --paper-flap-lo: #e2e2e5;
+  --paper-back-hi: #ebebed;
+  --paper-back-lo: #dadadd;
+  --paper-facet-hi: #f7f7f8;
+  --paper-facet-lo: #e4e4e7;
+  --paper-fold: #d4d4d8;
+  --paper-thick: #cdcdd1;
   --paper-edge: #b8b8bd;
   --paper-edge-strong: #8e8f94;
-  --paper-seam: #c2c2c7;
+  --paper-seam: #cbcbd0;
   --paper-ink: #111113;
   --paper-ink-2: #5f6168;
   --paper-shadow: rgb(0 0 0 / 30%);
@@ -88,11 +95,16 @@
   --glass-shade: rgb(0 0 0 / 40%);
   --glass-deep: rgb(0 0 0 / 35%);
 
-  --paper-hi: #f1f1f2;
-  --paper-lo: #d9d9dc;
-  --paper-flap: #e6e6e8;
-  --paper-flap-2: #e0e0e2;
-  --paper-fold: #c3c3c7;
+  --paper-hi: #f0f0f1;
+  --paper-lo: #dcdcdf;
+  --paper-flap-hi: #e6e6e8;
+  --paper-flap-lo: #c8c8cc;
+  --paper-back-hi: #cfcfd3;
+  --paper-back-lo: #bbbbc0;
+  --paper-facet-hi: #e2e2e4;
+  --paper-facet-lo: #cdcdd1;
+  --paper-fold: #b6b6bb;
+  --paper-thick: #8d8e93;
   --paper-edge: #8f9095;
   --paper-edge-strong: #f2f2f3;
   --paper-seam: #b0b1b6;
@@ -160,7 +172,8 @@
 
 .heroTitle {
   margin-block-start: clamp(1rem, 1.6vw, 1.75rem);
-  font-size: clamp(3.25rem, 6.1vw, 6.5rem);
+  /* Held back a little so the envelopes keep the approved weight beside it. */
+  font-size: clamp(3.25rem, 5.6vw, 6rem);
   font-weight: 750;
   letter-spacing: -0.055em;
   line-height: 0.98;

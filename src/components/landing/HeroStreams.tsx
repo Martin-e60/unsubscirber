@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 import { OPENING, POOL_PER_SIDE, startHeroStreams, type Sample, type Side } from "./streamsEngine";
 import styles from "./HeroStreams.module.css";
 
@@ -67,7 +67,17 @@ export function HeroStreams() {
   );
 }
 
+/**
+ * One envelope, drawn as folded paper in a 400 × 152 box (the ASPECT the
+ * engine sizes it by): a back sheet showing its edge, a flap folded in from
+ * the left with a crease across it, the bright front panel the text sits on,
+ * a small facet under its lower right corner and a curled-over top corner.
+ * Each facet has its own light-to-shade gradient, so the folds read from
+ * light rather than from outlines alone.
+ */
 function Envelope({ side, sample }: { side: Side; sample?: Sample }) {
+  const id = useId().replace(/[^a-zA-Z0-9_-]/g, "");
+  const g = (name: string) => `${name}-${id}`;
   return (
     <li
       className={styles.env}
@@ -78,7 +88,6 @@ function Envelope({ side, sample }: { side: Side; sample?: Sample }) {
     >
       <span className={styles.shade} data-shade aria-hidden="true" />
       <div className={styles.paper} data-paper>
-        {/* The folds: a deep flap from the left, a shallow one on the right. */}
         <svg
           className={styles.folds}
           viewBox="0 0 400 152"
@@ -86,9 +95,46 @@ function Envelope({ side, sample }: { side: Side; sample?: Sample }) {
           aria-hidden="true"
           focusable="false"
         >
-          <path className={styles.flap} d="M0 0 L108 82 L0 152" />
-          <path className={styles.flapSide} d="M400 34 L338 98 L400 152" />
-          <path className={styles.crease} d="M108 82 L170 152" />
+          <defs>
+            <linearGradient id={g("back")} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" className={styles.stopBackHi} />
+              <stop offset="1" className={styles.stopBackLo} />
+            </linearGradient>
+            <linearGradient id={g("flap")} x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" className={styles.stopFlapHi} />
+              <stop offset="1" className={styles.stopFlapLo} />
+            </linearGradient>
+            <linearGradient id={g("front")} x1="0" y1="0" x2="0.35" y2="1">
+              <stop offset="0" className={styles.stopFrontHi} />
+              <stop offset="1" className={styles.stopFrontLo} />
+            </linearGradient>
+            <linearGradient id={g("facet")} x1="1" y1="0" x2="0" y2="1">
+              <stop offset="0" className={styles.stopFacetHi} />
+              <stop offset="1" className={styles.stopFacetLo} />
+            </linearGradient>
+            <linearGradient id={g("ear")} x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" className={styles.stopEarLo} />
+              <stop offset="0.6" className={styles.stopEarHi} />
+            </linearGradient>
+          </defs>
+          {/* The thickness of the sheet, showing under its lower edge. */}
+          <path className={styles.edge} d="M1 4 H368 L401 37 V155 H1 Z" />
+          {/* The back sheet: seen in the pocket at lower left. */}
+          <path className={styles.facet} fill={`url(#${g("back")})`} d="M0 0 H366 L400 32 V152 H0 Z" />
+          {/* The lower right facet, folded up under the front panel. */}
+          <path className={styles.facet} fill={`url(#${g("facet")})`} d="M352 152 L400 100 V152 Z" />
+          {/* The front panel the address sits on. */}
+          <path
+            className={styles.facet}
+            fill={`url(#${g("front")})`}
+            d="M0 0 H366 L400 32 V100 L352 152 H132 L102 108 Z"
+          />
+          {/* The flap folded in from the left, with the pocket crease. */}
+          <path className={styles.facet} fill={`url(#${g("flap")})`} d="M0 0 L102 108 L0 140 Z" />
+          <path className={styles.crease} d="M0 122 L70 104" />
+          {/* The top right corner, curled over towards the viewer. */}
+          <path className={styles.earShadow} d="M366 0 L400 32 L398 40 L362 6 Z" />
+          <path className={styles.facet} fill={`url(#${g("ear")})`} d="M366 0 Q380 6 400 32 L384 29 Q373 17 366 0 Z" />
         </svg>
         <span className={styles.text}>
           <span className={styles.sender} data-sender>

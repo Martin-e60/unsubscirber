@@ -65,12 +65,16 @@ const NARROW = "(max-width: 64rem)";
 
 const SPEED = 22; // px per second, desktop
 const SPEED_NARROW = 17;
-const DISSOLVE = 1.15; // seconds for an envelope to come apart
-const DUST_PER_ENVELOPE = 240;
-const MAX_DUST = 1800;
+const DISSOLVE = 1.5; // seconds for an envelope to come apart
+const DUST_PER_ENVELOPE = 320;
+const MAX_DUST = 2400;
 const MOTES_PER_LANE = 20;
 /** Gap between the copy and the inner edge of a lane. */
-const COPY_GAP = 24;
+const COPY_GAP = 12;
+/** Envelope width as a share of the copy's width, from the approved layout. */
+const ENVELOPE_TO_COPY = 0.66;
+/** The dissolve's crumbling band, in envelope widths (3em at width / 21). */
+const BAND = 3 / 21;
 
 // --- Small helpers ------------------------------------------------------------
 
@@ -101,7 +105,16 @@ function relativeRect(el: Element, to: DOMRect): Rect {
 
 type Pose = { x: number; y: number; r: number; k: number; o: number };
 
-type Burst = { expected: number; arrived: number; pulsed: boolean };
+/** One dissolve's dust: how much, how much has arrived, and the shared route
+    its particles gather onto, so they travel as one stream. */
+type Burst = {
+  expected: number;
+  arrived: number;
+  pulsed: boolean;
+  p1: Point;
+  p2: Point;
+  p3: Point;
+};
 
 type Envelope = {
   el: HTMLElement;
@@ -209,6 +222,7 @@ class Streams {
   private pitch = 0;
   private offset: Point = { x: 0, y: 0 };
   private ctaRect: Rect | null = null;
+  private copyRect: Rect | null = null;
   private colors = { dust: "#111", dust2: "#888", mote: "#111" };
   private colorsAt = -1;
 
@@ -476,8 +490,10 @@ class Streams {
     env.state = "flow";
     env.d = d;
     env.jitter = rand(-1, 1);
-    lane.flip = !lane.flip;
-    env.tilt = (lane.flip ? rand(7, 15) : rand(-9, -3)) * (this.narrow ? 0.6 : 1);
+    // Mostly tipped the same way, as in the approved layout, with the odd one
+    // leaning back — never two in a row, so neighbours never collide.
+    lane.flip = !lane.flip && Math.random() < 0.3;
+    env.tilt = (lane.flip ? rand(-9, -5) : rand(12, 19)) * (this.narrow ? 0.6 : 1);
     env.depth = rand(0.94, 1);
     env.hold = 0;
     env.hover = env.focus = false;
@@ -524,6 +540,7 @@ class Streams {
     const narrow = this.narrowQuery.matches;
     this.offset = { x: streamsRect.left - rootRect.left, y: streamsRect.top - rootRect.top };
     if (this.cta) this.ctaRect = relativeRect(this.cta, rootRect);
+    if (this.copy) this.copyRect = relativeRect(this.copy, rootRect);
 
     let envW: number;
     if (narrow || !this.copy) {
@@ -535,9 +552,11 @@ class Streams {
       const copy = relativeRect(this.copy, streamsRect);
       const gutter = clamp(width * 0.034, 16, 56);
       const free = Math.min(copy.left, width - copy.right) - COPY_GAP - gutter;
-      envW = clamp(free / 1.32, 170, 400);
-      this.lanes[0].cx = copy.left - COPY_GAP - envW * 0.68;
-      this.lanes[1].cx = copy.right + COPY_GAP + envW * 0.68;
+      // Sized against the copy, as in the approved layout, unless the side
+      // space is too narrow; a tilted envelope plus its sway spans 1.26 widths.
+      envW = clamp(Math.min(copy.width * ENVELOPE_TO_COPY, free / 1.26), 170, 420);
+      this.lanes[0].cx = copy.left - COPY_GAP - envW * 0.6;
+      this.lanes[1].cx = copy.right + COPY_GAP + envW * 0.6;
       // Envelopes are gone before they reach the header.
       const nav = parseFloat(getComputedStyle(this.root).paddingTop) || 0;
       for (const lane of this.lanes) lane.top = nav + 12 - (streamsRect.top - rootRect.top);
@@ -554,7 +573,7 @@ class Streams {
     this.narrow = narrow;
     this.envW = envW;
     this.envH = envH;
-    this.pitch = envH * (narrow ? 1.55 : 1.72);
+    this.pitch = envH * (narrow ? 1.8 : 1.72);
     this.streams.style.setProperty("--env-w", `${envW.toFixed(1)}px`);
     this.streams.style.setProperty("--env-h", `${envH.toFixed(1)}px`);
 
@@ -628,7 +647,7 @@ class Streams {
         const env = lane.envs.find((e) => e.state === "idle");
         if (env) {
           this.launch(env, lowest === Infinity ? 0 : Math.max(0, lowest - lane.gap), this.nextSample());
-          lane.gap = this.pitch * rand(0.9, 1.12);
+          lane.gap = this.pitch * rand(0.95, 1.12);
         }
       }
 
@@ -657,7 +676,8 @@ class Streams {
   private fade(lane: Lane, y: number) {
     const h = this.envH;
     const top = smooth((y - h * 0.62 - lane.top) / (h * 0.9));
-    const bottom = smooth((lane.bottom - 40 - y) / (h * 0.9));
+    // Clear of the divider and its caption before reaching them.
+    const bottom = smooth((lane.bottom - (this.narrow ? 40 : 110) - y) / (h * 0.9));
     return Math.min(top, bottom);
   }
 
@@ -695,18 +715,18 @@ class Streams {
       Math.hypot(w - env.ox, env.oy),
       Math.hypot(env.ox, h - env.oy),
       Math.hypot(w - env.ox, h - env.oy),
-    ) + h * 0.3;
+    ) + w * BAND;
     env.t = 0;
     env.r = 0;
     env.carry = 0;
     const expected = Math.round(DUST_PER_ENVELOPE * clamp((w * h) / (400 * 400 * ASPECT), 0.5, 1));
-    env.burst = { expected, arrived: 0, pulsed: false };
+    if (this.cta) this.ctaRect = relativeRect(this.cta, this.root.getBoundingClientRect());
+    env.burst = { expected, arrived: 0, pulsed: false, ...this.route(env) };
     env.paper.style.setProperty("--mx", `${env.ox.toFixed(1)}px`);
     env.paper.style.setProperty("--my", `${env.oy.toFixed(1)}px`);
     env.paper.style.setProperty("--mr", "0px");
     env.el.setAttribute("data-dissolving", "");
     this.setInteractive(env, false);
-    if (this.cta) this.ctaRect = relativeRect(this.cta, this.root.getBoundingClientRect());
   }
 
   /** Keeps keyboard focus in the lanes when the focused envelope goes. */
@@ -720,12 +740,16 @@ class Streams {
   /** Advances a dissolve; true once the envelope is gone. */
   private stepDissolve(env: Envelope, dt: number): boolean {
     env.t += dt;
-    const progress = easeInOut(env.t / DISSOLVE);
+    // A steady front, easing only at its ends, so the paper is visibly eaten
+    // across rather than vanishing in the middle of the move.
+    const t = clamp(env.t / DISSOLVE);
+    const progress = (t + easeInOut(t)) / 2;
     const r0 = env.r;
     env.r = progress * env.rMax;
     this.emit(env, r0, env.r);
     env.paper.style.setProperty("--mr", `${env.r.toFixed(1)}px`);
-    env.shade.style.opacity = String(1 - progress);
+    // The shadow goes with the paper it belongs to, ahead of the last crumbs.
+    env.shade.style.opacity = String(clamp(1 - progress * 1.8));
     if (env.t < DISSOLVE) return false;
     this.retire(env);
     return true;
@@ -750,7 +774,8 @@ class Streams {
     for (let i = 0; i < tries; i++) {
       if (this.alive >= MAX_DUST) return;
       const a = Math.random() * Math.PI * 2;
-      const rr = Math.sqrt(r0 * r0 + Math.random() * (r1 * r1 - r0 * r0));
+      // Off the crumbling band just outside the advancing edge.
+      const rr = Math.sqrt(r0 * r0 + Math.random() * (r1 * r1 - r0 * r0)) + w * BAND * rand(0.1, 0.7);
       const lx = env.ox + Math.cos(a) * rr;
       const ly = env.oy + Math.sin(a) * rr;
       if (lx < 0 || lx > w || ly < 0 || ly > h) continue;
@@ -758,11 +783,54 @@ class Streams {
       const cy = ly - h / 2;
       const x = pose.x + cx * cos - cy * sin + this.offset.x;
       const y = pose.y + cx * sin + cy * cos + this.offset.y;
-      this.spawnParticle({ x, y }, Math.cos(a), Math.sin(a), env.lane.dir, burst);
+      this.spawnParticle({ x, y }, Math.cos(a), Math.sin(a), burst);
     }
   }
 
-  private spawnParticle(p0: Point, ux: number, uy: number, dir: 1 | -1, burst: Burst) {
+  /**
+   * The route a dissolve's dust takes to the CTA: down the inside of its lane
+   * (or, when narrow, up a column beside the button), then into the lower
+   * corner of the button on its own side. Built from the control's position,
+   * where the erosion starts.
+   */
+  private route(env: Envelope): { p1: Point; p2: Point; p3: Point } {
+    const cta = this.ctaRect ?? { left: 0, right: 0, top: 0, bottom: 0, width: 0, height: 0 };
+    const dir = env.lane.dir;
+    const ch = cta.height;
+    const edge = dir > 0 ? cta.left : cta.right;
+    const maxX = this.root.clientWidth - 6;
+    const pose = env.pose;
+    const rad = (pose.r * Math.PI) / 180;
+    const lx = (env.ox - this.envW / 2) * pose.k;
+    const ly = (env.oy - this.envH / 2) * pose.k;
+    const start = {
+      x: pose.x + lx * Math.cos(rad) - ly * Math.sin(rad) + this.offset.x,
+      y: pose.y + lx * Math.sin(rad) + ly * Math.cos(rad) + this.offset.y,
+    };
+    const p3 = { x: edge + dir * ch * 0.55, y: cta.top + ch * 0.8 };
+
+    if (this.narrow) {
+      const outer = Math.max(6, Math.min(maxX, edge - dir * ch));
+      return {
+        p1: { x: outer, y: start.y + (cta.bottom - start.y) * 0.6 },
+        p2: { x: outer, y: cta.top + ch * 0.75 },
+        p3,
+      };
+    }
+    // Down the gap between the lane and the copy (clear of the envelopes
+    // below), level with the button by then, so it never crosses the text;
+    // then up into the button's lower corner from below and outside.
+    const approachY = cta.bottom + ch * 0.9;
+    const copy = this.copyRect;
+    const x1 = copy ? (dir > 0 ? copy.left : copy.right) : start.x + dir * ch * 0.4;
+    return {
+      p1: { x: x1, y: Math.max(start.y + (approachY - start.y) * 0.7, cta.top) },
+      p2: { x: Math.max(6, Math.min(maxX, edge - dir * ch * 1.1)), y: approachY },
+      p3,
+    };
+  }
+
+  private spawnParticle(p0: Point, ux: number, uy: number, burst: Burst) {
     const cta = this.ctaRect;
     if (!cta) return;
     let particle = this.particles.find((p) => !p.alive);
@@ -788,46 +856,29 @@ class Streams {
       this.particles.push(particle);
     }
 
-    // Into the lower corner of the CTA on the side the dust comes from.
+    // Each grain joins its burst's route near the start and keeps to it, so
+    // the dust converges into one stream instead of drifting as a cloud.
     const ch = cta.height;
-    const edge = dir > 0 ? cta.left : cta.right;
-    const p3 = { x: edge + dir * (ch * 0.3 + rand(0, ch * 0.6)), y: cta.top + ch * rand(0.45, 0.92) };
-    const maxX = this.root.clientWidth - 6;
-    let p1: Point;
-    let p2: Point;
-    if (this.narrow) {
-      // Rising from the band below: up a column outside the button and its
-      // note, then in from the side.
-      const outer = Math.max(6, Math.min(maxX, edge - dir * ch * rand(0.85, 1.15)));
-      p1 = { x: outer + rand(-6, 6), y: p0.y + (cta.bottom - p0.y) * rand(0.55, 0.8) };
-      p2 = { x: outer, y: cta.top + ch * rand(0.55, 0.9) };
-    } else {
-      // The approach runs just under the button, beside the note, so it
-      // passes under the copy rather than through it.
-      const approachY = cta.bottom + ch * rand(0.3, 0.75);
-      p2 = {
-        x: Math.max(6, Math.min(maxX, edge - dir * ch * rand(1.2, 2))),
-        y: approachY - rand(0, ch * 0.3),
-      };
-      p1 = { x: p0.x - dir * rand(0, 30), y: p0.y + (approachY - p0.y) * rand(0.6, 0.85) };
-    }
+    const p1 = { x: burst.p1.x + rand(-10, 10), y: burst.p1.y + rand(-10, 10) };
+    const p2 = { x: burst.p2.x + rand(-5, 5), y: burst.p2.y + rand(-4, 4) };
+    const p3 = { x: burst.p3.x + rand(-0.22, 0.22) * ch, y: burst.p3.y + rand(-0.16, 0.16) * ch };
 
     particle.alive = true;
     particle.p0 = p0;
     particle.p1 = p1;
     particle.p2 = p2;
     particle.p3 = p3;
-    const puff = rand(8, 46);
-    particle.puff = { x: ux * puff, y: uy * puff - rand(0, 10) };
-    const spread = rand(6, 26);
+    const puff = rand(2, 12);
+    particle.puff = { x: ux * puff, y: uy * puff - rand(0, 4) };
+    const spread = rand(2, 9);
     const na = rand(0, Math.PI * 2);
     particle.noise = { x: Math.cos(na) * spread, y: Math.sin(na) * spread };
     particle.age = 0;
-    particle.dur = rand(1.9, 2.7);
-    particle.size = Math.random() < 0.12 ? rand(1.8, 2.6) : rand(0.6, 1.6);
+    particle.dur = rand(1.8, 2.4);
+    particle.size = Math.random() < 0.1 ? rand(1.6, 2.2) : rand(0.5, 1.3);
     particle.alpha = rand(0.45, 0.95);
     particle.light = Math.random() < 0.35;
-    particle.wobble = rand(2, 5);
+    particle.wobble = rand(1.5, 3);
     particle.seed = rand(0, 10);
     particle.arrived = false;
     particle.burst = burst;
@@ -942,33 +993,47 @@ class Streams {
     ctx.globalAlpha = 1;
   }
 
+  /** Where a grain is at a given age along its route. */
+  private at(p: Particle, age: number, out: Point) {
+    const t = clamp(age / p.dur);
+    // Off the paper at once, slowing as it reaches the button.
+    const e = 1 - Math.pow(1 - t, 2.2);
+    const u = 1 - e;
+    const b0 = u * u * u;
+    const b1 = 3 * u * u * e;
+    const b2 = 3 * u * e * e;
+    const b3 = e * e * e;
+    const burst = Math.sin(Math.min(1, t * 3) * (Math.PI / 2)) * u * u;
+    const drift = Math.sin(Math.PI * e) * u;
+    const wobble = Math.sin(age * p.wobble + p.seed) * 1.5 * u;
+    out.x = b0 * p.p0.x + b1 * p.p1.x + b2 * p.p2.x + b3 * p.p3.x + p.puff.x * burst + p.noise.x * drift + wobble;
+    out.y = b0 * p.p0.y + b1 * p.p1.y + b2 * p.p2.y + b3 * p.p3.y + p.puff.y * burst + p.noise.y * drift;
+  }
+
   private drawDust() {
     const ctx = this.dust;
     if (!ctx) return;
     if (!this.alive && !this.dustDirty) return;
     ctx.clearRect(0, 0, this.root.clientWidth, this.root.clientHeight);
     this.dustDirty = this.alive > 0;
+    const here: Point = { x: 0, y: 0 };
+    const behind: Point = { x: 0, y: 0 };
     for (const light of [false, true]) {
       ctx.fillStyle = light ? this.colors.dust2 : this.colors.dust;
       for (const p of this.particles) {
         if (!p.alive || p.light !== light) continue;
         const t = clamp(p.age / p.dur);
-        const e = t * t * (3 - 2 * t);
-        const u = 1 - e;
-        const b0 = u * u * u;
-        const b1 = 3 * u * u * e;
-        const b2 = 3 * u * e * e;
-        const b3 = e * e * e;
-        const burst = Math.sin(Math.min(1, t * 3) * (Math.PI / 2)) * u * u;
-        const drift = Math.sin(Math.PI * e) * u;
-        const wobble = Math.sin(p.age * p.wobble + p.seed) * 2 * u;
-        const x = b0 * p.p0.x + b1 * p.p1.x + b2 * p.p2.x + b3 * p.p3.x + p.puff.x * burst + p.noise.x * drift + wobble;
-        const y = b0 * p.p0.y + b1 * p.p1.y + b2 * p.p2.y + b3 * p.p3.y + p.puff.y * burst + p.noise.y * drift;
+        this.at(p, p.age, here);
+        this.at(p, Math.max(0, p.age - 0.05), behind);
         // In quickly, then shrinking and fading as it enters the button.
         const end = t > 0.8 ? 1 - (t - 0.8) / 0.2 : 1;
         const s = p.size * (0.2 + 0.8 * end);
-        ctx.globalAlpha = p.alpha * Math.min(1, t * 25) * end;
-        ctx.fillRect(x - s / 2, y - s / 2, s, s);
+        const alpha = p.alpha * Math.min(1, t * 25) * end;
+        // A faint grain just behind, so moving dust reads as a stream.
+        ctx.globalAlpha = alpha * 0.35;
+        ctx.fillRect((here.x + behind.x) / 2 - s / 2, (here.y + behind.y) / 2 - s / 2, s, s);
+        ctx.globalAlpha = alpha;
+        ctx.fillRect(here.x - s / 2, here.y - s / 2, s, s);
       }
     }
     ctx.globalAlpha = 1;

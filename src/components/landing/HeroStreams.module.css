@@ -58,42 +58,22 @@
 }
 
 /* The shadow sits apart from the paper, so it can fade with the dissolve
-   instead of being cut off by its mask. */
+   instead of being cut off by its mask. Restrained: paper on glass, not a
+   floating card. */
 .shade {
   position: absolute;
-  inset: 0;
-  border-radius: 0.2em;
+  inset: 0.15em 0.1em 0;
   box-shadow:
-    0 1px 1px var(--paper-shadow-near),
-    0 0.9em 1.9em -0.8em var(--paper-shadow);
+    0 1px 1.5px var(--paper-shadow-near),
+    0 0.75em 1.5em -0.75em var(--paper-shadow);
 }
 
-/* Folded paper: a sheet with its top-right corner turned down. */
+/* The sheet itself is drawn in the SVG (HeroStreams.tsx); this box only
+   holds it, the printed text and the control, and takes the dissolve mask. */
 .paper {
   position: absolute;
   inset: 0;
-  overflow: hidden;
-  border: 1px solid var(--paper-edge);
-  border-radius: 0.12em;
-  background: linear-gradient(170deg, var(--paper-hi) 10%, var(--paper-lo) 100%);
   color: var(--paper-ink);
-  clip-path: polygon(0 0, calc(100% - 1.45em) 0, 100% 1.45em, 100% 100%, 0 100%);
-}
-
-.paper::after {
-  content: "";
-  position: absolute;
-  inset-block-start: 0;
-  inset-inline-end: 0;
-  inline-size: 1.45em;
-  block-size: 1.45em;
-  background: linear-gradient(
-    225deg,
-    transparent calc(50% - 0.6px),
-    var(--paper-edge) 50%,
-    var(--paper-fold) calc(50% + 0.6px)
-  );
-  box-shadow: -1px 1px 2px var(--paper-shadow-near);
 }
 
 .folds {
@@ -101,34 +81,53 @@
   inset: 0;
   inline-size: 100%;
   block-size: 100%;
+  overflow: visible;
 }
 
-.folds path {
-  stroke: var(--paper-seam);
-  stroke-width: 1;
+.facet {
+  stroke: var(--paper-edge);
+  stroke-width: 0.8;
   stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
 }
 
-.flap {
-  fill: var(--paper-flap);
-}
-
-.flapSide {
-  fill: var(--paper-flap-2);
+.edge {
+  fill: var(--paper-thick);
 }
 
 .crease {
   fill: none;
-  opacity: 0.55;
+  stroke: var(--paper-seam);
+  stroke-width: 0.8;
+  vector-effect: non-scaling-stroke;
 }
 
+.earShadow {
+  fill: var(--paper-shadow-near);
+}
+
+.stopBackHi { stop-color: var(--paper-back-hi); }
+.stopBackLo { stop-color: var(--paper-back-lo); }
+.stopFlapHi { stop-color: var(--paper-flap-hi); }
+.stopFlapLo { stop-color: var(--paper-flap-lo); }
+.stopFrontHi { stop-color: var(--paper-hi); }
+.stopFrontLo { stop-color: var(--paper-lo); }
+.stopFacetHi { stop-color: var(--paper-facet-hi); }
+.stopFacetLo { stop-color: var(--paper-facet-lo); }
+.stopEarHi { stop-color: var(--paper-hi); }
+.stopEarLo { stop-color: var(--paper-fold); }
+
+.env[data-held] .facet {
+  stroke: var(--paper-edge-strong);
+}
+
+/* The address, on the front panel right of the flap. */
 .text {
   position: absolute;
-  inset-block-start: 21%;
-  inset-inline: 27% 17%;
+  inset-block-start: 19%;
+  inset-inline: 28% 12%;
   display: grid;
-  gap: 0.2em;
+  gap: 0.15em;
 }
 
 .sender,
@@ -152,13 +151,15 @@
   line-height: 1.3;
 }
 
+/* Below the subject line, so a long subject never runs into it. */
 .time {
   position: absolute;
-  inset-block-start: 49%;
-  inset-inline-end: 8%;
+  inset-block-start: 61%;
+  inset-inline-end: 11%;
   color: var(--paper-ink-2);
   font-size: 0.78em;
   white-space: nowrap;
+  transition: opacity 160ms var(--lp-ease);
 }
 
 /* --- Unsubscribe control ----------------------------------------------------
@@ -168,8 +169,8 @@
 
 .unsub {
   position: absolute;
-  inset-block-end: 12%;
-  inset-inline-end: 6%;
+  inset-block-end: 13%;
+  inset-inline-end: 10%;
   padding: 0.42em 1em;
   border: 0;
   border-radius: 999px;
@@ -198,7 +199,7 @@
 }
 
 .env[data-side="right"] .unsub {
-  inset-inline: 27% auto;
+  inset-inline: 34% auto;
 }
 
 .env[data-held] .unsub,
@@ -208,28 +209,44 @@
   pointer-events: auto;
 }
 
+/* The control takes the timestamp's corner on the left lane. */
+.env[data-side="left"][data-held] .time,
+.env[data-side="left"]:focus-within .time {
+  opacity: 0;
+}
+
 .unsub:focus-visible {
   outline: 2px solid var(--unsub-bg);
   outline-offset: 2px;
 }
 
-.env[data-held] .paper {
-  border-color: var(--paper-edge-strong);
+/* Dissolving: the paper erodes from the control outward. Behind the
+   advancing edge (--mr, grown by the engine, which sheds dust along it) is a
+   band where only a grain of specks survives, thinning towards the hole, so
+   the sheet crumbles rather than fades. Three mask layers, bottom up: the
+   ramp across the band, the grain intersected with it, and the solid paper
+   beyond the band added back. */
+.env {
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 9 0 0 0 -4.3'/%3E%3C/filter%3E%3Crect width='96' height='96' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
-/* Dissolving: the paper is eaten from the control outward; the engine grows
-   --mr and sheds dust along the edge. */
 .env[data-dissolving] .paper {
-  -webkit-mask-image: radial-gradient(
-    circle at var(--mx) var(--my),
-    transparent var(--mr, 0px),
-    #000 calc(var(--mr, 0px) + 1.4em)
-  );
-  mask-image: radial-gradient(
-    circle at var(--mx) var(--my),
-    transparent var(--mr, 0px),
-    #000 calc(var(--mr, 0px) + 1.4em)
-  );
+  --band: 3em;
+  mask-image:
+    radial-gradient(
+      circle at var(--mx) var(--my),
+      transparent calc(var(--mr, 0px) + var(--band) * 0.7),
+      #000 calc(var(--mr, 0px) + var(--band))
+    ),
+    var(--grain),
+    radial-gradient(
+      circle at var(--mx) var(--my),
+      transparent var(--mr, 0px),
+      #000 calc(var(--mr, 0px) + var(--band) * 0.85)
+    );
+  mask-size: 100% 100%, 5em 5em, 100% 100%;
+  mask-repeat: no-repeat, repeat, no-repeat;
+  mask-composite: add, intersect;
 }
 
 /* --- Narrow screens -----------------------------------------------------------
