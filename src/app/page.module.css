@@ -4,40 +4,65 @@
 /* --- Hero ----------------------------------------------------------------
    The one monochrome part of the page, from the approved design: the landing
    tokens are swapped for grayscale ones inside it, so nothing below changes.
-   On a wide screen the hero runs up under the header, letting the faint cards
-   of the scene show behind it; the header carries the same palette
-   (LandingNav.module.css). */
+   The copy sits centred in a protected field; two lanes of paper envelopes
+   rise beside it (src/components/landing/HeroStreams.tsx) over a soft glass
+   background. On a wide screen the hero runs up under the header; the header
+   carries the same palette (LandingNav.module.css).
+
+   Light is the default. Any ancestor marked data-appearance="dark" switches
+   the hero, and only the hero and its header, to the graphite variant below. */
 
 .hero {
-  --lp-bg: #ffffff;
+  --lp-bg: #fafafa;
   --lp-text: #0e0e10;
-  --lp-text-2: #5b5d63;
+  --lp-text-2: #4a4c52;
   --lp-accent: #0e0e10;
   --lp-soft: #ececee;
-  --lp-line: #e4e4e7;
+  --lp-line: #e2e2e5;
   --lp-panel: #ffffff;
   --lp-on-accent: #ffffff;
   --lp-shadow-lift: 0 12px 24px -12px rgb(0 0 0 / 40%);
+
+  --hero-eyebrow: #26272b;
+  --hero-muted: #6b6d73;
+  --hero-ring: rgb(14 14 16 / 42%);
+  /* The glass: broad curved bands of light and shade at the edges. */
+  --glass-light: rgb(255 255 255 / 95%);
+  --glass-shade: rgb(0 0 0 / 4.5%);
+  --glass-deep: rgb(0 0 0 / 5%);
+
+  /* Paper envelopes. */
+  --paper-hi: #ffffff;
+  --paper-lo: #ebebed;
+  --paper-flap: #f5f5f6;
+  --paper-flap-2: #efeff1;
+  --paper-fold: #e4e4e6;
+  --paper-edge: #b8b8bd;
+  --paper-edge-strong: #8e8f94;
+  --paper-seam: #c2c2c7;
+  --paper-ink: #111113;
+  --paper-ink-2: #5f6168;
+  --paper-shadow: rgb(0 0 0 / 30%);
+  --paper-shadow-near: rgb(0 0 0 / 6%);
+  --unsub-bg: #0e0e10;
+  --unsub-fg: #ffffff;
+
+  /* Dust and the motes along the lanes (read by streamsEngine.ts). */
+  --hero-dust: #111113;
+  --hero-dust-2: #85878d;
+  --hero-mote: #1a1a1c;
 
   /* Header height (LandingNav.module.css) and gutters wider than the rest of
      the page, as in the design. */
   --hero-nav: 4.75rem;
   --hero-max: 104rem;
   --hero-gutter: clamp(1rem, 3.4vw, 3.5rem);
-  /* The scene takes what the copy leaves: at least 36% of the width for the
-     copy (more on very wide screens), and never wider than 80rem. */
-  --hero-scene: clamp(
-    0px,
-    100vw - max(36vw, (100vw - var(--hero-max)) / 2 + 38rem),
-    80rem
-  );
 
   position: relative;
   isolation: isolate;
   display: flex;
   flex-direction: column;
-  /* Tall enough for the whole scene (1072 × 880) plus the divider. */
-  min-block-size: calc(var(--hero-scene) * 880 / 1072 + 3.75rem);
+  min-block-size: max(44rem, 100svh);
   margin-block-start: calc(-1 * var(--hero-nav));
   padding-block-start: var(--hero-nav);
   overflow: clip;
@@ -45,25 +70,89 @@
   color: var(--lp-text);
 }
 
+[data-appearance="dark"] .hero {
+  --lp-bg: #141415;
+  --lp-text: #f2f2f3;
+  --lp-text-2: #a7a8ae;
+  --lp-accent: #f2f2f3;
+  --lp-soft: #2a2a2d;
+  --lp-line: #2e2e31;
+  --lp-panel: #1c1c1e;
+  --lp-on-accent: #111113;
+  --lp-shadow-lift: 0 12px 24px -12px rgb(0 0 0 / 80%);
+
+  --hero-eyebrow: #d4d4d8;
+  --hero-muted: #8d8e94;
+  --hero-ring: rgb(242 242 243 / 45%);
+  --glass-light: rgb(255 255 255 / 7%);
+  --glass-shade: rgb(0 0 0 / 40%);
+  --glass-deep: rgb(0 0 0 / 35%);
+
+  --paper-hi: #f1f1f2;
+  --paper-lo: #d9d9dc;
+  --paper-flap: #e6e6e8;
+  --paper-flap-2: #e0e0e2;
+  --paper-fold: #c3c3c7;
+  --paper-edge: #8f9095;
+  --paper-edge-strong: #f2f2f3;
+  --paper-seam: #b0b1b6;
+  --paper-ink: #111113;
+  --paper-ink-2: #55575d;
+  --paper-shadow: rgb(0 0 0 / 60%);
+  --paper-shadow-near: rgb(0 0 0 / 30%);
+  --unsub-bg: #111113;
+  --unsub-fg: #f2f2f3;
+
+  --hero-dust: #ededee;
+  --hero-dust-2: #8d8e94;
+  --hero-mote: #e4e4e6;
+
+  color-scheme: dark;
+}
+
+/* Soft architectural glass: a few broad curved refractions at the edges and a
+   clean field in the middle. Static, so it costs nothing per frame. */
+.hero::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(42% 46% at 50% 46%, var(--lp-bg) 35%, transparent 100%),
+    radial-gradient(62% 95% at -8% 20%, transparent 60%, var(--glass-light) 65%, transparent 71%),
+    radial-gradient(66% 100% at -10% 24%, transparent 70%, var(--glass-shade) 74%, transparent 81%),
+    radial-gradient(58% 92% at 108% 86%, transparent 58%, var(--glass-light) 63%, transparent 69%),
+    radial-gradient(62% 98% at 110% 90%, transparent 68%, var(--glass-shade) 72%, transparent 79%),
+    radial-gradient(48% 62% at 104% -6%, var(--glass-deep), transparent 70%),
+    radial-gradient(52% 58% at -6% 108%, var(--glass-deep), transparent 72%),
+    linear-gradient(180deg, transparent 70%, var(--glass-shade));
+}
+
 .heroInner {
   position: relative;
   z-index: 2;
   display: grid;
   flex: 1;
-  align-items: center;
+  place-items: center;
   inline-size: 100%;
   max-inline-size: var(--hero-max);
   margin-inline: auto;
-  padding: 2.5rem var(--hero-gutter);
+  padding: 2.5rem var(--hero-gutter) 1.5rem;
 }
 
+/* As wide as its widest line, so the lanes can come right up to it. */
 .heroCopy {
-  max-inline-size: min(38rem, 40vw);
+  display: grid;
+  justify-items: center;
+  inline-size: fit-content;
+  max-inline-size: 100%;
+  text-align: center;
   animation: heroIn 520ms var(--lp-ease) both;
 }
 
 .hero .heroEyebrow {
-  color: #26272b;
+  color: var(--hero-eyebrow);
   font-size: clamp(0.75rem, 0.55rem + 0.35vw, 0.9375rem);
   font-weight: 500;
   letter-spacing: 0.22em;
@@ -84,15 +173,17 @@
 }
 
 .heroLede {
-  max-inline-size: 33rem;
-  margin-block-start: clamp(1.5rem, 2.4vw, 2.5rem);
-  color: #45474d;
+  max-inline-size: min(31.5rem, 38vw);
+  margin-block-start: clamp(1.25rem, 2vw, 2rem);
+  color: var(--lp-text-2);
   font-size: clamp(1.0625rem, 0.55rem + 0.95vw, 1.5rem);
   line-height: 1.45;
 }
 
 .heroAction {
-  margin-block-start: clamp(2rem, 3.4vw, 3.5rem);
+  display: grid;
+  justify-items: center;
+  margin-block-start: clamp(1.75rem, 2.8vw, 2.75rem);
 }
 
 .primary {
@@ -108,8 +199,8 @@
   font-weight: 600;
   text-decoration: none;
   transition:
-    transform var(--lp-fast) var(--lp-ease),
-    box-shadow var(--lp-fast) var(--lp-ease);
+    transform 240ms var(--lp-ease),
+    box-shadow 240ms var(--lp-ease);
 }
 
 .primary svg,
@@ -138,9 +229,23 @@
   box-shadow: none;
 }
 
+/* Dust from an envelope arriving (streamsEngine.ts sets data-dust briefly): a
+   fine grayscale outline and a tiny lift, then back. Transform only, so
+   nothing around it moves. */
+.primary[data-dust] {
+  transform: scale(1.03);
+  box-shadow:
+    0 0 0 3px var(--lp-bg),
+    0 0 0 4.5px var(--hero-ring);
+}
+
+.primary[data-dust]:hover {
+  transform: translateY(-1px) scale(1.03);
+}
+
 .note {
   margin-block-start: 1rem;
-  color: #6b6d73;
+  color: var(--hero-muted);
   font-size: var(--lp-size-small);
 }
 
@@ -151,20 +256,28 @@
   border-inline-start: 3px solid var(--lp-bad);
   border-radius: 6px;
   background: var(--lp-bad-bg);
-  color: var(--lp-text);
+  color: #35232b;
   font-size: var(--lp-size-small);
+  text-align: start;
 }
 
-/* The animated inbox (src/components/landing/InboxScene.tsx). Pinned to the
-   top-right corner, under the header, behind the copy. */
-.heroScene {
-  position: absolute;
-  z-index: 1;
-  inset-block-start: 0;
-  inset-inline-end: 0;
-  inline-size: var(--hero-scene);
-  aspect-ratio: 1072 / 880;
-  animation: sceneIn 900ms var(--lp-ease) 120ms both;
+/* What the envelopes are, under the copy. */
+.preview {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  justify-items: center;
+  gap: 0.125rem;
+  padding: 0 var(--hero-gutter) 1.5rem;
+  color: var(--lp-text);
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.previewHint {
+  color: var(--hero-muted);
+  font-size: 0.875rem;
 }
 
 /* The divider at the foot of the first screen. */
@@ -179,7 +292,7 @@
   max-inline-size: var(--hero-max);
   margin-inline: auto;
   padding: 0 var(--hero-gutter) 0.75rem;
-  color: #2c2d31;
+  color: var(--lp-text);
 }
 
 .heroFootLine {
@@ -393,17 +506,11 @@
   }
 }
 
-@keyframes sceneIn {
-  from {
-    opacity: 0;
-  }
-}
-
 /* --- Tablet -------------------------------------------------------------- */
 
-/* The hero stacks a little earlier than the rest: below this width the copy
-   and the scene no longer fit side by side. InboxScene.module.css uses the
-   same breakpoint to crop the scene. */
+/* The hero stacks a little earlier than the rest: below this width the lanes
+   no longer fit beside the copy, so they run in a band under it.
+   HeroStreams.module.css and streamsEngine.ts use the same breakpoint. */
 @media (max-width: 64rem) {
   .hero {
     min-block-size: 0;
@@ -412,20 +519,11 @@
   }
 
   .heroInner {
-    padding-block: clamp(2.75rem, 7vw, 4rem) 1.5rem;
+    padding-block: clamp(2.75rem, 7vw, 4rem) 0.5rem;
   }
 
-  .heroCopy {
-    max-inline-size: 38rem;
-  }
-
-  /* Full width; the height follows the scene's scale (InboxScene.module.css). */
-  .heroScene {
-    position: relative;
-    inset: auto;
-    inline-size: 100%;
-    block-size: min(100vw * 800 / 760, 720px);
-    aspect-ratio: auto;
+  .heroLede {
+    max-inline-size: 32rem;
   }
 
   .heroFoot {
@@ -515,9 +613,14 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .heroCopy,
-  .heroScene {
+  .heroCopy {
     animation: none;
+  }
+
+  /* The outline still answers arriving dust; the lift does not. */
+  .primary[data-dust],
+  .primary[data-dust]:hover {
+    transform: none;
   }
 
   .primary,

@@ -2,11 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowRight, ArrowUpRight, ChevronDown } from "lucide-react";
-// The serif italic used for a few short phrases in the large headings.
-// Imported here rather than in the root layout, so only this page loads it.
+// The serif italic used for a few short phrases in the large headings, and
+// the upright serif printed on the hero's envelopes. Imported here rather than
+// in the root layout, so only this page loads them.
 import "@fontsource-variable/newsreader/wght-italic.css";
+import "@fontsource-variable/newsreader/wght.css";
 import { LandingNav } from "@/components/landing/LandingNav";
-import { InboxScene } from "@/components/landing/InboxScene";
+import { HeroStreams } from "@/components/landing/HeroStreams";
 import { Reveal } from "@/components/landing/Reveal";
 import { ConnectArt, FindArt, ChooseArt } from "@/components/landing/StepArt";
 import { Outcomes } from "@/components/landing/Outcomes";
@@ -28,7 +30,8 @@ import styles from "./page.module.css";
  * Everything visual is scoped to this page through the landing tokens in
  * src/components/landing/theme.module.css. The signed-in app and the other
  * public pages keep their own styles. The hero, and the header above it,
- * swap those tokens for a monochrome set of their own.
+ * swap those tokens for a monochrome set of their own, with a dark variant
+ * that applies under any ancestor marked data-appearance="dark".
  *
  * A server component: the session cookie is read first, so a signed-in visitor
  * goes straight to the dashboard without a flash of this page. Only the cookie
@@ -75,16 +78,14 @@ export default async function HomePage({
 
       <main>
         {/* --- Hero -------------------------------------------------------- */}
-        <section className={styles.hero}>
+        <section className={styles.hero} data-hero>
           <div className={styles.heroInner}>
-            <div className={styles.heroCopy}>
+            <div className={styles.heroCopy} data-hero-copy>
               <p className={`${theme.eyebrow} ${styles.heroEyebrow}`}>A little less inbox noise</p>
               <h1 className={styles.heroTitle}>
                 Your inbox.
                 <br />
-                Minus
-                <br />
-                <span className={theme.serif}>the junk.</span>
+                Minus <span className={theme.serif}>the junk.</span>
               </h1>
               <p className={styles.heroLede}>
                 Find your Gmail subscriptions. Keep the ones you love. Unsubscribe
@@ -92,7 +93,7 @@ export default async function HomePage({
               </p>
 
               <div className={styles.heroAction}>
-                <Link href="/demo" className={styles.primary}>
+                <Link href="/demo" className={styles.primary} data-hero-cta>
                   Try the demo
                   <ArrowRight size={22} strokeWidth={2} aria-hidden />
                 </Link>
@@ -107,9 +108,12 @@ export default async function HomePage({
             </div>
           </div>
 
-          <div className={styles.heroScene}>
-            <InboxScene />
-          </div>
+          <HeroStreams />
+
+          <p className={styles.preview}>
+            <span>Interactive preview · No real emails</span>
+            <span className={styles.previewHint}>Hover to explore. Click to unsubscribe.</span>
+          </p>
 
           <div className={styles.heroFoot} aria-hidden="true">
             <span className={styles.heroFootLine} />

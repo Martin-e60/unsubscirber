@@ -1,0 +1,266 @@
+/* The envelope lanes beside the hero copy (HeroStreams.tsx).
+
+   Colours are the hero's tokens (.hero in src/app/page.module.css), so the
+   same rules draw the light and the dark appearance. Envelope size comes from
+   the engine as --env-w / --env-h; everything inside is in em, scaled from
+   the width. The page decides where the lanes sit; this file only draws them. */
+
+.streams {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  overflow: clip;
+  pointer-events: none;
+  user-select: none;
+  opacity: 0;
+  transition: opacity 900ms var(--lp-ease) 120ms;
+}
+
+.streams[data-ready] {
+  opacity: 1;
+}
+
+.motes,
+.dust {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  pointer-events: none;
+}
+
+/* Above the copy, so the dust can be seen entering the button. It routes
+   around the text and never takes a click. */
+.dust {
+  z-index: 4;
+}
+
+.lane {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* --- Envelope ---------------------------------------------------------------- */
+
+.env {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  inline-size: var(--env-w, 22rem);
+  block-size: var(--env-h, 8.4rem);
+  font-size: calc(var(--env-w, 22rem) / 21);
+  pointer-events: auto;
+  transform-origin: 50% 50%;
+  will-change: transform, opacity;
+}
+
+/* The shadow sits apart from the paper, so it can fade with the dissolve
+   instead of being cut off by its mask. */
+.shade {
+  position: absolute;
+  inset: 0;
+  border-radius: 0.2em;
+  box-shadow:
+    0 1px 1px var(--paper-shadow-near),
+    0 0.9em 1.9em -0.8em var(--paper-shadow);
+}
+
+/* Folded paper: a sheet with its top-right corner turned down. */
+.paper {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border: 1px solid var(--paper-edge);
+  border-radius: 0.12em;
+  background: linear-gradient(170deg, var(--paper-hi) 10%, var(--paper-lo) 100%);
+  color: var(--paper-ink);
+  clip-path: polygon(0 0, calc(100% - 1.45em) 0, 100% 1.45em, 100% 100%, 0 100%);
+}
+
+.paper::after {
+  content: "";
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-end: 0;
+  inline-size: 1.45em;
+  block-size: 1.45em;
+  background: linear-gradient(
+    225deg,
+    transparent calc(50% - 0.6px),
+    var(--paper-edge) 50%,
+    var(--paper-fold) calc(50% + 0.6px)
+  );
+  box-shadow: -1px 1px 2px var(--paper-shadow-near);
+}
+
+.folds {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+}
+
+.folds path {
+  stroke: var(--paper-seam);
+  stroke-width: 1;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.flap {
+  fill: var(--paper-flap);
+}
+
+.flapSide {
+  fill: var(--paper-flap-2);
+}
+
+.crease {
+  fill: none;
+  opacity: 0.55;
+}
+
+.text {
+  position: absolute;
+  inset-block-start: 21%;
+  inset-inline: 27% 17%;
+  display: grid;
+  gap: 0.2em;
+}
+
+.sender,
+.subject {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sender {
+  font-family: var(--lp-serif);
+  font-size: 1.42em;
+  font-weight: 620;
+  letter-spacing: -0.015em;
+  line-height: 1.15;
+}
+
+.subject {
+  color: var(--paper-ink-2);
+  font-size: 0.86em;
+  line-height: 1.3;
+}
+
+.time {
+  position: absolute;
+  inset-block-start: 49%;
+  inset-inline-end: 8%;
+  color: var(--paper-ink-2);
+  font-size: 0.78em;
+  white-space: nowrap;
+}
+
+/* --- Unsubscribe control ----------------------------------------------------
+   Faces the copy: lower right on the left lane, lower left on the right.
+   It ignores pointers until revealed, so a first tap on a phone only holds
+   the envelope. Keyboard focus reveals it too. */
+
+.unsub {
+  position: absolute;
+  inset-block-end: 12%;
+  inset-inline-end: 6%;
+  padding: 0.42em 1em;
+  border: 0;
+  border-radius: 999px;
+  background: var(--unsub-bg);
+  box-shadow: 0 0.45em 0.9em -0.45em rgb(0 0 0 / 55%);
+  color: var(--unsub-fg);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.74em;
+  font-weight: 600;
+  line-height: 1.1;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(0.3em);
+  pointer-events: none;
+  transition:
+    opacity 160ms var(--lp-ease),
+    transform 160ms var(--lp-ease);
+}
+
+/* A larger invisible target than the pill itself, for fingers. */
+.unsub::before {
+  content: "";
+  position: absolute;
+  inset: -0.9em -0.6em;
+}
+
+.env[data-side="right"] .unsub {
+  inset-inline: 27% auto;
+}
+
+.env[data-held] .unsub,
+.env:focus-within .unsub {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+.unsub:focus-visible {
+  outline: 2px solid var(--unsub-bg);
+  outline-offset: 2px;
+}
+
+.env[data-held] .paper {
+  border-color: var(--paper-edge-strong);
+}
+
+/* Dissolving: the paper is eaten from the control outward; the engine grows
+   --mr and sheds dust along the edge. */
+.env[data-dissolving] .paper {
+  -webkit-mask-image: radial-gradient(
+    circle at var(--mx) var(--my),
+    transparent var(--mr, 0px),
+    #000 calc(var(--mr, 0px) + 1.4em)
+  );
+  mask-image: radial-gradient(
+    circle at var(--mx) var(--my),
+    transparent var(--mr, 0px),
+    #000 calc(var(--mr, 0px) + 1.4em)
+  );
+}
+
+/* --- Narrow screens -----------------------------------------------------------
+   Matches the hero's breakpoint in page.module.css: the lanes run in a band
+   under the copy instead of beside it. */
+
+@media (max-width: 64rem) {
+  .streams {
+    position: relative;
+    inset: auto;
+    block-size: clamp(21rem, 88vw, 30rem);
+  }
+}
+
+/* Touch screens have no hover to reveal the control, so it shows faintly. */
+@media (hover: none) {
+  .unsub {
+    opacity: 0.5;
+  }
+}
+
+/* --- Reduced motion ------------------------------------------------------------
+   The lanes stand still (see streamsEngine.ts); an unsubscribe fades out. */
+
+@media (prefers-reduced-motion: reduce) {
+  .streams,
+  .unsub {
+    transition: none;
+  }
+
+  .env {
+    transition: opacity 400ms ease;
+  }
+}

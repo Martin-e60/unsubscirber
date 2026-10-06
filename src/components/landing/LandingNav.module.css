@@ -6,10 +6,21 @@
   --lp-accent: #0e0e10;
   --lp-line: #0e0e10;
   --lp-panel: #ffffff;
+  --bar-bg: #fafafa;
 
   position: relative;
   z-index: 3;
   color: var(--lp-text);
+}
+
+/* The hero's dark appearance (page.module.css) reaches the header too. */
+[data-appearance="dark"] .bar {
+  --lp-text: #f2f2f3;
+  --lp-text-2: #f2f2f3;
+  --lp-accent: #f2f2f3;
+  --lp-line: #f2f2f3;
+  --lp-panel: #141415;
+  --bar-bg: #141415;
 }
 
 /* Same width and gutters as the hero, which are wider than the page's. */
@@ -94,7 +105,7 @@
    brings its own background. */
 @media (max-width: 64rem) {
   .bar {
-    background: #ffffff;
+    background: var(--bar-bg);
   }
 }
 
