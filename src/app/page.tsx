@@ -9,6 +9,7 @@ import "@fontsource-variable/newsreader/wght-italic.css";
 import "@fontsource-variable/newsreader/wght.css";
 import { LandingNav } from "@/components/landing/LandingNav";
 import { LandingShell } from "@/components/landing/LandingTheme";
+import { FeatureTour } from "@/components/landing/FeatureTour";
 import { TourLink } from "@/components/landing/TourLink";
 import { Reveal } from "@/components/landing/Reveal";
 import { ConnectArt, FindArt, ChooseArt } from "@/components/landing/StepArt";
@@ -24,8 +25,8 @@ import styles from "./page.module.css";
 /**
  * The landing page.
  *
- * Four questions, answered in order: what Tidely does (the hero), how it
- * works (three steps), how much control you keep and what you will be told
+ * Five parts, in order: what Tidely does (the hero), a tour of its four
+ * screens, how it works (three steps), how much control you keep and what you will be told
  * (choice and the four outcomes), and how to try it (the closing band).
  *
  * Everything visual is scoped to this page through the landing tokens in
@@ -96,7 +97,7 @@ export default async function HomePage({
                   Open demo
                   <ArrowRight size={22} strokeWidth={2} aria-hidden />
                 </Link>
-                <TourLink href="#how-it-works" className={styles.secondary}>
+                <TourLink href="#tour" className={styles.secondary}>
                   Take a tour
                   <ArrowDown size={22} strokeWidth={2} aria-hidden />
                 </TourLink>
@@ -115,6 +116,9 @@ export default async function HomePage({
             <ChevronDown size={20} strokeWidth={2.7} />
           </div>
         </section>
+
+        {/* --- Feature tour ------------------------------------------------ */}
+        <FeatureTour />
 
         {/* --- How it works ------------------------------------------------ */}
         <section

@@ -1,0 +1,152 @@
+/* The feature presentation: a large sticky list of names beside four
+   previews that scroll normally. Plain monochrome like the hero, so the same
+   tokens are swapped in here, and inverted by data-theme on the page root. */
+
+.tour {
+  --lp-bg: #ffffff;
+  --lp-text: #08080a;
+  --lp-text-2: #737784;
+  --lp-line: #e2e2e5;
+  --tour-shadow: 0 1px 2px rgb(0 0 0 / 5%), 0 30px 60px -36px rgb(0 0 0 / 35%);
+  --tour-shot-filter: grayscale(1);
+
+  /* Where the list sits in the window while it is held, and the space above
+     the first preview. The list starts lower than the preview by the difference,
+     so nothing jumps when it begins to stick. */
+  --tour-hold: clamp(5rem, 24svh, 15rem);
+  --tour-pad: clamp(3rem, 10svh, 7rem);
+
+  background: var(--lp-bg);
+  color: var(--lp-text);
+}
+
+[data-theme="dark"] .tour {
+  --lp-bg: #000000;
+  --lp-text: #ffffff;
+  --lp-text-2: #a3a6ae;
+  --lp-line: #2c2c30;
+  --tour-shadow: 0 1px 2px rgb(0 0 0 / 60%), 0 30px 60px -36px rgb(0 0 0 / 90%);
+  --tour-shot-filter: grayscale(1) brightness(0.9);
+}
+
+.inner {
+  display: grid;
+  gap: 2rem;
+  padding: var(--tour-pad) clamp(1rem, 3.4vw, 3.5rem) clamp(3rem, 8svh, 6rem);
+}
+
+/* The names belong to the wide layout; below it each preview carries its own. */
+.side {
+  display: none;
+}
+
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-block-end: clamp(1.25rem, 3svh, 2.5rem);
+  color: var(--lp-text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.eyebrow::before {
+  content: "";
+  inline-size: 0.4rem;
+  block-size: 0.4rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.names {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.name {
+  display: block;
+  color: var(--lp-text-2);
+  font-size: clamp(2.5rem, 4.6vw, 5rem);
+  font-weight: 700;
+  letter-spacing: -0.05em;
+  line-height: 1.12;
+  text-decoration: none;
+  transition: color 240ms var(--lp-ease);
+}
+
+.name[aria-current="true"],
+.name:hover {
+  color: var(--lp-text);
+}
+
+.features {
+  display: grid;
+  gap: clamp(4rem, 14svh, 9rem);
+}
+
+.preview {
+  overflow: hidden;
+  border: 1px solid var(--lp-line);
+  border-radius: var(--lp-radius-band);
+  background: var(--lp-bg);
+  box-shadow: var(--tour-shadow);
+}
+
+.shot {
+  display: block;
+  inline-size: 100%;
+  block-size: auto;
+  filter: var(--tour-shot-filter);
+}
+
+.title {
+  margin-block-start: clamp(1.25rem, 2.4vw, 1.75rem);
+  font-size: clamp(1.5rem, 1.1rem + 1.2vw, 2rem);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.15;
+}
+
+.text {
+  max-inline-size: 34rem;
+  margin-block-start: 0.5rem;
+  color: var(--lp-text-2);
+  font-size: var(--lp-size-lede);
+  line-height: 1.5;
+}
+
+.note {
+  margin-block-start: 0.75rem;
+  color: var(--lp-text-2);
+  font-size: 0.8125rem;
+  letter-spacing: 0.01em;
+}
+
+.tour a:focus-visible {
+  outline-color: var(--lp-text);
+}
+
+@media (min-width: 64rem) {
+  .inner {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: clamp(1.5rem, 3vw, 3rem);
+  }
+
+  .side {
+    display: block;
+    position: sticky;
+    inset-block-start: var(--tour-hold);
+    align-self: start;
+    margin-block-start: calc(var(--tour-hold) - var(--tour-pad));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .name {
+    transition: none;
+  }
+}

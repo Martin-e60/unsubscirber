@@ -82,3 +82,31 @@ test("the landing page no longer links to the removed free page", () => {
     assert.ok(!source.includes('"/free"'), "no link to /free");
   }
 });
+
+test("the feature tour lists the four screens in order, each with a real preview", async () => {
+  const { TOUR_FEATURES } = await import("../src/components/landing/tour");
+
+  assert.deepEqual(
+    TOUR_FEATURES.map((feature) => feature.name),
+    ["Home", "Cleanup", "Clear out", "Unsubscribed"],
+  );
+  for (const feature of TOUR_FEATURES) {
+    assert.ok(
+      fs.existsSync(path.join("public", feature.image)),
+      `${feature.image} exists`,
+    );
+  }
+});
+
+test("the current feature is the last one that has reached the anchor line", async () => {
+  const { activeFeature } = await import("../src/components/landing/tour");
+
+  // Nothing has reached the line yet: the first is current.
+  assert.equal(activeFeature([700, 1500, 2300, 3100], 500), 0);
+  // The second has crossed it; the others have not.
+  assert.equal(activeFeature([-200, 400, 1200, 2000], 500), 1);
+  // Scrolled well past the end: the last stays current.
+  assert.equal(activeFeature([-3000, -2200, -1400, -600], 500), 3);
+  // Exactly on the line counts, so a settled page has one answer.
+  assert.equal(activeFeature([-800, 500, 1300, 2100], 500), 1);
+});
