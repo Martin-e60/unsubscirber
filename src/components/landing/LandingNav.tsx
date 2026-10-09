@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { TourLink } from "./TourLink";
 import styles from "./LandingNav.module.css";
 
 /**
@@ -9,11 +10,10 @@ import styles from "./LandingNav.module.css";
  * landing page's palette and nothing else.
  *
  * Two groups across the full width, over the dark hero: the logo and the FAQ
- * label on the left, the account links on the right. FAQ is a plain label for
- * now: the FAQ section does not exist yet, so there is nothing to link to. It
- * becomes an in-page anchor when that section is added. Only one thing here
- * looks like a button: Connect Gmail, outlined rather than filled, so Open
- * demo stays the obvious first step.
+ * link on the left, the account links on the right. FAQ scrolls to the FAQ
+ * section further down this page. Only one thing here looks like a button:
+ * Connect Gmail, outlined rather than filled, so Open demo stays the obvious
+ * first step.
  */
 export function LandingNav() {
   return (
@@ -25,7 +25,9 @@ export function LandingNav() {
           </Link>
 
           <nav className={`${styles.group} ${styles.wide}`} aria-label="Main">
-            <span className={styles.label}>FAQ</span>
+            <TourLink href="#faq" className={styles.link}>
+              FAQ
+            </TourLink>
           </nav>
         </div>
 

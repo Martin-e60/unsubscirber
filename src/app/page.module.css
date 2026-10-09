@@ -182,16 +182,14 @@ a.secondary:focus-visible {
 }
 
 .primary svg,
-.secondary svg,
-.cream svg {
+.secondary svg {
   flex: none;
   transition: transform var(--lp-fast) var(--lp-ease);
 }
 
 /* Hover lifts rather than recolours, so the approved HEX stays exact. */
 .primary:hover,
-.secondary:hover,
-.cream:hover {
+.secondary:hover {
   transform: translateY(-1px);
   box-shadow: var(--lp-shadow-lift);
 }
@@ -204,13 +202,8 @@ a.secondary:focus-visible {
   transform: translateY(3px);
 }
 
-.cream:hover svg {
-  transform: translate(2px, -2px);
-}
-
 .primary:active,
-.secondary:active,
-.cream:active {
+.secondary:active {
   transform: translateY(0) scale(0.98);
   box-shadow: none;
 }
@@ -329,192 +322,15 @@ a.secondary:focus-visible {
   );
 }
 
-/* --- Shared section furniture -------------------------------------------- */
-
-.section {
-  padding-block: clamp(4rem, 8vw, 6.5rem);
-}
-
-.sectionHead {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 1.5rem 4rem;
-  margin-block-end: clamp(2.5rem, 5vw, 3.5rem);
-}
-
-.sectionTitle {
-  margin-block-start: 1rem;
-  font-size: clamp(2.25rem, 1.2rem + 2.8vw, 3.5rem);
-  font-weight: 800;
-  letter-spacing: -0.04em;
-  line-height: 1.06;
-}
-
-.sectionAside {
-  max-inline-size: 19rem;
-  padding-block-end: 0.5rem;
-  color: var(--lp-text-2);
-  font-size: var(--lp-size-body);
-  line-height: 1.7;
-}
-
-/* --- How it works -------------------------------------------------------- */
-
-.steps {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 2.5rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.step {
-  display: grid;
-  align-content: start;
-  gap: 1.5rem;
-}
-
-.stepTitle {
-  display: flex;
-  align-items: baseline;
-  gap: 0.75rem;
-  font-size: 1.25rem;
-  font-weight: 700;
-  letter-spacing: -0.015em;
-  line-height: 1.3;
-}
-
-.stepNumber {
-  color: var(--lp-accent);
-  font-size: 0.875rem;
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0;
-}
-
-.stepBody {
-  max-inline-size: 22rem;
-  margin-block-start: 0.5rem;
-  color: var(--lp-text-2);
-  font-size: 1rem;
-  line-height: 1.7;
-}
-
-/* --- Choice and outcomes ------------------------------------------------- */
-
-.choice {
+/* --- The stage ------------------------------------------------------------
+   Everything above the footer. It is its own stacking layer, above the
+   footer's, and opaque all the way down, so the footer pinned behind it only
+   shows as this layer scrolls up. The header (z-index 3, before it in the
+   page) still sits over the hero. */
+.stage {
   position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  align-items: start;
-  gap: 3rem clamp(3rem, 7vw, 8rem);
-}
-
-/* A divider as wide as the content, not the padded container. */
-.choice::before {
-  content: "";
-  position: absolute;
-  inset-block-start: 0;
-  inset-inline: var(--lp-gutter);
-  block-size: 1px;
-  background: var(--lp-line);
-}
-
-.choiceCopy {
-  max-inline-size: 34rem;
-}
-
-.choiceLede {
-  max-inline-size: 27rem;
-  margin-block: 1.5rem 1.75rem;
-  color: var(--lp-text-2);
-  font-size: var(--lp-size-body);
-  line-height: 1.75;
-}
-
-.outcomesLabel {
-  margin-block-end: 1rem;
-  color: var(--lp-text-2);
-  font-size: 0.8125rem;
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-/* --- Try it band --------------------------------------------------------- */
-
-.band {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 2rem 3rem;
-  margin-block-end: 1rem;
-  padding: clamp(2.25rem, 5vw, 4rem);
-  border-radius: var(--lp-radius-band);
-  background: var(--lp-accent);
-  color: var(--lp-on-accent);
-}
-
-.bandEyebrow {
-  color: var(--lp-soft);
-  font-size: 0.8125rem;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-}
-
-.bandTitle {
-  margin-block-start: 1rem;
-  color: var(--lp-on-accent);
-  font-size: clamp(2rem, 1rem + 2.6vw, 3.25rem);
-  font-weight: 800;
-  letter-spacing: -0.04em;
-  line-height: 1.1;
-}
-
-.bandSerif {
-  color: var(--lp-soft);
-  font-family: var(--lp-serif);
-  font-style: italic;
-  font-weight: 450;
-  letter-spacing: -0.01em;
-}
-
-.bandAction {
-  display: grid;
-  justify-items: center;
-  gap: 0.875rem;
-}
-
-.cream {
-  display: inline-flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 3rem;
-  min-inline-size: 16rem;
-  min-block-size: 3.5rem;
-  padding-inline: 2rem 1.5rem;
-  border-radius: var(--lp-radius-button);
-  background: var(--lp-bg);
-  color: var(--lp-accent);
-  font-size: var(--lp-size-body);
-  font-weight: 700;
-  text-decoration: none;
-  transition:
-    transform var(--lp-fast) var(--lp-ease),
-    box-shadow var(--lp-fast) var(--lp-ease);
-}
-
-/* The page-wide focus ring is cherry, which would vanish on a cherry band. */
-.band :focus-visible {
-  outline-color: var(--lp-on-accent);
-}
-
-.bandNote {
-  color: var(--lp-soft);
-  font-size: 0.875rem;
+  z-index: 2;
+  background: #090909;
 }
 
 /* --- Load-in ------------------------------------------------------------- */
@@ -524,64 +340,6 @@ a.secondary:focus-visible {
     opacity: 0;
     transform: translateY(14px);
   }
-}
-
-/* --- Tablet -------------------------------------------------------------- */
-
-@media (max-width: 60rem) {
-  .choice {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .choiceCopy {
-    max-inline-size: none;
-  }
-
-  /* Two columns would squeeze the heading onto three lines. */
-  .band {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .bandAction {
-    justify-items: start;
-  }
-}
-
-/* --- Phone --------------------------------------------------------------- */
-
-@media (max-width: 52rem) {
-  .sectionHead {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .sectionAside {
-    max-inline-size: 30rem;
-  }
-
-  /* Steps stack, each with its small illustration beside the text. */
-  .steps {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 1.75rem;
-  }
-
-  .step {
-    grid-template-columns: 8.5rem minmax(0, 1fr);
-    align-items: center;
-    gap: 1.25rem;
-  }
-
-  .stepTitle {
-    flex-direction: column;
-    gap: 0.25rem;
-    font-size: 1.0625rem;
-  }
-
-  .stepBody {
-    margin-block-start: 0.375rem;
-    font-size: var(--lp-size-small);
-    line-height: 1.6;
-  }
-
 }
 
 @media (max-width: 30rem) {
@@ -599,23 +357,9 @@ a.secondary:focus-visible {
   }
 
   .primary,
-  .secondary,
-  .cream {
+  .secondary {
     inline-size: 100%;
     justify-content: space-between;
-  }
-
-  .cream {
-    min-inline-size: 0;
-  }
-
-  .bandAction {
-    justify-items: stretch;
-  }
-
-  .step {
-    grid-template-columns: 6.5rem minmax(0, 1fr);
-    gap: 1rem;
   }
 }
 
@@ -626,22 +370,17 @@ a.secondary:focus-visible {
 
   .primary,
   .secondary,
-  .cream,
   .primary svg,
-  .secondary svg,
-  .cream svg {
+  .secondary svg {
     transition: none;
   }
 
   .primary:hover,
   .secondary:hover,
-  .cream:hover,
   .primary:active,
   .secondary:active,
-  .cream:active,
   .primary:hover svg,
-  .secondary:hover svg,
-  .cream:hover svg {
+  .secondary:hover svg {
     transform: none;
   }
 }

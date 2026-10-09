@@ -1,0 +1,178 @@
+/* The FAQ: near-black, a centred two-line heading and five rounded outlined
+   rows. Plain monochrome, so the landing tokens are swapped here the way the
+   hero swaps them. Sizes on a wide screen come from the approved 1487 × 1058
+   frame, in 1440-wide pixels (--u, see theme.module.css). */
+
+.faq {
+  --lp-bg: #090909;
+  --lp-text: #ffffff;
+  --lp-text-2: #c6c6ca;
+  --lp-accent: #ffffff;
+  --lp-line: #262626;
+
+  /* The answer opens and the plus turns on the same clock. */
+  --faq-time: 300ms;
+  --faq-ease: cubic-bezier(0, 0, 0.2, 1);
+
+  --faq-radius: 1.125rem;
+  --faq-pad-x: 1.25rem;
+  --faq-pad-y: 1.375rem;
+
+  padding: clamp(4rem, 14vw, 6rem) var(--lp-gutter) clamp(4.5rem, 16vw, 7rem);
+  background: var(--lp-bg);
+  color: var(--lp-text);
+}
+
+.title {
+  text-align: center;
+  font-size: clamp(2.25rem, 9.4vw, 3.5rem);
+  font-weight: 400;
+  letter-spacing: -0.04em;
+  word-spacing: 0.1em;
+  line-height: 1.02;
+}
+
+/* The two lines break where the approved heading does, at any width. */
+.title span {
+  display: block;
+}
+
+.list {
+  display: grid;
+  gap: 0.75rem;
+  max-inline-size: 47.5rem;
+  margin: clamp(2rem, 7vw, 2.75rem) auto 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  border: 1px solid var(--lp-line);
+  border-radius: var(--faq-radius);
+}
+
+.heading {
+  margin: 0;
+  font: inherit;
+}
+
+.trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  inline-size: 100%;
+  padding: var(--faq-pad-y) var(--faq-pad-x);
+  border: 0;
+  border-radius: var(--faq-radius);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition: padding-block-end var(--faq-time) var(--faq-ease);
+}
+
+/* The global focus ring squares its element off; the row keeps its corners. */
+.item .trigger:focus-visible {
+  outline-offset: -3px;
+  border-radius: var(--faq-radius);
+}
+
+/* The question sits where the answer will start, so opening a row grows it
+   by the answer and nothing else. */
+.item[data-open] .trigger {
+  padding-block-end: 0;
+}
+
+.question {
+  font-size: 1.0625rem;
+  font-weight: 400;
+  letter-spacing: -0.03em;
+  word-spacing: 0.08em;
+  line-height: 1.3;
+}
+
+.icon {
+  flex: none;
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  transition: transform var(--faq-time) var(--faq-ease);
+}
+
+.item[data-open] .icon {
+  transform: rotate(45deg);
+}
+
+/* 0fr ↔ 1fr: the row grows to the answer's full height, whatever it is. */
+.panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--faq-time) var(--faq-ease);
+}
+
+.item[data-open] .panel {
+  grid-template-rows: 1fr;
+}
+
+.clip {
+  min-block-size: 0;
+  overflow: hidden;
+}
+
+.answer {
+  padding: 0.875rem var(--faq-pad-x) 1.5rem;
+  color: var(--lp-text-2);
+  font-size: 1rem;
+  letter-spacing: -0.034em;
+  word-spacing: 0.08em;
+  line-height: 1.55;
+}
+
+@media (min-width: 64rem) {
+  .faq {
+    padding: calc(141 * var(--u)) var(--lp-gutter) calc(150 * var(--u));
+  }
+
+  .title {
+    font-size: max(2.5rem, calc(53 * var(--u)));
+    line-height: calc(54 / 53);
+  }
+
+  .list {
+    gap: calc(18 * var(--u));
+    max-inline-size: max(34rem, calc(761 * var(--u)));
+    margin-block-start: calc(47 * var(--u));
+  }
+
+  .item {
+    --faq-radius: calc(17 * var(--u));
+    --faq-pad-x: calc(29 * var(--u));
+    --faq-pad-y: calc(31 * var(--u));
+  }
+
+  .question {
+    font-size: max(1rem, calc(21 * var(--u)));
+  }
+
+  .icon {
+    inline-size: calc(19 * var(--u));
+    block-size: calc(19 * var(--u));
+  }
+
+  .answer {
+    padding-block: calc(19 * var(--u)) calc(33.5 * var(--u));
+    font-size: max(0.9375rem, calc(18.4 * var(--u)));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trigger,
+  .icon,
+  .panel {
+    transition: none;
+  }
+}

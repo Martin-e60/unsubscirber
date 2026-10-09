@@ -10,6 +10,13 @@
 /** Public source repository, or "" to hide the link. */
 export const REPO_URL = "https://github.com/Martin-e60/unsubscirber";
 
+/** The author's own profiles, linked from the landing footer. */
+export const SOCIAL_LINKS = {
+  linkedin: "https://www.linkedin.com/in/martin-marinov-2677b0381/",
+  github: "https://github.com/Martin-e60",
+  instagram: "https://www.instagram.com/_martin.e60/",
+} as const;
+
 /** Where the app is served from. Used for canonical and social-preview URLs. */
 export const SITE_URL = (process.env.APP_URL ?? "https://tidely.vercel.app").replace(
   /\/$/,
