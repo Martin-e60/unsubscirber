@@ -59,10 +59,10 @@ test("landing styles are scoped: no global selectors except the page's own body"
     const globals = css.match(/:global\([^)]*\)[^{]*/g) ?? [];
     for (const selector of globals) {
       // The one allowed exception paints the body only when it contains the
-      // landing page's own themed root, in either of its two themes.
+      // landing page's own themed root.
       assert.match(
         selector.trim(),
-        /^:global\(body\):has\(\.theme(\[data-theme="dark"\])?\)$/,
+        /^:global\(body\):has\(\.theme\)$/,
         `${file} must not style other pages: ${selector.trim()}`,
       );
     }

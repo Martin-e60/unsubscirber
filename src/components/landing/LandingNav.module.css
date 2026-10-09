@@ -1,26 +1,15 @@
-/* White on black, or the reverse in the dark theme. The header sits above the
-   hero on the same plain background, so the two read as one first screen. */
+/* White on the dark hero. The header has no background of its own: it sits on
+   the hero's dark paper, so the two read as one first screen. */
 .bar {
-  --lp-text: #08080a;
-  --lp-text-2: #08080a;
-  --lp-accent: #08080a;
-  --lp-line: #08080a;
-  --lp-panel: #ffffff;
-  --lp-bg: #ffffff;
-
-  position: relative;
-  z-index: 3;
-  background: var(--lp-bg);
-  color: var(--lp-text);
-}
-
-[data-theme="dark"] .bar {
   --lp-text: #ffffff;
   --lp-text-2: #ffffff;
   --lp-accent: #ffffff;
   --lp-line: #ffffff;
-  --lp-panel: #000000;
-  --lp-bg: #000000;
+  --lp-panel: #0b0b0c;
+
+  position: relative;
+  z-index: 3;
+  color: var(--lp-text);
 }
 
 .inner {
@@ -29,7 +18,7 @@
   justify-content: space-between;
   gap: 1rem;
   inline-size: 100%;
-  min-block-size: var(--nav-h);
+  block-size: var(--nav-h);
   margin-inline: auto;
   padding-inline: clamp(1rem, 3.4vw, 3.5rem);
 }
@@ -46,11 +35,6 @@
 
 .group {
   gap: clamp(0.25rem, 1.4vw, 1.75rem);
-}
-
-.middle {
-  display: flex;
-  justify-content: center;
 }
 
 .brand {
@@ -83,6 +67,17 @@
   opacity: 0.6;
 }
 
+/* A label, not a link: no hover, no pointer, nothing to focus. */
+.label {
+  padding: 0.5rem 0.75rem;
+  color: var(--lp-text-2);
+  font-size: clamp(var(--lp-size-small), 0.75rem + 0.3vw, 1.0625rem);
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: default;
+  user-select: none;
+}
+
 .connect {
   display: inline-flex;
   align-items: center;
@@ -111,19 +106,15 @@
   transform: translateY(1px);
 }
 
-/* Desktop: three equal-weight columns, so the middle one is the true centre of
-   the window. Laid out in the approved 1440 × 900 frame (--u, see
+/* Desktop: laid out in the approved 1440 × 900 frame (--u, see
    theme.module.css); the 1555 × 1012 reference is that frame at 1.08. */
 @media (min-width: 46rem) {
   .inner {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     padding-inline: max(2rem, calc(62 * var(--u)));
   }
 
   .start {
     gap: calc(44 * var(--u));
-    justify-self: start;
   }
 
   .group {
@@ -131,7 +122,6 @@
   }
 
   .end {
-    justify-self: end;
     gap: calc(29 * var(--u));
   }
 
@@ -139,7 +129,8 @@
     font-size: max(1.375rem, calc(34 * var(--u)));
   }
 
-  .link {
+  .link,
+  .label {
     padding: 0.5rem 0.25rem;
     font-size: max(14px, calc(16.4 * var(--u)));
     letter-spacing: -0.015em;
@@ -155,23 +146,11 @@
   }
 }
 
-/* Narrower than that the side groups would meet the switch, so the row is
-   simply spaced out and the switch sits between them. */
-@media (max-width: 45.99rem) {
-  .inner {
-    gap: 0.5rem;
-  }
-}
-
 /* On a phone the page itself is the navigation: the demo button sits right
-   under the heading and How it works is the next thing on screen. */
+   under the heading, so the FAQ label is left out. */
 @media (max-width: 40rem) {
   .wide {
     display: none;
-  }
-
-  .inner {
-    min-block-size: 4rem;
   }
 
   .word {

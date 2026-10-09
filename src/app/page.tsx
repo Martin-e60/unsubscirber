@@ -8,7 +8,6 @@ import { ArrowDown, ArrowRight, ArrowUpRight, ChevronDown } from "lucide-react";
 import "@fontsource-variable/newsreader/wght-italic.css";
 import "@fontsource-variable/newsreader/wght.css";
 import { LandingNav } from "@/components/landing/LandingNav";
-import { LandingShell } from "@/components/landing/LandingTheme";
 import { FeatureTour } from "@/components/landing/FeatureTour";
 import { TourLink } from "@/components/landing/TourLink";
 import { Reveal } from "@/components/landing/Reveal";
@@ -31,9 +30,9 @@ import styles from "./page.module.css";
  *
  * Everything visual is scoped to this page through the landing tokens in
  * src/components/landing/theme.module.css. The signed-in app and the other
- * public pages keep their own styles. The hero, and the header above it, are
- * plain monochrome; the round switch in the header turns the whole page
- * between white-on-black and black-on-white (LandingTheme.tsx).
+ * public pages keep their own styles. The hero, and the header above it, sit on
+ * one fixed dark paper background; the feature tour below is white, with its
+ * four outer corners rounded over the dark. There is no light / dark switch.
  *
  * A server component: the session cookie is read first, so a signed-in visitor
  * goes straight to the dashboard without a flash of this page. Only the cookie
@@ -75,12 +74,19 @@ export default async function HomePage({
   const error = authErrorMessage((await searchParams).error);
 
   return (
-    <LandingShell>
+    <div className={theme.theme}>
       <LandingNav />
 
       <main>
         {/* --- Hero -------------------------------------------------------- */}
         <section className={styles.hero}>
+          {/* The dark paper. It reaches up behind the transparent header, so
+              the two share one surface. */}
+          <div className={styles.paper} aria-hidden="true">
+            <span className={styles.paperLeft} />
+            <span className={styles.paperRight} />
+          </div>
+
           <div className={styles.heroInner}>
             <div className={styles.heroCopy}>
               <h1 className={styles.heroTitle}>
@@ -118,7 +124,9 @@ export default async function HomePage({
         </section>
 
         {/* --- Feature tour ------------------------------------------------ */}
-        <FeatureTour />
+        <div className={styles.tourFrame}>
+          <FeatureTour />
+        </div>
 
         {/* --- How it works ------------------------------------------------ */}
         <section
@@ -210,6 +218,6 @@ export default async function HomePage({
       </main>
 
       <LandingFooter />
-    </LandingShell>
+    </div>
   );
 }

@@ -1,6 +1,9 @@
 /* The feature presentation: a large sticky list of names beside four
-   previews that scroll normally. Plain monochrome like the hero, so the same
-   tokens are swapped in here, and inverted by data-theme on the page root. */
+   previews that scroll normally. Plain monochrome, so its own tokens are
+   swapped in here. The surface is white edge to edge; only its four outer
+   corners are rounded, over the dark behind it (see .tourFrame in
+   page.module.css). Nothing clips it, so the sticky list and the focus rings
+   are unaffected. */
 
 .tour {
   --lp-bg: #ffffff;
@@ -16,17 +19,9 @@
   --tour-hold: clamp(5rem, 24svh, 15rem);
   --tour-pad: clamp(3rem, 10svh, 7rem);
 
+  border-radius: var(--lp-tour-radius);
   background: var(--lp-bg);
   color: var(--lp-text);
-}
-
-[data-theme="dark"] .tour {
-  --lp-bg: #000000;
-  --lp-text: #ffffff;
-  --lp-text-2: #a3a6ae;
-  --lp-line: #2c2c30;
-  --tour-shadow: 0 1px 2px rgb(0 0 0 / 60%), 0 30px 60px -36px rgb(0 0 0 / 90%);
-  --tour-shot-filter: grayscale(1) brightness(0.9);
 }
 
 .inner {

@@ -69,6 +69,11 @@
   --u: calc(min(100vw, 160svh) / 1440);
   --nav-h: 4.75rem;
 
+  /* The rounded outer corners of the white tour. The hero is padded by this
+     much below its first screen and the tour is pulled up over that padding,
+     so the top corners are cut out of the hero's own background. */
+  --lp-tour-radius: clamp(1.75rem, 5.6vw, 5.5rem);
+
   min-block-size: 100dvh;
   background: var(--lp-bg);
   color: var(--lp-text);
@@ -78,40 +83,10 @@
   color-scheme: light;
 }
 
-/* The dark theme: the same page, inverted. White on black, with the neutral
-   grays lifted so secondary text stays readable. The outcome icons keep their
-   hues on dark tints. */
-.theme[data-theme="dark"] {
-  --lp-bg: #000000;
-  --lp-text: #ffffff;
-  --lp-text-2: #a3a6ae;
-  --lp-accent: #ffffff;
-  --lp-soft: #232326;
-  --lp-line: #2c2c30;
-  --lp-panel: #0e0e10;
-  --lp-on-accent: #000000;
-
-  --lp-ok: #5fd0a8;
-  --lp-ok-bg: #0f2a21;
-  --lp-warn: #e0b050;
-  --lp-warn-bg: #2c2210;
-  --lp-bad: #ef8a82;
-  --lp-bad-bg: #301816;
-
-  --lp-shadow-panel: 0 1px 2px rgb(0 0 0 / 40%), 0 28px 56px -32px rgb(0 0 0 / 80%);
-  --lp-shadow-lift: 0 10px 22px -12px rgb(0 0 0 / 70%);
-
-  color-scheme: dark;
-}
-
 /* The page fills the viewport, but overscroll and the space below a short page
    show the body. Scoped with :has, so only the landing page's body changes. */
 :global(body):has(.theme) {
   background: #FBF4EF;
-}
-
-:global(body):has(.theme[data-theme="dark"]) {
-  background: #000000;
 }
 
 .theme :focus-visible {
@@ -158,6 +133,7 @@
 
 @media (max-width: 40rem) {
   .theme {
+    --nav-h: 4rem;
     --lp-gutter: 1rem;
   }
 }

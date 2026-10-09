@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { ThemeToggle } from "./LandingTheme";
 import styles from "./LandingNav.module.css";
 
 /**
@@ -9,10 +8,10 @@ import styles from "./LandingNav.module.css";
  * that one, and restyling it would have changed them too. This one carries the
  * landing page's palette and nothing else.
  *
- * Three groups across the full width: the logo and the page links on the left,
- * the theme switch exactly in the middle, and the account links on the right.
- * The middle column is auto-sized between two equal ones, so the switch stays
- * on the centre line whatever the side groups' widths. Only one thing here
+ * Two groups across the full width, over the dark hero: the logo and the FAQ
+ * label on the left, the account links on the right. FAQ is a plain label for
+ * now: the FAQ section does not exist yet, so there is nothing to link to. It
+ * becomes an in-page anchor when that section is added. Only one thing here
  * looks like a button: Connect Gmail, outlined rather than filled, so Open
  * demo stays the obvious first step.
  */
@@ -26,17 +25,8 @@ export function LandingNav() {
           </Link>
 
           <nav className={`${styles.group} ${styles.wide}`} aria-label="Main">
-            <a className={styles.link} href="#how-it-works">
-              How it works
-            </a>
-            <Link className={styles.link} href="/demo">
-              Demo
-            </Link>
+            <span className={styles.label}>FAQ</span>
           </nav>
-        </div>
-
-        <div className={styles.middle}>
-          <ThemeToggle />
         </div>
 
         <nav className={`${styles.group} ${styles.end}`} aria-label="Account">
