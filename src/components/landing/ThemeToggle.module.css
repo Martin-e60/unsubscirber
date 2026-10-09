@@ -1,0 +1,61 @@
+/* The disc is drawn from the page's own colours, so in dark mode it is the same
+   circle with the halves swapped. The button around it is larger than the disc,
+   so it stays an easy target. */
+.toggle {
+  display: grid;
+  place-items: center;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--lp-text);
+  cursor: pointer;
+}
+
+/* The page-wide focus ring squares off its element; this stays round. */
+button.toggle:focus-visible {
+  border-radius: 50%;
+}
+
+.disc {
+  inline-size: 2rem;
+  block-size: 2rem;
+  border: 2px solid var(--lp-text);
+  border-radius: 50%;
+  background: linear-gradient(90deg, var(--lp-text) 50%, var(--lp-bg) 50%);
+  transition: transform var(--lp-fast) var(--lp-ease);
+}
+
+.toggle:hover .disc {
+  transform: rotate(180deg);
+}
+
+.toggle:active .disc {
+  transform: rotate(180deg) scale(0.94);
+}
+
+@media (max-width: 22rem) {
+  .toggle {
+    inline-size: 2.25rem;
+  }
+}
+
+@media (min-width: 46rem) {
+  .disc {
+    inline-size: max(1.75rem, calc(36 * var(--u)));
+    block-size: max(1.75rem, calc(36 * var(--u)));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .disc {
+    transition: none;
+  }
+
+  .toggle:hover .disc,
+  .toggle:active .disc {
+    transform: none;
+  }
+}

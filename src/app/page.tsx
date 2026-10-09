@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, ArrowUpRight, ChevronDown } from "lucide-react";
+import { ArrowDown, ArrowRight, ArrowUpRight, ChevronDown } from "lucide-react";
 // The serif italic used for a few short phrases in the large headings, and
 // the upright serif printed on the hero's envelopes. Imported here rather than
 // in the root layout, so only this page loads them.
 import "@fontsource-variable/newsreader/wght-italic.css";
 import "@fontsource-variable/newsreader/wght.css";
 import { LandingNav } from "@/components/landing/LandingNav";
-import { HeroStreams } from "@/components/landing/HeroStreams";
-import { HeroGlass } from "@/components/landing/HeroGlass";
+import { LandingShell } from "@/components/landing/LandingTheme";
+import { TourLink } from "@/components/landing/TourLink";
 import { Reveal } from "@/components/landing/Reveal";
 import { ConnectArt, FindArt, ChooseArt } from "@/components/landing/StepArt";
 import { Outcomes } from "@/components/landing/Outcomes";
@@ -30,10 +30,9 @@ import styles from "./page.module.css";
  *
  * Everything visual is scoped to this page through the landing tokens in
  * src/components/landing/theme.module.css. The signed-in app and the other
- * public pages keep their own styles. The hero, and the header above it,
- * swap those tokens for a monochrome set of their own. Only the light
- * appearance is designed; the old dark variant (data-appearance="dark") is
- * left as it was and nothing sets it.
+ * public pages keep their own styles. The hero, and the header above it, are
+ * plain monochrome; the round switch in the header turns the whole page
+ * between white-on-black and black-on-white (LandingTheme.tsx).
  *
  * A server component: the session cookie is read first, so a signed-in visitor
  * goes straight to the dashboard without a flash of this page. Only the cookie
@@ -75,34 +74,32 @@ export default async function HomePage({
   const error = authErrorMessage((await searchParams).error);
 
   return (
-    <div className={theme.theme}>
+    <LandingShell>
       <LandingNav />
 
       <main>
         {/* --- Hero -------------------------------------------------------- */}
-        <section className={styles.hero} data-hero>
-          {/* The glass: broad sculpted surfaces at both outer edges, framing the
-              scene. The engine in HeroStreams moves its light (data-glass). */}
-          <div className={styles.glass} aria-hidden="true" data-glass>
-            <HeroGlass />
-          </div>
-
+        <section className={styles.hero}>
           <div className={styles.heroInner}>
-            <div className={styles.heroCopy} data-hero-copy>
-              <h1 className={styles.heroTitle} data-hero-text>
+            <div className={styles.heroCopy}>
+              <h1 className={styles.heroTitle}>
                 Unsubscribe from
                 <br />
                 unwanted emails.
               </h1>
-              <p className={styles.heroLede} data-hero-text>
+              <p className={styles.heroLede}>
                 Find your Gmail mailing lists and choose which ones to leave.
               </p>
 
-              <div className={styles.heroAction}>
-                <Link href="/demo" className={styles.primary} data-hero-cta>
-                  Try the demo
+              <div className={styles.actions}>
+                <Link href="/demo" className={styles.primary}>
+                  Open demo
                   <ArrowRight size={22} strokeWidth={2} aria-hidden />
                 </Link>
+                <TourLink href="#how-it-works" className={styles.secondary}>
+                  Take a tour
+                  <ArrowDown size={22} strokeWidth={2} aria-hidden />
+                </TourLink>
                 <p className={styles.note}>Sample data. No account needed.</p>
               </div>
 
@@ -114,16 +111,8 @@ export default async function HomePage({
             </div>
           </div>
 
-          <HeroStreams />
-
-          <p className={styles.preview} data-hero-hint>
-            <span className={styles.heroFootLine} aria-hidden="true" />
-            Click an envelope to preview. Nothing is sent.
-            <span className={styles.heroFootLine} aria-hidden="true" />
-          </p>
-
           <div className={styles.heroFoot} aria-hidden="true">
-            <ChevronDown size={20} strokeWidth={1.75} />
+            <ChevronDown size={20} strokeWidth={2.7} />
           </div>
         </section>
 
@@ -217,6 +206,6 @@ export default async function HomePage({
       </main>
 
       <LandingFooter />
-    </div>
+    </LandingShell>
   );
 }

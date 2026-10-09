@@ -59,90 +59,14 @@ test("landing styles are scoped: no global selectors except the page's own body"
     const globals = css.match(/:global\([^)]*\)[^{]*/g) ?? [];
     for (const selector of globals) {
       // The one allowed exception paints the body only when it contains the
-      // landing page's own themed root.
+      // landing page's own themed root, in either of its two themes.
       assert.match(
         selector.trim(),
-        /^:global\(body\):has\(\.theme\)$/,
+        /^:global\(body\):has\(\.theme(\[data-theme="dark"\])?\)$/,
         `${file} must not style other pages: ${selector.trim()}`,
       );
     }
   }
-});
-
-/** The approved 1440 × 900 frame's lane, as streamsEngine.ts builds it. */
-const LANE = { r0: 497, k: 0.0018, y0: 402, lim: 360 };
-
-test("a lane bows outward at mid-height and comes back in at both ends", async () => {
-  const { laneOffset } = await import("../src/components/landing/laneGeometry");
-
-  // Widest at the apex, closer to the middle above and below it.
-  assert.equal(laneOffset(LANE, LANE.y0), LANE.r0);
-  assert.ok(laneOffset(LANE, LANE.y0 - 200) < laneOffset(LANE, LANE.y0));
-  assert.ok(laneOffset(LANE, LANE.y0 + 200) < laneOffset(LANE, LANE.y0));
-  // A curve, not a slant: the same either side of the apex.
-  assert.equal(laneOffset(LANE, LANE.y0 - 150), laneOffset(LANE, LANE.y0 + 150));
-  // The three envelopes of the approved frame sit on it (centres 432 / 498 / 418
-  // from the middle at heights 218 / 402 / 617), within a few pixels.
-  for (const [y, from] of [[218, 432], [402, 498], [617, 418]]) {
-    assert.ok(Math.abs(laneOffset(LANE, y) - from) < 8, `y ${y}: ${laneOffset(LANE, y)} vs ${from}`);
-  }
-  // Beyond the limit it carries on straight: it keeps closing in, and never
-  // folds back over itself or crosses to the other lane.
-  let last = Infinity;
-  for (let dy = 0; dy <= 3000; dy += 50) {
-    const here = laneOffset(LANE, LANE.y0 - dy);
-    assert.ok(here < last || dy === 0, `still closing in at ${dy}`);
-    last = here;
-  }
-});
-
-test("envelopes turn gently with the lane, and the two lanes mirror each other", async () => {
-  const { laneLean, paperTilt } = await import("../src/components/landing/laneGeometry");
-
-  // Level at the apex, leaning in above it and out below it.
-  assert.ok(Math.abs(laneLean(LANE, LANE.y0)) < 1e-9);
-  assert.ok(laneLean(LANE, LANE.y0 - 200) > 0);
-  assert.ok(laneLean(LANE, LANE.y0 + 200) < 0);
-
-  // Left lane (+1) and right lane (-1) tip opposite ways by the same amount.
-  for (const dy of [-300, -100, 0, 120, 280]) {
-    const lean = laneLean(LANE, LANE.y0 + dy);
-    assert.equal(paperTilt(1, lean, 1.5), -paperTilt(-1, lean, 1.5));
-  }
-  // The approved frame: the top one tipped back, the middle and lower ones forwards.
-  assert.ok(paperTilt(1, laneLean(LANE, 218)) < 0);
-  assert.ok(paperTilt(1, laneLean(LANE, 402)) > 10);
-  assert.ok(paperTilt(1, laneLean(LANE, 617)) > 10);
-
-  // Never stood on end, however far along the lane: readable at any height.
-  for (let y = -3000; y <= 4000; y += 25) {
-    for (const own of [-2.5, 0, 3]) {
-      const tilt = paperTilt(1, laneLean(LANE, y), own);
-      assert.ok(tilt > -15 && tilt < 25, `tilt ${tilt} at ${y}`);
-    }
-  }
-});
-
-test("an envelope is gone before its paper reaches the header or the hint", async () => {
-  const { edgeFade } = await import("../src/components/landing/laneGeometry");
-  // Header edge at 78, clear from 134; hint edge at 779, clear from 723.
-  const fade = (top: number, bottom: number) => edgeFade(top, bottom, 78, 134, 779, 723);
-
-  assert.equal(fade(78, 300), 0);
-  assert.equal(fade(40, 300), 0);
-  assert.equal(fade(134, 300), 1);
-  assert.equal(fade(400, 779), 0);
-  assert.equal(fade(400, 900), 0);
-  assert.equal(fade(400, 723), 1);
-  // Between, it comes and goes smoothly.
-  let last = -1;
-  for (let top = 78; top <= 134; top += 4) {
-    const o = fade(top, 300);
-    assert.ok(o >= last);
-    last = o;
-  }
-  // Whichever edge is nearer decides.
-  assert.equal(fade(100, 760), Math.min(fade(100, 300), fade(400, 760)));
 });
 
 test("the landing page no longer links to the removed free page", () => {
@@ -156,33 +80,5 @@ test("the landing page no longer links to the removed free page", () => {
 
   for (const source of [page, ...components]) {
     assert.ok(!source.includes('"/free"'), "no link to /free");
-  }
-});
-
-test("a tilted envelope cannot cover central text on either lane", async () => {
-  const { protectLaneX } = await import("../src/components/landing/laneGeometry");
-  const text = [{ left: 445, right: 980, top: 309, bottom: 445 }];
-  // Entering near the headline: the rotated bounding corner can cross it even
-  // when the nominal lane centre is outside the text.
-  const left = protectLaneX(310, 228, 151, 85, 1, text, 12, 24);
-  const right = protectLaneX(1133, 228, 155, 85, -1, text, 12, 24);
-  assert.ok(left + 151 <= text[0].left - 12);
-  assert.ok(right - 155 >= text[0].right + 12);
-  // Paper with plenty of whitespace, and paper past the vertical band, keep
-  // following their original curve.
-  assert.equal(protectLaneX(220, 402, 151, 85, 1, text, 12, 24), 220);
-  assert.equal(protectLaneX(310, 650, 151, 85, 1, text, 12, 24), 310);
-});
-
-test("the copy guard approaches continuously without jumping across a lane", async () => {
-  const { protectLaneX } = await import("../src/components/landing/laneGeometry");
-  const text = [{ left: 445, right: 980, top: 309, bottom: 445 }];
-  let previous = 310;
-  for (let y = 180; y <= 245; y += 0.25) {
-    const x = protectLaneX(310, y, 151, 85, 1, text, 12, 24);
-    assert.ok(x <= previous + 1e-8);
-    assert.ok(previous - x < 0.5);
-    assert.ok(x > 0);
-    previous = x;
   }
 });

@@ -64,6 +64,11 @@
   --lp-max: 76rem;
   --lp-gutter: 2rem;
 
+  /* One pixel of the approved 1440 x 900 desktop frame. The header and the
+     hero size themselves in it on a wide screen. --nav-h is the header height. */
+  --u: calc(min(100vw, 160svh) / 1440);
+  --nav-h: 4.75rem;
+
   min-block-size: 100dvh;
   background: var(--lp-bg);
   color: var(--lp-text);
@@ -73,10 +78,40 @@
   color-scheme: light;
 }
 
+/* The dark theme: the same page, inverted. White on black, with the neutral
+   grays lifted so secondary text stays readable. The outcome icons keep their
+   hues on dark tints. */
+.theme[data-theme="dark"] {
+  --lp-bg: #000000;
+  --lp-text: #ffffff;
+  --lp-text-2: #a3a6ae;
+  --lp-accent: #ffffff;
+  --lp-soft: #232326;
+  --lp-line: #2c2c30;
+  --lp-panel: #0e0e10;
+  --lp-on-accent: #000000;
+
+  --lp-ok: #5fd0a8;
+  --lp-ok-bg: #0f2a21;
+  --lp-warn: #e0b050;
+  --lp-warn-bg: #2c2210;
+  --lp-bad: #ef8a82;
+  --lp-bad-bg: #301816;
+
+  --lp-shadow-panel: 0 1px 2px rgb(0 0 0 / 40%), 0 28px 56px -32px rgb(0 0 0 / 80%);
+  --lp-shadow-lift: 0 10px 22px -12px rgb(0 0 0 / 70%);
+
+  color-scheme: dark;
+}
+
 /* The page fills the viewport, but overscroll and the space below a short page
    show the body. Scoped with :has, so only the landing page's body changes. */
 :global(body):has(.theme) {
   background: #FBF4EF;
+}
+
+:global(body):has(.theme[data-theme="dark"]) {
+  background: #000000;
 }
 
 .theme :focus-visible {
@@ -113,6 +148,12 @@
   font-weight: 450;
   letter-spacing: -0.01em;
   color: var(--lp-accent);
+}
+
+@media (min-width: 46rem) {
+  .theme {
+    --nav-h: max(3.5rem, calc(88 * var(--u)));
+  }
 }
 
 @media (max-width: 40rem) {

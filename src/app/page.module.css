@@ -2,204 +2,51 @@
    tokens (src/components/landing/theme.module.css), never from the app's. */
 
 /* --- Hero ----------------------------------------------------------------
-   The one monochrome part of the page: the landing tokens are swapped for
-   grayscale ones inside it, so nothing below changes. The copy sits centred
-   in a protected field; two curved lanes of paper envelopes rise beside it
-   (src/components/landing/HeroStreams.tsx) in front of sculpted glass at both
-   edges (HeroGlass.tsx), which reflects them. On a wide screen the hero runs
-   up under the header; the header carries the same palette
-   (LandingNav.module.css).
-
-   Only the light appearance is designed. The dark block below is the old
-   one, kept as it was; nothing sets data-appearance="dark". */
+   Plain on purpose: one uniform background, the headline, one line of copy and
+   two pill buttons, centred under the header. The hero is the one part of the
+   page that is pure white and black rather than the page's warm palette, so
+   the landing tokens are swapped for monochrome ones inside it. The dark theme
+   (data-theme on the page root) inverts them. */
 
 .hero {
-  --lp-bg: #fdfdfd;
+  --lp-bg: #ffffff;
   --lp-text: #08080a;
   --lp-text-2: #737784;
-  --lp-accent: #121314;
-  --lp-soft: #ececee;
-  --lp-line: #e2e2e5;
-  --lp-panel: #ffffff;
+  --lp-accent: #08080a;
   --lp-on-accent: #ffffff;
+  --lp-line: #e2e2e5;
   --lp-shadow-lift: 0 12px 24px -12px rgb(0 0 0 / 40%);
 
-  --hero-eyebrow: #26272b;
-  --hero-muted: #858995;
-  --hero-ring: rgb(14 14 16 / 42%);
-  --hero-rule: #d6d8dd;
-
-  /* The glass at the edges (HeroGlass.tsx). Neutral silver: clear body,
-     shaded thickness inside each rim, bright grazing rims, soft haze. */
-  --glass-haze-strong: rgb(172 178 190 / 92%);
-  --glass-haze-soft: rgb(218 222 229 / 55%);
-  --glass-clear: rgb(253 253 253 / 0%);
-  --lens-core: rgb(255 255 255 / 22%);
-  --lens-body: rgb(206 210 218 / 65%);
-  --lens-band: rgb(255 255 255 / 85%);
-  --lens-depth: rgb(70 78 96 / 66%);
-  --lens-rim: rgb(255 255 255 / 100%);
-  --lens-rim-soft: rgb(255 255 255 / 70%);
-  --lens-glow: rgb(255 255 255 / 80%);
-  --lens-glint: rgb(255 255 255 / 90%);
-  --frost-opacity: 0.1;
-  /* What the engine's reflections and highlights are drawn with. */
-  --mirror-paper: #ffffff;
-  --mirror-edge: rgb(120 126 140 / 55%);
-  --mirror-ink: rgb(60 66 80 / 70%);
-  --glass-spec: rgb(255 255 255 / 85%);
-  --glass-sheen: rgb(255 255 255 / 55%);
-  --lens-sweep: rgb(255 255 255 / 40%);
-  --lens-halo: rgb(255 255 255 / 92%);
-  --lens-streak: rgb(255 255 255 / 55%);
-  --lens-streak-shade: rgb(120 128 146 / 16%);
-  --lens-hair: rgb(84 92 108 / 60%);
-  --lens-line: rgb(84 92 108 / 45%);
-  --lens-sweep-shade: rgb(110 118 136 / 16%);
-
-  /* Paper envelopes: white sheet, lit from the upper left. The front panel is
-     the brightest; the flap and the lower facet step down a little and the
-     pocket behind them is the darkest. */
-  --paper-hi: #ffffff;
-  --paper-lo: #f3f4f7;
-  --paper-flap-hi: #f7f8fa;
-  --paper-flap-lo: #dde0e6;
-  --paper-back-hi: #e9ebef;
-  --paper-back-lo: #d5d8de;
-  --paper-facet-hi: #f5f6f8;
-  --paper-facet-lo: #dadde3;
-  --paper-fold: #cdd1d8;
-  --paper-thick: #c6cad2;
-  --paper-edge: #bbbfc7;
-  --paper-edge-strong: #8e9097;
-  --paper-seam: #cacdd5;
-  --paper-ink: #0b0b0c;
-  --paper-ink-2: #737985;
-  --paper-time: #7b808b;
-  --paper-shadow: rgb(40 43 48 / 36%);
-  --paper-shadow-near: rgb(40 43 48 / 15%);
-  --unsub-bg: #0e0e10;
-  --unsub-fg: #ffffff;
-  --paper-grain: none;
-  --paper-grain-opacity: 0;
-  --distant-opacity: 0.5;
-
-  /* Dust and the motes along the lanes (read by streamsEngine.ts). */
-  --hero-dust: #111113;
-  --hero-dust-2: #85878d;
-  --hero-mote: #1a1a1c;
-
-  /* Header height (LandingNav.module.css) and the narrow-screen gutters. */
-  --hero-nav: 4.75rem;
-  --hero-max: 104rem;
-  --hero-gutter: clamp(1rem, 3.4vw, 3.5rem);
-
   position: relative;
-  isolation: isolate;
   display: flex;
   flex-direction: column;
-  min-block-size: max(44rem, 100svh);
-  margin-block-start: calc(-1 * var(--hero-nav));
-  padding-block-start: var(--hero-nav);
-  overflow: clip;
+  min-block-size: max(36rem, calc(100svh - var(--nav-h)));
   background: var(--lp-bg);
   color: var(--lp-text);
 }
 
-[data-appearance="dark"] .hero {
-  --lp-bg: #141415;
-  --lp-text: #f2f2f3;
-  --lp-text-2: #a7a8ae;
-  --lp-accent: #f2f2f3;
-  --lp-soft: #2a2a2d;
-  --lp-line: #2e2e31;
-  --lp-panel: #1c1c1e;
-  --lp-on-accent: #111113;
-  --lp-shadow-lift: 0 12px 24px -12px rgb(0 0 0 / 80%);
-
-  --hero-eyebrow: #d4d4d8;
-  --hero-muted: #8d8e94;
-  --hero-ring: rgb(242 242 243 / 45%);
-  --hero-rule: #3a3b3f;
-
-  --glass-haze-strong: rgb(140 141 146 / 60%);
-  --glass-haze-soft: rgb(70 71 75 / 30%);
-  --glass-clear: rgb(20 20 21 / 0%);
-  --lens-core: rgb(255 255 255 / 6%);
-  --lens-body: rgb(255 255 255 / 18%);
-  --lens-band: rgb(255 255 255 / 35%);
-  --lens-depth: rgb(0 0 0 / 45%);
-  --lens-rim: rgb(255 255 255 / 85%);
-  --lens-rim-soft: rgb(255 255 255 / 35%);
-  --lens-glow: rgb(255 255 255 / 30%);
-  --lens-glint: rgb(255 255 255 / 45%);
-  --frost-opacity: 0.12;
-
-  --paper-hi: #f0f0f1;
-  --paper-lo: #dcdcdf;
-  --paper-flap-hi: #e6e6e8;
-  --paper-flap-lo: #c8c8cc;
-  --paper-back-hi: #cfcfd3;
-  --paper-back-lo: #bbbbc0;
-  --paper-facet-hi: #e2e2e4;
-  --paper-facet-lo: #cdcdd1;
-  --paper-fold: #b6b6bb;
-  --paper-thick: #8d8e93;
-  --paper-edge: #8f9095;
-  --paper-edge-strong: #f2f2f3;
-  --paper-seam: #b0b1b6;
-  --paper-ink: #111113;
-  --paper-ink-2: #55575d;
-  --paper-shadow: rgb(0 0 0 / 60%);
-  --paper-shadow-near: rgb(0 0 0 / 30%);
-  --unsub-bg: #111113;
-  --unsub-fg: #f2f2f3;
-  --paper-grain-opacity: 0.3;
-  --distant-opacity: 0.14;
-
-  --hero-dust: #ededee;
-  --hero-dust-2: #8d8e94;
-  --hero-mote: #e4e4e6;
-
-  color-scheme: dark;
+[data-theme="dark"] .hero {
+  --lp-bg: #000000;
+  --lp-text: #ffffff;
+  --lp-text-2: #a3a6ae;
+  --lp-accent: #ffffff;
+  --lp-on-accent: #000000;
+  --lp-line: #2c2c30;
+  --lp-shadow-lift: 0 12px 24px -12px rgb(255 255 255 / 25%);
 }
 
-/* The glass at both outer edges (HeroGlass.tsx), behind everything. */
-.glass {
-  position: absolute;
-  z-index: 0;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-/* The copy layer spans the hero, but only the copy itself takes input, so
-   pointers reach the envelopes in the space around it. */
+/* The copy sits in the middle of what is left under the header. The padding
+   keeps it clear of the chevron at the foot on a short window. */
 .heroInner {
-  pointer-events: none;
-}
-
-.heroCopy {
-  pointer-events: auto;
-}
-
-.heroInner {
-  position: relative;
-  z-index: 2;
   display: grid;
   flex: 1;
   place-items: center;
-  inline-size: 100%;
-  max-inline-size: var(--hero-max);
-  margin-inline: auto;
-  padding: 2.5rem var(--hero-gutter) 1.5rem;
+  padding: 4.5rem var(--lp-gutter);
 }
 
-/* As wide as its widest line, so the lanes can come right up to it. */
 .heroCopy {
   display: grid;
   justify-items: center;
-  inline-size: fit-content;
   max-inline-size: 100%;
   text-align: center;
   animation: heroIn 520ms var(--lp-ease) both;
@@ -213,43 +60,73 @@
 }
 
 .heroLede {
-  max-inline-size: min(31.5rem, 38vw);
+  max-inline-size: 32rem;
   margin-block-start: clamp(1rem, 1.6vw, 1.5rem);
   color: var(--lp-text-2);
   font-size: clamp(1.0625rem, 0.55rem + 0.95vw, 1.25rem);
   line-height: 1.45;
 }
 
-.heroAction {
+/* Two pills side by side. The note hangs under the first only. */
+.actions {
   display: grid;
-  justify-items: center;
+  grid-template-columns: auto auto;
+  grid-template-areas:
+    "demo tour"
+    "note .";
+  justify-content: center;
+  align-items: start;
+  gap: 0.75rem;
   margin-block-start: clamp(1.75rem, 2.8vw, 2.25rem);
 }
 
-.primary {
+.primary,
+.secondary {
   display: inline-flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.875rem;
   min-block-size: clamp(3rem, 3.9vw, 3.5rem);
-  padding-inline: clamp(2rem, 3vw, 3.125rem);
+  padding-inline: clamp(1.5rem, 3vw, 2.25rem);
+  border: 1.5px solid var(--lp-accent);
   border-radius: 999px;
-  background: var(--lp-accent);
-  color: var(--lp-on-accent);
   font-size: clamp(1.0625rem, 0.7rem + 0.5vw, 1.1875rem);
   font-weight: 600;
   text-decoration: none;
+  white-space: nowrap;
   transition:
     transform 240ms var(--lp-ease),
     box-shadow 240ms var(--lp-ease);
 }
 
+.primary {
+  grid-area: demo;
+  background: var(--lp-accent);
+  color: var(--lp-on-accent);
+}
+
+.secondary {
+  grid-area: tour;
+  background: var(--lp-bg);
+  color: var(--lp-text);
+}
+
+/* The page-wide focus ring squares off its element; these keep their pill. */
+a.primary:focus-visible,
+a.secondary:focus-visible {
+  border-radius: 999px;
+}
+
 .primary svg,
+.secondary svg,
 .cream svg {
+  flex: none;
   transition: transform var(--lp-fast) var(--lp-ease);
 }
 
 /* Hover lifts rather than recolours, so the approved HEX stays exact. */
 .primary:hover,
+.secondary:hover,
 .cream:hover {
   transform: translateY(-1px);
   box-shadow: var(--lp-shadow-lift);
@@ -259,33 +136,25 @@
   transform: translateX(3px);
 }
 
+.secondary:hover svg {
+  transform: translateY(3px);
+}
+
 .cream:hover svg {
   transform: translate(2px, -2px);
 }
 
 .primary:active,
+.secondary:active,
 .cream:active {
   transform: translateY(0) scale(0.98);
   box-shadow: none;
 }
 
-/* Dust from an envelope arriving (streamsEngine.ts sets data-dust briefly): a
-   fine grayscale outline and a tiny lift, then back. Transform only, so
-   nothing around it moves. */
-.primary[data-dust] {
-  transform: scale(1.03);
-  box-shadow:
-    0 0 0 3px var(--lp-bg),
-    0 0 0 4.5px var(--hero-ring);
-}
-
-.primary[data-dust]:hover {
-  transform: translateY(-1px) scale(1.03);
-}
-
 .note {
-  margin-block-start: 0.75rem;
-  color: var(--hero-muted);
+  grid-area: note;
+  justify-self: center;
+  color: var(--lp-text-2);
   font-size: var(--lp-size-small);
 }
 
@@ -296,113 +165,82 @@
   border-inline-start: 3px solid var(--lp-bad);
   border-radius: 6px;
   background: var(--lp-bad-bg);
-  color: #35232b;
+  color: var(--lp-text);
   font-size: var(--lp-size-small);
   text-align: start;
 }
 
-/* The one hint at the foot of the first screen, between two short rules. Text
-   only: it lets pointers through to the envelopes passing beside it. */
-.preview {
-  position: relative;
-  z-index: 2;
-  pointer-events: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1.25rem;
-  padding: 0 var(--hero-gutter) 0.5rem;
-  color: var(--hero-muted);
-  font-size: 0.875rem;
-  line-height: 1.45;
-  text-align: center;
-}
-
-.heroFootLine {
-  flex: none;
-  inline-size: clamp(2.5rem, 12vw, 8.25rem);
-  block-size: 1px;
-  background: var(--hero-rule);
-}
-
-/* The discreet downward cue under it. */
+/* The discreet downward cue at the foot of the first screen. */
 .heroFoot {
-  position: relative;
-  z-index: 2;
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 1.5rem;
   display: grid;
   justify-items: center;
-  padding: 0 var(--hero-gutter) 1rem;
   color: var(--lp-text);
   pointer-events: none;
 }
 
 /* --- Desktop: the approved proportions ------------------------------------
    Sizes and gaps in the hero come from the approved 1440 × 900 frame, in its
-   own pixels: --u is one of them. The frame is 1440 wide and 900 tall, so a
-   short window scales down too. The lanes in streamsEngine.ts use the same
-   unit. Small text keeps a readable floor. */
-@media (min-width: 64.0625rem) {
-  .hero {
-    --u: calc(min(100vw, 160svh) / 1440);
-    --hero-nav: max(3.5rem, calc(72 * var(--u)));
-    --glass-w: calc(460 * var(--u));
-  }
-
-  /* The copy block's centre sits a little below the middle of the frame. */
+   own pixels (--u, see theme.module.css); the 1555 × 1012 reference is that
+   frame at 1.08. Small text keeps a readable floor. */
+@media (min-width: 64rem) {
   .heroInner {
-    padding-block: calc(65 * var(--u)) calc(10 * var(--u));
+    padding-block: 3rem;
   }
 
   .heroTitle {
-    font-size: calc(68 * var(--u));
+    font-size: calc(78 * var(--u));
     letter-spacing: -0.055em;
-    line-height: 1;
+    line-height: 0.96;
   }
 
   .heroLede {
     max-inline-size: none;
     margin-block-start: calc(19 * var(--u));
-    font-size: max(14px, calc(18.6 * var(--u)));
+    font-size: max(14px, calc(24.7 * var(--u)));
     letter-spacing: -0.018em;
     line-height: 1.3;
     white-space: nowrap;
   }
 
-  .heroAction {
-    margin-block-start: calc(34 * var(--u));
+  .actions {
+    gap: calc(7 * var(--u)) calc(12 * var(--u));
+    margin-block-start: calc(42 * var(--u));
+  }
+
+  .primary,
+  .secondary {
+    min-block-size: max(2.75rem, calc(54 * var(--u)));
+    font-size: max(15px, calc(20.8 * var(--u)));
+    letter-spacing: -0.02em;
   }
 
   .primary {
-    gap: calc(22 * var(--u));
-    min-block-size: max(2.5rem, calc(48 * var(--u)));
-    padding-inline: calc(46.5 * var(--u));
-    font-size: max(14px, calc(19 * var(--u)));
+    gap: calc(33 * var(--u));
+    padding-inline: calc(60 * var(--u)) calc(53 * var(--u));
+    font-weight: 500;
   }
 
-  .primary svg {
-    inline-size: 1.05em;
-    block-size: 1.05em;
+  .secondary {
+    gap: calc(43.5 * var(--u));
+    padding-inline: calc(64 * var(--u)) calc(30.5 * var(--u));
+  }
+
+  .primary svg,
+  .secondary svg {
+    inline-size: calc(22 * var(--u));
+    block-size: calc(22 * var(--u));
   }
 
   .note {
-    margin-block-start: calc(7 * var(--u));
-    font-size: max(12px, calc(13.7 * var(--u)));
+    font-size: max(12px, calc(15.3 * var(--u)));
     letter-spacing: -0.01em;
-  }
-
-  .preview {
-    gap: calc(32 * var(--u));
-    padding-block-end: calc(9 * var(--u));
-    font-size: max(12px, calc(13.4 * var(--u)));
-    letter-spacing: -0.01em;
-  }
-
-  .heroFootLine {
-    inline-size: calc(132 * var(--u));
   }
 
   .heroFoot {
-    padding-block-end: calc(65 * var(--u));
+    inset-block-end: calc(42 * var(--u));
   }
 
   .heroFoot svg {
@@ -610,29 +448,6 @@
 
 /* --- Tablet -------------------------------------------------------------- */
 
-/* The hero stacks a little earlier than the rest: below this width the lanes
-   no longer fit beside the copy, so they run in a band under it.
-   HeroStreams.module.css and streamsEngine.ts use the same breakpoint. */
-@media (max-width: 64rem) {
-  .hero {
-    min-block-size: 0;
-    margin-block-start: 0;
-    padding-block-start: 0;
-  }
-
-  .heroInner {
-    padding-block: clamp(2.75rem, 7vw, 4rem) 0.5rem;
-  }
-
-  .heroLede {
-    max-inline-size: 32rem;
-  }
-
-  .heroFoot {
-    padding-block-start: 0.5rem;
-  }
-}
-
 @media (max-width: 60rem) {
   .choice {
     grid-template-columns: minmax(0, 1fr);
@@ -689,19 +504,22 @@
 
 }
 
-@media (max-width: 40rem) {
-  /* The hint wraps on a phone; the rules would be left hanging at the edges. */
-  .heroFootLine {
-    display: none;
-  }
-}
-
 @media (max-width: 30rem) {
   .heroTitle {
     font-size: clamp(1.875rem, 10.2vw, 3.25rem);
   }
 
+  /* Both pills fill the row and stack; the note follows the first. */
+  .actions {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "demo"
+      "note"
+      "tour";
+  }
+
   .primary,
+  .secondary,
   .cream {
     inline-size: 100%;
     justify-content: space-between;
@@ -726,24 +544,23 @@
     animation: none;
   }
 
-  /* The outline still answers arriving dust; the lift does not. */
-  .primary[data-dust],
-  .primary[data-dust]:hover {
-    transform: none;
-  }
-
   .primary,
+  .secondary,
   .cream,
   .primary svg,
+  .secondary svg,
   .cream svg {
     transition: none;
   }
 
   .primary:hover,
+  .secondary:hover,
   .cream:hover,
   .primary:active,
+  .secondary:active,
   .cream:active,
   .primary:hover svg,
+  .secondary:hover svg,
   .cream:hover svg {
     transform: none;
   }
