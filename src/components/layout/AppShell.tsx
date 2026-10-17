@@ -11,8 +11,10 @@ import {
   type ReactNode,
 } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { CircleAlert, CircleCheck, Mails, X } from "lucide-react";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { HomeHeader } from "@/components/layout/HomeHeader";
 import { AccountMenu } from "@/components/layout/AccountMenu";
 import { MailboxSwitcher } from "@/components/layout/MailboxSwitcher";
 import {
@@ -37,8 +39,9 @@ import {
   mailboxTitle,
   pickActiveMailbox,
 } from "@/lib/mailbox/shared";
-import type { NavItem } from "@/lib/navigation";
+import { NAV, navHref, type NavItem } from "@/lib/navigation";
 import theme from "./appTheme.module.css";
+import homeTheme from "./homeTheme.module.css";
 import styles from "./AppShell.module.css";
 
 /**
@@ -400,6 +403,37 @@ function Frame({
   cleanupCount,
   account,
 }: FrameProps) {
+  const pathname = usePathname();
+  const notices = notice ? (
+    <div className={styles.notice} data-tone={notice.tone} role="status">
+      {notice.tone === "success" ? (
+        <CircleCheck size={17} strokeWidth={2} aria-hidden />
+      ) : (
+        <CircleAlert size={17} strokeWidth={2} aria-hidden />
+      )}
+      <p>{notice.text}</p>
+      <button type="button" onClick={onDismissNotice} aria-label="Dismiss">
+        <X size={16} strokeWidth={2} aria-hidden />
+      </button>
+    </div>
+  ) : null;
+
+  // Home is the one page without a sidebar: a header with the destinations,
+  // in a white and gray palette of its own. Every other page keeps the
+  // sidebar and the app's warm theme.
+  if (pathname === navHref(NAV[0], basePath)) {
+    return (
+      <div className={`${homeTheme.theme} ${styles.homeShell}`}>
+        <HomeHeader basePath={basePath} items={navItems} account={account} />
+        <div className={styles.homeFrame}>
+          {banner}
+          {notices}
+          <main className={styles.homeMain}>{children}</main>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`${theme.theme} ${styles.shell}`}>
       <Sidebar
@@ -427,19 +461,7 @@ function Frame({
         </header>
 
         {banner}
-        {notice ? (
-          <div className={styles.notice} data-tone={notice.tone} role="status">
-            {notice.tone === "success" ? (
-              <CircleCheck size={17} strokeWidth={2} aria-hidden />
-            ) : (
-              <CircleAlert size={17} strokeWidth={2} aria-hidden />
-            )}
-            <p>{notice.text}</p>
-            <button type="button" onClick={onDismissNotice} aria-label="Dismiss">
-              <X size={16} strokeWidth={2} aria-hidden />
-            </button>
-          </div>
-        ) : null}
+        {notices}
         <main className={styles.main}>{children}</main>
       </div>
     </div>

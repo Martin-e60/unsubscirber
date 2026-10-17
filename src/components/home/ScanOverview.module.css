@@ -1,0 +1,280 @@
+/* The scan overview. Sizes that carry the hierarchy follow the viewport width
+   (the vw terms equal the approved design at 1660px) and stop at readable
+   limits, so nothing is scaled as a whole. */
+
+.card {
+  border: var(--border-width) solid var(--color-border);
+  border-radius: 0.875rem;
+  background: var(--color-surface);
+}
+
+/* --- Upper row ---------------------------------------------------------------- */
+
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3) 0;
+  padding: 1.40625rem 3.0625rem 1.09375rem 2.9375rem;
+}
+
+.title {
+  font-size: clamp(1.25rem, 1.45vw, 1.5rem);
+  font-weight: var(--weight-semibold);
+  letter-spacing: -0.045em;
+  line-height: 1.2;
+}
+
+.when {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-inline-start: 1.375rem;
+  padding-inline-start: 1.375rem;
+  color: var(--color-text);
+  font-size: clamp(1.0625rem, 1.325vw, 1.375rem);
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+}
+
+.when::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block-start: 50%;
+  block-size: 1.625rem;
+  margin-block-start: -0.8125rem;
+  border-inline-start: var(--border-width) solid var(--color-border-strong);
+}
+
+.period {
+  color: var(--color-text-muted);
+}
+
+.actionSlot {
+  margin-inline-start: auto;
+}
+
+.action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.0625rem;
+  min-block-size: 3.25rem;
+  padding-inline: 1.53rem 1.22rem;
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: 0.625rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: clamp(1rem, 1.2vw, 1.25rem);
+  font-weight: var(--weight-medium);
+  letter-spacing: -0.02em;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease),
+    border-color var(--duration-fast) var(--ease);
+}
+
+.action:hover {
+  border-color: var(--color-text-subtle);
+  background: var(--color-surface-sunken);
+}
+
+.rule {
+  margin: 0 1.5625rem;
+  border: 0;
+  border-block-start: var(--border-width) solid var(--color-border);
+}
+
+/* --- Lower row ---------------------------------------------------------------- */
+
+.lower {
+  padding: 1.5625rem 3.0625rem 1rem 3.125rem;
+}
+
+/* Found | not reviewed | progress, in the proportions of the design. */
+.figures {
+  display: grid;
+  grid-template-columns: minmax(0, 31.5fr) minmax(0, 38fr) minmax(0, 30.5fr);
+  align-items: center;
+}
+
+.stat {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.75rem;
+  min-block-size: 4.4375rem;
+  align-content: flex-end;
+  padding-block-end: 0.4375rem;
+}
+
+.stat + .stat {
+  align-self: stretch;
+  padding-inline-start: 4.375rem;
+  border-inline-start: var(--border-width) solid var(--color-border);
+}
+
+.statValue {
+  font-size: clamp(2rem, 2.9vw, 3rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+}
+
+.statLabel {
+  color: var(--color-text-muted);
+  font-size: clamp(1.25rem, 2.17vw, 2.25rem);
+  font-weight: var(--weight-normal);
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+}
+
+/* The bar sits a little below the figures, as in the design. */
+.progress {
+  display: flex;
+  flex-direction: column;
+  align-self: start;
+  gap: 0.6875rem;
+  margin-block-start: 1.375rem;
+}
+
+.track {
+  overflow: hidden;
+  block-size: 0.875rem;
+  border-radius: var(--radius-full);
+  background: #e6e6e8;
+}
+
+.fill {
+  display: block;
+  block-size: 100%;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  transition: inline-size var(--duration-normal) var(--ease);
+}
+
+.caption {
+  color: var(--color-text-muted);
+  font-size: 1.125rem;
+  line-height: 1.2;
+}
+
+.note {
+  max-inline-size: 48rem;
+  color: var(--color-text-muted);
+  font-size: var(--text-lg);
+  line-height: var(--leading-normal);
+}
+
+.noteInline {
+  grid-column: 3;
+  font-size: var(--text-base);
+}
+
+.skeleton {
+  block-size: 4.375rem;
+  border-radius: var(--radius-md);
+  background: linear-gradient(90deg, #f1f1f2, #fafafa, #f1f1f2);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+.error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: 0 1.5625rem 1.25rem;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-danger-soft);
+  color: var(--color-danger-text);
+  font-size: var(--text-base);
+}
+
+.error svg {
+  flex-shrink: 0;
+  margin-block-start: 0.125rem;
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* --- Narrower windows --------------------------------------------------------
+   The figures stack instead of squeezing: found, then not reviewed, then the
+   progress. */
+
+@media (max-width: 70rem) {
+  .top {
+    padding-inline: 1.5rem;
+  }
+
+  .lower {
+    padding-inline: 1.5rem;
+  }
+
+  .figures {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--space-5) 0;
+  }
+
+  .progress,
+  .noteInline {
+    grid-column: 1 / -1;
+  }
+
+  .stat + .stat {
+    padding-inline-start: 2rem;
+  }
+}
+
+@media (max-width: 44rem) {
+  .top {
+    padding-block: var(--space-4);
+  }
+
+  .when {
+    margin-inline-start: 0;
+    padding-inline-start: 0;
+    inline-size: 100%;
+  }
+
+  .when::before {
+    display: none;
+  }
+
+  .actionSlot {
+    margin-inline-start: 0;
+    inline-size: 100%;
+  }
+
+  .action {
+    inline-size: 100%;
+  }
+
+  .figures {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .stat + .stat {
+    padding-inline-start: 0;
+    border-inline-start: 0;
+  }
+
+  .stat {
+    min-block-size: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}

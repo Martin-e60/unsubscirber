@@ -6,7 +6,7 @@ import {
   ChevronRight,
   CircleAlert,
   CircleCheck,
-  MailCheck,
+  Mail,
   MousePointer2,
   ScanLine,
   Send,
@@ -79,7 +79,7 @@ export function Attention({
                   </span>
                   <span className={styles.rowBody}>Finish on the sender’s website.</span>
                 </span>
-                <ChevronRight className={styles.chevron} size={18} strokeWidth={1.75} aria-hidden />
+                <ChevronRight className={styles.chevron} size={26} strokeWidth={2.4} aria-hidden />
               </Link>
             </li>
           ) : null}
@@ -95,7 +95,7 @@ export function Attention({
                   </span>
                   <span className={styles.rowBody}>See what happened and your options.</span>
                 </span>
-                <ChevronRight className={styles.chevron} size={18} strokeWidth={1.75} aria-hidden />
+                <ChevronRight className={styles.chevron} size={26} strokeWidth={2.4} aria-hidden />
               </Link>
             </li>
           ) : null}
@@ -103,10 +103,9 @@ export function Attention({
       )}
 
       <footer className={styles.foot}>
-        <p className={styles.footNote}>You stay in control of every request.</p>
         <Link href={results} className={styles.footLink}>
           Review results
-          <ArrowUpRight size={16} strokeWidth={2} aria-hidden />
+          <ArrowUpRight className={styles.arrow} size={26} strokeWidth={2.4} aria-hidden />
         </Link>
       </footer>
     </section>
@@ -117,7 +116,7 @@ export function Attention({
 
 const ACTIVITY_ICON: Record<ActivityKind, LucideIcon> = {
   scan: ScanLine,
-  removed: MailCheck,
+  removed: Mail,
   sent: Send,
 };
 
@@ -136,7 +135,7 @@ export function Activity({
         </h2>
         <Link href={`${basePath}/unsubscribed`} className={styles.headLink}>
           View history
-          <ArrowUpRight size={16} strokeWidth={2} aria-hidden />
+          <ArrowUpRight className={styles.arrow} size={26} strokeWidth={2.4} aria-hidden />
         </Link>
       </header>
 

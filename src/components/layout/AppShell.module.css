@@ -176,3 +176,26 @@
     display: none;
   }
 }
+
+/* --- Home -------------------------------------------------------------------
+   No sidebar: the header is HomeHeader, and the page sits in one broad,
+   centred container (see homeTheme for its width). */
+
+.homeShell {
+  min-block-size: 100dvh;
+}
+
+.homeFrame {
+  inline-size: var(--home-width);
+  margin-inline: auto;
+  padding-block: var(--space-5) var(--space-12);
+}
+
+.homeFrame > .notice {
+  max-inline-size: none;
+  margin: var(--space-4) 0 0;
+}
+
+.homeMain {
+  margin-block-start: 1.5625rem;
+}

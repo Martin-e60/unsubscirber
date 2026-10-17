@@ -1,0 +1,239 @@
+.header {
+  position: relative;
+  z-index: 20;
+  border-block-end: var(--border-width) solid var(--color-border);
+  background: var(--color-surface);
+}
+
+/* Brand left, destinations centred on the page, account right. */
+.inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  inline-size: var(--home-width);
+  min-block-size: 4.5rem;
+  margin-inline: auto;
+}
+
+.brand {
+  justify-self: start;
+  position: relative;
+  inset-block-start: -0.2rem;
+  margin-inline-start: -0.125rem;
+  color: var(--color-text);
+  font-size: 1.875rem;
+  font-weight: 700;
+  letter-spacing: -0.055em;
+  line-height: 1;
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: clamp(1.25rem, 2.9vw, 2.9375rem);
+}
+
+.link {
+  position: relative;
+  padding-block: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: 1rem;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color var(--duration-fast) var(--ease);
+}
+
+.link:hover {
+  color: var(--color-text);
+}
+
+.link[data-active] {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+/* The page you are on: a dot under its name. */
+.link[data-active]::after {
+  content: "";
+  position: absolute;
+  inset-inline-start: 50%;
+  inset-block-start: calc(100% - 0.1rem);
+  inline-size: 0.5rem;
+  block-size: 0.5rem;
+  margin-inline-start: -0.25rem;
+  border-radius: var(--radius-full);
+  background: var(--color-text);
+}
+
+/* --- Account ---------------------------------------------------------------- */
+
+.account {
+  position: relative;
+  justify-self: end;
+  padding-inline-start: 2.25rem;
+}
+
+.account::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block: 50%;
+  block-size: 1.875rem;
+  margin-block: -0.9375rem;
+  border-inline-start: var(--border-width) solid var(--color-border-strong);
+}
+
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-1);
+  border: 0;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  inline-size: 2.625rem;
+  block-size: 2.625rem;
+  border-radius: var(--radius-full);
+  background: #e7e7e8;
+  color: var(--color-text);
+  transition: background-color var(--duration-fast) var(--ease);
+}
+
+.trigger:hover .avatar {
+  background: #dfdfe1;
+}
+
+.chevron {
+  transition: transform var(--duration-fast) var(--ease);
+}
+
+.chevron[data-open] {
+  transform: rotate(180deg);
+}
+
+.menu {
+  position: absolute;
+  z-index: 30;
+  inset-block-start: calc(100% + var(--space-2));
+  inset-inline-end: 0;
+  inline-size: min(20rem, calc(100vw - 2rem));
+  padding: var(--space-2);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-lg);
+  animation: menuIn 160ms var(--ease) backwards;
+}
+
+.menuEmail {
+  overflow: hidden;
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.switcher {
+  padding-block-end: var(--space-2);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  inline-size: 100%;
+  min-block-size: 2.75rem;
+  padding-inline: var(--space-3);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text);
+  font-weight: var(--weight-medium);
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.item:hover,
+.item:focus-visible {
+  background: var(--color-surface-sunken);
+}
+
+/* Opacity only: a transform on this menu would become the containing block of
+   the mailbox switcher's fixed-position list inside it, and misplace it. */
+@keyframes menuIn {
+  from {
+    opacity: 0;
+  }
+}
+
+/* --- Narrow windows ---------------------------------------------------------
+   The brand and the account share the first row; the destinations take a row
+   of their own and scroll sideways rather than wrapping or shrinking. */
+
+@media (max-width: 56rem) {
+  .inner {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "brand account"
+      "nav nav";
+    min-block-size: 0;
+    padding-block-start: var(--space-3);
+  }
+
+  .brand {
+    grid-area: brand;
+    font-size: 1.625rem;
+  }
+
+  .account {
+    grid-area: account;
+    padding-inline-start: 0;
+  }
+
+  .account::before {
+    display: none;
+  }
+
+  .nav {
+    grid-area: nav;
+    gap: var(--space-6);
+    margin-inline: calc(-1 * var(--space-1));
+    padding-inline: var(--space-1);
+    padding-block-end: var(--space-2);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .link {
+    padding-block: var(--space-3);
+  }
+
+  .link[data-active]::after {
+    inset-block-start: auto;
+    inset-block-end: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu {
+    animation: none;
+  }
+}
