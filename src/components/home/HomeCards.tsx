@@ -1,19 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import {
-  ArrowUpRight,
-  ChevronRight,
-  CircleAlert,
-  CircleCheck,
-  Mail,
-  MousePointer2,
-  ScanLine,
-  Send,
-  type LucideIcon,
-} from "lucide-react";
+import { ArrowUpRight, ChevronRight, CircleCheck, ScanLine } from "lucide-react";
 import { relativeTime } from "@/lib/home/format";
-import type { ActivityItem, ActivityKind } from "@/lib/home/activity";
+import type { ActivityItem } from "@/lib/home/activity";
 import type { StatsDto } from "@/lib/api/types";
 import styles from "./HomeCards.module.css";
 
@@ -66,13 +56,10 @@ export function Attention({
           </div>
         </div>
       ) : (
-        <ul className={styles.list}>
+        <ul className={`${styles.list} ${styles.rows}`}>
           {needsClick > 0 ? (
             <li>
               <Link href={`${basePath}/cleanup?status=MANUAL`} className={styles.row}>
-                <span className={styles.rowIcon} aria-hidden="true">
-                  <MousePointer2 size={18} strokeWidth={1.75} />
-                </span>
                 <span className={styles.rowText}>
                   <span className={styles.rowTitle}>
                     {needsClick} {needsClick === 1 ? "needs" : "need"} one more click
@@ -86,9 +73,6 @@ export function Attention({
           {failed > 0 ? (
             <li>
               <Link href={`${basePath}/cleanup?status=FAILED`} className={styles.row}>
-                <span className={styles.rowIcon} aria-hidden="true">
-                  <CircleAlert size={18} strokeWidth={1.75} />
-                </span>
                 <span className={styles.rowText}>
                   <span className={styles.rowTitle}>
                     {failed} {failed === 1 ? "attempt needs" : "attempts need"} a review
@@ -113,12 +97,6 @@ export function Attention({
 }
 
 // --- Recent activity --------------------------------------------------------
-
-const ACTIVITY_ICON: Record<ActivityKind, LucideIcon> = {
-  scan: ScanLine,
-  removed: Mail,
-  sent: Send,
-};
 
 export function Activity({
   items,
@@ -152,24 +130,20 @@ export function Activity({
           </div>
         </div>
       ) : (
-        <ul className={styles.list}>
-          {items.map((item) => {
-            const Icon = ACTIVITY_ICON[item.kind];
-            return (
-              <li key={item.id} className={styles.event} data-kind={item.kind}>
-                <span className={styles.rowIcon} aria-hidden="true">
-                  <Icon size={18} strokeWidth={1.75} />
-                </span>
-                <span className={styles.rowText}>
-                  <span className={styles.rowTitle}>{item.title}</span>
-                  <span className={styles.rowBody}>{item.detail}</span>
-                </span>
-                <time className={styles.time} dateTime={item.at}>
-                  {relativeTime(item.at)}
-                </time>
-              </li>
-            );
-          })}
+        <ul className={`${styles.list} ${styles.timeline}`}>
+          {items.map((item) => (
+            <li key={item.id} className={styles.event} data-kind={item.kind}>
+              {/* A position on the rail, nothing more: it carries no status. */}
+              <span className={styles.marker} aria-hidden="true" />
+              <span className={styles.rowText}>
+                <span className={styles.rowTitle}>{item.title}</span>
+                <span className={styles.rowBody}>{item.detail}</span>
+              </span>
+              <time className={styles.time} dateTime={item.at}>
+                {relativeTime(item.at)}
+              </time>
+            </li>
+          ))}
         </ul>
       )}
     </section>

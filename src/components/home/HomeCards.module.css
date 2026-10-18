@@ -73,59 +73,37 @@
   list-style: none;
 }
 
-.list > li {
-  border-block-end: var(--border-width) solid var(--color-border);
-}
+/* --- Needs your attention: compact, very pale rows ------------------------- */
 
-/* Only a line between rows: the last one hands over to the footer (or, in
-   Recent activity, to the card edge). */
-.list > li:last-child {
-  border-block-end: 0;
-}
-
-.card > .list:has(+ .foot) {
-  margin-block-end: 0.306rem;
-}
-
-.row,
-.event {
+.rows {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: clamp(1rem, 2vw, 2.0625rem);
-  padding-block: 1.03rem;
-}
-
-/* Recent activity sits a little tighter than the attention rows. */
-.event {
-  padding-block: 0.953rem;
+  gap: 0.8125rem;
+  margin-block: 0.9375rem 0.625rem;
 }
 
 .row {
-  border-radius: var(--radius-md);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 0.9375rem 1.25rem 0.9375rem 1.4375rem;
+  border-radius: 0.75rem;
+  background: #f6f6f7;
   color: var(--color-text);
   text-decoration: none;
+  transition: background-color var(--duration-fast) var(--ease);
+}
+
+.row:hover {
+  background: #f0f0f1;
+}
+
+.row:focus-visible {
+  border-radius: 0.75rem;
 }
 
 .row:hover .chevron {
   transform: translateX(3px);
-  color: var(--color-text);
-}
-
-.rowIcon {
-  display: grid;
-  place-items: center;
-  inline-size: 3.4375rem;
-  block-size: 3.4375rem;
-  border-radius: 0.625rem;
-  background: #f7f7f7;
-  color: var(--color-text);
-}
-
-.rowIcon svg {
-  inline-size: 1.75rem;
-  block-size: 1.75rem;
-  stroke-width: 2.1;
 }
 
 .rowText {
@@ -142,6 +120,15 @@
   line-height: 1.25;
 }
 
+/* The attention rows read a touch larger than the events beside them. */
+.row .rowTitle {
+  font-size: clamp(1.0625rem, 1.24vw, 1.29rem);
+}
+
+.row .rowBody {
+  font-size: clamp(1rem, 1.17vw, 1.22rem);
+}
+
 .rowBody {
   color: var(--color-text-muted);
   font-size: clamp(1rem, 1.145vw, 1.1875rem);
@@ -154,9 +141,71 @@
   transition: transform var(--duration-fast) var(--ease);
 }
 
+/* --- Recent activity: events on a fine rail -------------------------------- */
+
+.timeline {
+  --event-pad: 0.9rem;
+  margin-block-start: 0.5rem;
+  --marker-column: 2.75rem;
+  --marker-size: 0.875rem;
+  /* Centres the marker on the first line of the title. */
+  --marker-top: 0.34rem;
+}
+
+.event {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--marker-column) minmax(0, 1fr) auto;
+  align-items: start;
+  gap: clamp(1.25rem, 2.7vw, 2.8rem);
+  padding-block: var(--event-pad);
+}
+
+/* The rail: one segment per event, from the marker above to the marker below.
+   The first starts at its own marker and the last ends at its own. */
+.event::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: calc(var(--marker-column) / 2);
+  border-inline-start: var(--border-width) solid var(--color-border-strong);
+}
+
+.event:first-child::before {
+  inset-block-start: calc(var(--event-pad) + var(--marker-top) + var(--marker-size) / 2);
+}
+
+.event:last-child::before {
+  inset-block-end: auto;
+  block-size: calc(var(--event-pad) + var(--marker-top) + var(--marker-size) / 2);
+}
+
+.event:only-child::before {
+  display: none;
+}
+
+.marker {
+  position: relative;
+  justify-self: center;
+  inline-size: var(--marker-size);
+  block-size: var(--marker-size);
+  margin-block-start: var(--marker-top);
+  border-radius: var(--radius-full);
+  background: var(--color-text);
+}
+
+/* A scan, and a request still waiting, are open circles: nothing has been
+   confirmed removed. Only a position on the rail, not a status. */
+.event[data-kind="scan"] .marker,
+.event[data-kind="sent"] .marker {
+  border: 1.5px solid #4d4f57;
+  background: var(--color-surface);
+}
+
 .time {
   color: var(--color-text-subtle);
   font-size: clamp(1rem, 1.085vw, 1.125rem);
+  line-height: 1.4;
   white-space: nowrap;
 }
 
@@ -164,7 +213,7 @@
   display: flex;
   align-items: center;
   margin-block-start: auto;
-  min-block-size: 5.09rem;
+  min-block-size: 3.9rem;
   padding: 0 0 0.34rem;
   border-block-start: var(--border-width) solid var(--color-border);
 }
@@ -205,19 +254,17 @@
     padding: var(--space-5) var(--space-4) 0;
   }
 
-  .row,
+  .timeline {
+    --marker-column: 1.5rem;
+  }
+
   .event {
     gap: var(--space-3);
   }
 
-  .rowIcon {
-    inline-size: 2.75rem;
-    block-size: 2.75rem;
-  }
-
   /* The time drops under the text rather than squeezing it. */
   .event {
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: var(--marker-column) minmax(0, 1fr);
   }
 
   .time {
@@ -226,6 +273,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .row,
   .chevron,
   .headLink svg,
   .footLink svg {
