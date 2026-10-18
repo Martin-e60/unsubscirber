@@ -163,8 +163,13 @@ function listSenders(box: DemoMailboxId, params: URLSearchParams): SendersRespon
   };
 }
 
+function confirmedDate(sender: DemoSender, successes: { createdAt: string }[]): Date | null {
+  const latest = successes.map((a) => a.createdAt).sort().at(-1) ?? sender.decidedAt;
+  return latest ? new Date(latest) : null;
+}
+
 function computeDemoStats(box: DemoMailboxId): StatsDto {
-  const { senders } = loadState(box);
+  const { senders, attempts } = loadState(box);
   const cutoff = Date.now() - RECENT_WINDOW_DAYS * 86_400_000;
   const previousCutoff = Date.now() - RECENT_WINDOW_DAYS * 2 * 86_400_000;
 
@@ -189,6 +194,11 @@ function computeDemoStats(box: DemoMailboxId): StatsDto {
         messageCount: s.messageCount,
         firstSeenAt: new Date(s.firstSeenAt),
         lastSeenAt: new Date(s.lastSeenAt),
+        // Same rule as the server: the successful attempt, else the decision.
+        confirmedAt: confirmedDate(
+          s,
+          attempts.filter((a) => a.senderId === s.id && a.status === ATTEMPT_STATUS.SUCCESS),
+        ),
       })),
     all: group(senders),
     recent: group(

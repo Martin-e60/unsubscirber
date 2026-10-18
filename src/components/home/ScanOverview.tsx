@@ -78,10 +78,13 @@ export function ScanOverview({
   connected,
   stats,
   scan,
+  children,
 }: {
   connected: boolean | null;
   stats: StatsDto | null;
   scan: ScanControls;
+  /** Sits inside the card, under the figures: Home's impact cards. */
+  children?: React.ReactNode;
 }) {
   const mode = modeFor(connected, stats, scan);
   const progress = scan.progress;
@@ -265,6 +268,8 @@ export function ScanOverview({
       <hr className={styles.rule} />
 
       <div className={styles.lower}>{lower}</div>
+
+      {children}
 
       {scan.error && mode !== "loading" ? (
         <p className={styles.error} role="alert">

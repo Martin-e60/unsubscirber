@@ -266,3 +266,54 @@ test("formatDuration reads the way the design writes it", async () => {
   assert.equal(formatDuration(30), "30s");
   assert.equal(formatDuration(0), "0s");
 });
+
+test("the trend dates each removal by its confirmation, and leaves out undated ones", async () => {
+  const [user] = await db
+    .insert(schema.users)
+    .values({ email: "trend@example.com" })
+    .returning();
+  const [account] = await db
+    .insert(schema.mailAccounts)
+    .values({
+      userId: user.id,
+      provider: "gmail",
+      email: "trend@example.com",
+      accessTokenEnc: "x",
+      expiresAt: Date.now() + 3_600_000,
+      scope: "test",
+    })
+    .returning();
+
+  const now = Date.now();
+  const [attempted] = await db
+    .insert(schema.senders)
+    .values([
+      // Confirmed 20 days ago by an attempt; the decision was saved later.
+      { mailAccountId: account.id, address: "one@example.com", messageCount: 10, status: "UNSUBSCRIBED", decidedAt: new Date(now - 5 * DAY) },
+      // No attempt on record: the decision date stands in.
+      { mailAccountId: account.id, address: "two@example.com", messageCount: 4, status: "UNSUBSCRIBED", decidedAt: new Date(now - 3 * DAY) },
+      // Neither: it has no place on a time axis.
+      { mailAccountId: account.id, address: "three@example.com", messageCount: 100, status: "UNSUBSCRIBED" },
+      // Not confirmed: never part of it.
+      { mailAccountId: account.id, address: "four@example.com", messageCount: 50, status: "REQUESTED", decidedAt: new Date(now - 2 * DAY) },
+    ])
+    .returning();
+
+  await db.insert(schema.unsubscribeAttempts).values([
+    { senderId: attempted.id, method: "ONE_CLICK", status: "SENT", createdAt: new Date(now - 25 * DAY) },
+    { senderId: attempted.id, method: "ONE_CLICK", status: "SUCCESS", createdAt: new Date(now - 20 * DAY) },
+  ]);
+
+  const stats = await computeStats(account.id);
+  const days = stats.fewerEmailsTrend.map((p) => Math.round((now - Date.parse(p.at)) / DAY) || 0);
+  const values = stats.fewerEmailsTrend.map((p) => p.value);
+
+  assert.deepEqual(days, [20, 3, 0], "the SUCCESS attempt, then the decision date, then today");
+  assert.deepEqual(values, [10, 14, 14], "a running total of the monthly estimate");
+  assert.equal(stats.confirmedUnsubscribes, 3, "the undated removal still counts");
+});
+
+test("with no confirmed removals there is no trend", async () => {
+  const stats = await computeStats(accountId).then(() => computeStats("nobody"));
+  assert.deepEqual(stats.fewerEmailsTrend, []);
+});

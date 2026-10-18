@@ -15,7 +15,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-3) 0;
-  padding: 1.40625rem 3.0625rem 1.09375rem 2.9375rem;
+  padding: 1.40625rem 3.0625rem 0.71875rem 2.9375rem;
 }
 
 .title {
@@ -93,7 +93,7 @@
 /* --- Lower row ---------------------------------------------------------------- */
 
 .lower {
-  padding: 1.5625rem 3.0625rem 1rem 3.125rem;
+  padding: 0.25rem 3.0625rem 1rem 3.125rem;
 }
 
 /* Found | not reviewed | progress, in the proportions of the design. */

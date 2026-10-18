@@ -186,3 +186,83 @@ test("an unfinished scan is not reported as completed", async () => {
 
   assert.equal(items.length, 0);
 });
+
+test("the trend is a running total that ends where the headline figure does", async () => {
+  const { summariseStats } = await import("../src/lib/stats/summarise");
+
+  const now = new Date("2026-10-18T12:00:00Z");
+  const span = (firstDays: number) => ({
+    messageCount: 30,
+    firstSeenAt: new Date(now.getTime() - firstDays * DAY),
+    lastSeenAt: now,
+  });
+
+  const stats = summariseStats({
+    all: [{ status: "UNSUBSCRIBED", senderCount: 3, volume: 90 }],
+    recent: [],
+    previous: [],
+    now,
+    confirmed: [
+      // Out of order on purpose; 30 emails over 60 days is 15 a month.
+      { ...span(60), confirmedAt: new Date(now.getTime() - 2 * DAY) },
+      // 30 emails in a fortnight counts over one month: 30.
+      { ...span(14), confirmedAt: new Date(now.getTime() - 9 * DAY) },
+      // Undated: counted in the headline, absent from the line.
+      { ...span(14), confirmedAt: null },
+    ],
+  });
+
+  assert.deepEqual(
+    stats.fewerEmailsTrend.map((p) => Math.round(p.value)),
+    [30, 45, 45],
+  );
+  const times = stats.fewerEmailsTrend.map((p) => Date.parse(p.at));
+  assert.deepEqual(times, [...times].sort((a, b) => a - b), "oldest first");
+  assert.equal(times.at(-1), now.getTime(), "runs up to now");
+  assert.equal(Math.round(stats.fewerEmailsPerMonth!), 75, "the headline includes the undated removal");
+});
+
+test("the trend line is monotone and needs two distinct moments", async () => {
+  const { trendPath } = await import("../src/lib/home/trend");
+  const at = (day: number) => new Date(Date.UTC(2026, 9, day)).toISOString();
+
+  assert.equal(trendPath([], 400, 80), null);
+  assert.equal(trendPath([{ at: at(1), value: 5 }], 400, 80), null);
+  assert.equal(
+    trendPath([{ at: at(1), value: 5 }, { at: at(1), value: 9 }], 400, 80),
+    null,
+    "two points at the same moment have no width",
+  );
+
+  const path = trendPath(
+    [
+      { at: at(1), value: 5 },
+      { at: at(10), value: 6 },
+      { at: at(12), value: 20 },
+      { at: at(18), value: 20 },
+    ],
+    400,
+    80,
+  )!;
+  assert.ok(path.line.startsWith("M0 77"), "starts at the bottom-left: the first value is the floor");
+  assert.ok(path.area.endsWith("Z"));
+
+  // Never dips: every y along the curve's control points is at or above its start.
+  const ys = [...path.line.matchAll(/(-?[\d.]+) (-?[\d.]+)/g)].map((m) => Number(m[2]));
+  const ends = ys.filter((_, i) => i === 0 || (i - 1) % 3 === 2);
+  for (let i = 1; i < ends.length; i++) assert.ok(ends[i] <= ends[i - 1], "a running total never falls");
+
+  const flat = trendPath([{ at: at(1), value: 7 }, { at: at(9), value: 7 }], 400, 80)!;
+  assert.ok(flat.line.startsWith("M0 40"), "a series that never changes sits mid-height");
+});
+
+test("figures count up in whole minutes and settle on the real wording", async () => {
+  const { formatMinutesCounting, formatMinutes } = await import("../src/lib/home/format");
+
+  assert.equal(formatMinutesCounting(100, 0), "0 min");
+  assert.equal(formatMinutesCounting(100, 0.5), "1 min", "rounded down on the way up");
+  assert.equal(formatMinutesCounting(100, 0.99), "1 min", "not there until the end");
+  assert.equal(formatMinutesCounting(100, 1), formatMinutes(100));
+  assert.equal(formatMinutesCounting(10, 0), "0 min", "'<1 min' is kept for the end");
+  assert.equal(formatMinutesCounting(10, 1), "<1 min");
+});

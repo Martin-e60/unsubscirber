@@ -89,3 +89,14 @@ export function formatMinutes(seconds: number): string {
   const rest = minutes % 60;
   return rest === 0 ? `${hours} h` : `${hours} h ${rest} min`;
 }
+
+/**
+ * `formatMinutes` while a figure counts up: whole minutes, rounded down, growing from zero
+ * towards the real value, and the real wording once it gets there. The
+ * "<1 min" of a small value is kept for the end — at the start of a count it
+ * would read as already being something.
+ */
+export function formatMinutesCounting(seconds: number, progress: number): string {
+  if (progress >= 1) return formatMinutes(seconds);
+  return formatMinutes(Math.floor(Math.round(seconds / 60) * progress) * 60);
+}

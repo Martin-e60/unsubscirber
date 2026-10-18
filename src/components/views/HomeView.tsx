@@ -56,17 +56,15 @@ export function HomeView() {
         </p>
       ) : null}
 
-      <ScanOverview connected={accountConnected} stats={stats} scan={scan} />
+      <ScanOverview connected={accountConnected} stats={stats} scan={scan}>
+        {accountConnected === false ? null : <Impact stats={stats} />}
+      </ScanOverview>
 
       {accountConnected === false ? null : (
-        <>
-          <Impact stats={stats} />
-
-          <div className={styles.cards}>
-            <Attention stats={stats} basePath={basePath} />
-            <Activity items={activity} basePath={basePath} />
-          </div>
-        </>
+        <div className={styles.cards}>
+          <Attention stats={stats} basePath={basePath} />
+          <Activity items={activity} basePath={basePath} />
+        </div>
       )}
     </div>
   );

@@ -62,6 +62,14 @@
   --home-gutter: clamp(1rem, 5.8vw, 6rem);
   --home-width: min(100% - 2 * var(--home-gutter), 91.75rem);
 
+  /* The header's own side margin. Up to 1655px it is the page's, so the logo
+     and the account line up with the page as designed. Beyond that the page
+     stops growing and keeps centring, but the header keeps scaling with the
+     window (to a limit), so the logo and the account stay near its edges
+     instead of following the page inward. */
+  --home-header-gutter: clamp(1rem, 5.8vw, 8rem);
+  --home-header-width: calc(100% - 2 * var(--home-header-gutter));
+
   background: var(--color-bg);
   color: var(--color-text);
   color-scheme: light;

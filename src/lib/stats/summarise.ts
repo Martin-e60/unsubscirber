@@ -1,5 +1,5 @@
 import { SECONDS_SAVED_PER_EMAIL, SENDER_STATUS } from "@/lib/constants";
-import type { StatsDto } from "@/lib/api/types";
+import type { StatsDto, TrendPoint } from "@/lib/api/types";
 import { monthlyRate, type SeenSpan } from "@/lib/senders/derive";
 
 /**
@@ -54,14 +54,54 @@ export type StatsInput = {
    * span their messages covered. Requests sent, attempts that need a click
    * and failures are deliberately not here: none of them stops mail arriving.
    */
-  confirmed: SeenSpan[];
+  confirmed: ConfirmedSender[];
+  /** The moment the trend runs up to. Defaults to now. */
+  now?: Date;
 };
+
+/** A confirmed removal: the span its mail covered, and when it was confirmed. */
+export type ConfirmedSender = SeenSpan & {
+  /** Null for old records that never stored a date. */
+  confirmedAt?: Date | null;
+};
+
+/**
+ * The running total of the monthly estimate, one point per dated removal,
+ * closed with a point at `now` so the line runs up to today.
+ *
+ * Built from the same per-sender rates as the headline figure, so the last
+ * point equals it when every removal is dated. A removal without a date has no
+ * place on a time axis, so it is left out rather than given an invented one.
+ */
+export function fewerEmailsTrend(
+  confirmed: ConfirmedSender[],
+  now: Date = new Date(),
+): TrendPoint[] {
+  const dated = confirmed
+    .filter((sender): sender is ConfirmedSender & { confirmedAt: Date } => Boolean(sender.confirmedAt))
+    .map((sender) => ({ at: sender.confirmedAt.getTime(), rate: monthlyRate(sender) }))
+    .sort((a, b) => a.at - b.at);
+
+  if (dated.length === 0) return [];
+
+  let total = 0;
+  const points: TrendPoint[] = dated.map(({ at, rate }) => {
+    total += rate;
+    return { at: new Date(at).toISOString(), value: total };
+  });
+
+  // A removal confirmed after `now` (clock skew) must not be followed by an earlier point.
+  const end = Math.max(now.getTime(), dated[dated.length - 1].at);
+  points.push({ at: new Date(end).toISOString(), value: total });
+  return points;
+}
 
 export function summariseStats({
   all,
   recent,
   previous,
   confirmed,
+  now,
 }: StatsInput): StatsDto {
   const volumeOf = (rows: StatusVolume[], statuses: readonly string[]): number =>
     rows
@@ -126,6 +166,7 @@ export function summariseStats({
 
     confirmedUnsubscribes: countOf(all, [SENDER_STATUS.UNSUBSCRIBED]),
     fewerEmailsPerMonth,
+    fewerEmailsTrend: fewerEmailsTrend(confirmed, now),
     timeSavedPerMonthSeconds:
       fewerEmailsPerMonth === null
         ? null

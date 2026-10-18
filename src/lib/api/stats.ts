@@ -1,8 +1,8 @@
 import "server-only";
-import { and, eq, gte, lt, count, sum } from "drizzle-orm";
+import { and, eq, gte, lt, count, sql, sum } from "drizzle-orm";
 import { db } from "@/db";
 import { senders } from "@/db/schema";
-import { SENDER_STATUS } from "@/lib/constants";
+import { ATTEMPT_STATUS, SENDER_STATUS } from "@/lib/constants";
 import { RECENT_WINDOW_DAYS, summariseStats } from "@/lib/stats/summarise";
 import type { StatsDto } from "./types";
 
@@ -40,6 +40,15 @@ export async function computeStats(mailAccountId: string): Promise<StatsDto> {
         messageCount: senders.messageCount,
         firstSeenAt: senders.firstSeenAt,
         lastSeenAt: senders.lastSeenAt,
+        // When the removal was confirmed, for the Home trend: the successful
+        // attempt, or for records from before attempts were logged, the day the
+        // decision was saved. Spelled out with table names: inside a subquery
+        // a bare "id" would mean the attempt's own.
+        confirmedAt: sql<number | null>`coalesce(
+          (select max(a.created_at) from unsubscribe_attempts a
+            where a.sender_id = senders.id and a.status = ${ATTEMPT_STATUS.SUCCESS}),
+          senders.decided_at
+        )`,
       })
       .from(senders)
       .where(
@@ -50,5 +59,13 @@ export async function computeStats(mailAccountId: string): Promise<StatsDto> {
       ),
   ]);
 
-  return summariseStats({ all, recent, previous, confirmed });
+  return summariseStats({
+    all,
+    recent,
+    previous,
+    confirmed: confirmed.map(({ confirmedAt, ...span }) => ({
+      ...span,
+      confirmedAt: confirmedAt === null ? null : new Date(confirmedAt),
+    })),
+  });
 }

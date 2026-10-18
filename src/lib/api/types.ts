@@ -105,6 +105,9 @@ export type UnsubscribeResultDto = {
   detail: string;
 };
 
+/** One point of a running total: its ISO timestamp and the total then. */
+export type TrendPoint = { at: string; value: number };
+
 export type StatsDto = {
   /** 0–100: the share of subscription volume you have made a decision about. */
   inboxHealth: number;
@@ -135,6 +138,12 @@ export type StatsDto = {
   fewerEmailsPerMonth: number | null;
   /** fewerEmailsPerMonth × SECONDS_SAVED_PER_EMAIL. Null when that is null. */
   timeSavedPerMonthSeconds: number | null;
+  /**
+   * How that estimate built up: the running total of fewerEmailsPerMonth as
+   * each confirmed removal landed, oldest first, ending today. Only removals
+   * with a recorded confirmation date appear. Empty when there are none.
+   */
+  fewerEmailsTrend: TrendPoint[];
   /** Senders whose unsubscribe needs one more click from the user. */
   needsClick: number;
   /** Senders whose unsubscribe attempt failed. */

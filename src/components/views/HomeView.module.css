@@ -34,7 +34,7 @@
   display: grid;
   grid-template-columns: minmax(0, 673fr) minmax(0, 776fr);
   gap: 1.25rem;
-  margin-block-start: 2.92rem;
+  margin-block-start: 0;
 }
 
 @keyframes homeIn {

@@ -10,7 +10,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  inline-size: var(--home-width);
+  inline-size: var(--home-header-width);
   min-block-size: 4.5rem;
   margin-inline: auto;
 }
