@@ -154,7 +154,8 @@
      -4  white, difference         1 - c
      -3  the canvas's black, added back     1 - c + black = 1 - glass
      -2  the floor, lighten                 max(floor, 1 - glass)
-     -1  (the left column only) white, soft, over the lot
+     -1  white veil, clear at the page edges and solid in the middle, over
+         the lot; and, in the left column only, a softer white ellipse
 
    Where there is no glass the result is the white it was. The previews and
    the text are in front of all of it, as before. */
@@ -164,7 +165,8 @@
 
 [data-glass="on"] .tour::before,
 [data-glass="on"] .tour::after,
-[data-glass="on"] .inner::before {
+[data-glass="on"] .inner::before,
+[data-glass="on"] .inner::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -189,6 +191,34 @@
   z-index: -2;
   background: #6b6b6e;
   mix-blend-mode: lighten;
+}
+
+/* The glass is for the edges of the page. The veil is clear over the outer 15%
+   of the width on each side (250px at 1672), then eases to solid white by 40%
+   (670px), and stays solid in between, where the text and the previews are. It
+   is white, so over smoke it scales the smoke down to nothing, and over the
+   white where there is none it is invisible. Because it does not depend on
+   where the glass is, a sheet drifting through the middle is faded the same as
+   any other pose. */
+[data-glass="on"] .inner::after {
+  z-index: -1;
+  background: linear-gradient(
+    90deg,
+    rgb(255 255 255 / 0%) 15%,
+    rgb(255 255 255 / 6.1%) 18.75%,
+    rgb(255 255 255 / 21.6%) 22.5%,
+    rgb(255 255 255 / 50%) 27.5%,
+    rgb(255 255 255 / 78.4%) 32.5%,
+    rgb(255 255 255 / 93.9%) 36.25%,
+    rgb(255 255 255 / 100%) 40%,
+    rgb(255 255 255 / 100%) 60%,
+    rgb(255 255 255 / 93.9%) 63.75%,
+    rgb(255 255 255 / 78.4%) 67.5%,
+    rgb(255 255 255 / 50%) 72.5%,
+    rgb(255 255 255 / 21.6%) 77.5%,
+    rgb(255 255 255 / 6.1%) 81.25%,
+    rgb(255 255 255 / 0%) 85%
+  );
 }
 
 /* The names stay easy to read: round the left column, the glass is washed out
