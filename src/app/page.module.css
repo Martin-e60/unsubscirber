@@ -157,40 +157,147 @@
   margin-block-start: clamp(1.75rem, 2.8vw, 2.25rem);
 }
 
+/* The three stops of each button's body gradient are registered colours, so
+   hover and press can ease between them; a gradient alone would snap. */
+@property --glass-top {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: transparent;
+}
+
+@property --glass-mid {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: transparent;
+}
+
+@property --glass-bottom {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: transparent;
+}
+
+/* Both pills are glass. The paper behind them is near-black, so there is
+   little to refract: the material is the body gradient, the bevel (inset
+   shadows), a curved highlight (::before) and, on the primary, a diagonal
+   sheen (::after). The decorative layers sit under the label (z-index -1 in
+   the button's own stacking context) and never take the pointer. The 1.5px
+   border the pills used to have (drawn 1px wide on a 1x screen) is now 1px of
+   padding, so the size is unchanged. */
 .primary,
 .secondary {
+  position: relative;
+  isolation: isolate;
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.875rem;
   min-block-size: clamp(3rem, 3.9vw, 3.5rem);
-  padding-inline: clamp(1.5rem, 3vw, 2.25rem);
-  border: 1.5px solid var(--lp-accent);
+  padding-inline: calc(clamp(1.5rem, 3vw, 2.25rem) + 1px);
+  border: 0;
   border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    var(--glass-top) 0%,
+    var(--glass-mid) 52%,
+    var(--glass-bottom) 100%
+  );
   font-size: clamp(1.0625rem, 0.7rem + 0.5vw, 1.1875rem);
   font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
   transition:
-    transform 240ms var(--lp-ease),
-    box-shadow 240ms var(--lp-ease);
+    transform var(--lp-fast) var(--lp-ease),
+    box-shadow var(--lp-fast) var(--lp-ease),
+    --glass-top var(--lp-fast) var(--lp-ease),
+    --glass-mid var(--lp-fast) var(--lp-ease),
+    --glass-bottom var(--lp-fast) var(--lp-ease);
+}
+
+.primary::before,
+.primary::after,
+.secondary::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  transition: opacity var(--lp-fast) var(--lp-ease);
+}
+
+/* The curved highlight along the top inside edge. */
+.primary::before,
+.secondary::before {
+  border-radius: 26px 26px 60% 60% / 26px 26px 14px 14px;
 }
 
 .primary {
+  --glass-top: rgb(255 255 255 / 97%);
+  --glass-mid: rgb(232 236 242 / 90%);
+  --glass-bottom: rgb(246 248 251 / 95%);
+
   grid-area: demo;
-  background: var(--lp-accent);
-  color: var(--lp-on-accent);
+  color: #101012;
+  box-shadow:
+    inset 0 1px 0 #fff,
+    inset 0 -2px 3px rgb(120 128 140 / 35%),
+    inset 0 -1px 0 rgb(255 255 255 / 90%),
+    inset 0 12px 18px -8px rgb(255 255 255 / 90%),
+    0 8px 30px rgb(255 255 255 / 14%),
+    0 0 0 1px rgb(255 255 255 / 55%);
 }
 
+.primary::before {
+  inset: 3px 18px auto;
+  block-size: 42%;
+  background: linear-gradient(180deg, rgb(255 255 255 / 95%), rgb(255 255 255 / 0%));
+  opacity: 0.8;
+}
+
+.primary::after {
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    rgb(255 255 255 / 55%) 42%,
+    transparent 54%
+  );
+  mix-blend-mode: soft-light;
+  opacity: 0.7;
+}
+
+/* Clear smoked glass: almost no body, a luminous rim, a quiet highlight. */
 .secondary {
+  --glass-top: rgb(255 255 255 / 12%);
+  --glass-mid: rgb(255 255 255 / 2%);
+  --glass-bottom: rgb(255 255 255 / 6%);
+
   grid-area: tour;
-  background: var(--lp-bg);
-  color: var(--lp-text);
+  color: #fff;
+  /* Over the dark paper this changes nothing; if a bright ribbon drifts behind
+     the pill it dims what shows through, so the white label stays readable. */
+  -webkit-backdrop-filter: blur(6px) brightness(0.55);
+  backdrop-filter: blur(6px) brightness(0.55);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 70%),
+    inset 0 -1px 0 rgb(255 255 255 / 22%),
+    inset 0 12px 18px -10px rgb(255 255 255 / 18%),
+    0 0 0 1px rgb(255 255 255 / 50%);
 }
 
-/* The page-wide focus ring squares off its element; these keep their pill. */
+.secondary::before {
+  inset: 2px 16px auto;
+  block-size: 40%;
+  background: linear-gradient(180deg, rgb(255 255 255 / 35%), rgb(255 255 255 / 0%));
+  opacity: 0.6;
+}
+
+/* Keyboard focus only: a white ring, in the pill's own shape (the page-wide
+   focus ring would square it off). */
 a.primary:focus-visible,
 a.secondary:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 4px;
   border-radius: 999px;
 }
 
@@ -200,25 +307,80 @@ a.secondary:focus-visible {
   transition: transform var(--lp-fast) var(--lp-ease);
 }
 
-/* Hover lifts rather than recolours, so the approved HEX stays exact. */
-.primary:hover,
-.secondary:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--lp-shadow-lift);
+/* Hover (a real pointer only): lifts a pixel, brighter body and rim, wider
+   glow. */
+@media (hover: hover) {
+  .primary:hover,
+  .secondary:hover {
+    transform: translateY(-1px);
+  }
+
+  .primary:hover {
+    --glass-top: rgb(255 255 255 / 99%);
+    --glass-mid: rgb(240 243 247 / 94%);
+    --glass-bottom: rgb(250 251 253 / 97%);
+
+    box-shadow:
+      inset 0 1px 0 #fff,
+      inset 0 -2px 3px rgb(120 128 140 / 30%),
+      inset 0 -1px 0 rgb(255 255 255 / 95%),
+      inset 0 12px 18px -8px #fff,
+      0 10px 38px rgb(255 255 255 / 26%),
+      0 0 0 1px rgb(255 255 255 / 80%);
+  }
+
+  .secondary:hover {
+    --glass-top: rgb(255 255 255 / 17%);
+    --glass-mid: rgb(255 255 255 / 5%);
+    --glass-bottom: rgb(255 255 255 / 9%);
+
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 95%),
+      inset 0 -1px 0 rgb(255 255 255 / 30%),
+      inset 0 12px 18px -10px rgb(255 255 255 / 26%),
+      0 0 0 1px rgb(255 255 255 / 80%);
+  }
+
+  .primary:hover svg {
+    transform: translateX(3px);
+  }
+
+  .secondary:hover svg {
+    transform: translateY(3px);
+  }
 }
 
-.primary:hover svg {
-  transform: translateX(3px);
-}
-
-.secondary:hover svg {
-  transform: translateY(3px);
-}
-
+/* Pressed: a pixel down and a touch smaller, a shadow inside the top edge, a
+   dimmer body. */
 .primary:active,
 .secondary:active {
-  transform: translateY(0) scale(0.98);
-  box-shadow: none;
+  transform: translateY(1px) scale(0.985);
+}
+
+.primary:active {
+  --glass-top: rgb(214 219 227 / 95%);
+  --glass-mid: rgb(226 230 236 / 90%);
+  --glass-bottom: rgb(222 226 233 / 92%);
+
+  box-shadow:
+    inset 0 2px 5px rgb(70 78 92 / 40%),
+    inset 0 -2px 3px rgb(120 128 140 / 25%),
+    inset 0 -1px 0 rgb(255 255 255 / 70%),
+    inset 0 12px 18px -8px rgb(255 255 255 / 40%),
+    0 4px 16px rgb(255 255 255 / 8%),
+    0 0 0 1px rgb(255 255 255 / 45%);
+}
+
+.secondary:active {
+  --glass-top: rgb(255 255 255 / 3%);
+  --glass-mid: rgb(255 255 255 / 0%);
+  --glass-bottom: rgb(255 255 255 / 3%);
+
+  box-shadow:
+    inset 0 2px 6px rgb(0 0 0 / 55%),
+    inset 0 -1px 0 rgb(255 255 255 / 14%),
+    inset 0 12px 18px -10px rgb(255 255 255 / 8%),
+    0 0 0 1px rgb(255 255 255 / 38%);
 }
 
 .note {
@@ -289,13 +451,13 @@ a.secondary:focus-visible {
 
   .primary {
     gap: calc(33 * var(--u));
-    padding-inline: calc(60 * var(--u)) calc(53 * var(--u));
+    padding-inline: calc(60 * var(--u) + 1px) calc(53 * var(--u) + 1px);
     font-weight: 500;
   }
 
   .secondary {
     gap: calc(43.5 * var(--u));
-    padding-inline: calc(64 * var(--u)) calc(30.5 * var(--u));
+    padding-inline: calc(64 * var(--u) + 1px) calc(30.5 * var(--u) + 1px);
   }
 
   .primary svg,
@@ -381,8 +543,16 @@ a.secondary:focus-visible {
     animation: none;
   }
 
+  /* No lift, press or arrow nudge; the glass still brightens and dims. */
   .primary,
-  .secondary,
+  .secondary {
+    transition:
+      box-shadow var(--lp-fast) var(--lp-ease),
+      --glass-top var(--lp-fast) var(--lp-ease),
+      --glass-mid var(--lp-fast) var(--lp-ease),
+      --glass-bottom var(--lp-fast) var(--lp-ease);
+  }
+
   .primary svg,
   .secondary svg {
     transition: none;
