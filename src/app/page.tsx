@@ -6,6 +6,7 @@ import { LandingNav } from "@/components/landing/LandingNav";
 import { FeatureTour } from "@/components/landing/FeatureTour";
 import { TourLink } from "@/components/landing/TourLink";
 import { Faq } from "@/components/landing/Faq";
+import { GlassBackground } from "@/components/landing/GlassBackground";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import theme from "@/components/landing/theme.module.css";
 import { getCurrentUser } from "@/lib/api/auth";
@@ -58,14 +59,17 @@ export default async function HomePage({
         {/* --- Hero -------------------------------------------------------- */}
         <section className={styles.hero}>
           {/* The dark paper. It reaches up behind the transparent header, so
-              the two share one surface. */}
+              the two share one surface. On a desktop the glass canvas covers
+              it once WebGL is ready; until then, and without WebGL, the
+              matte sheets are the background. */}
           <div className={styles.paper} aria-hidden="true">
             <span className={styles.paperLeft} />
             <span className={styles.paperRight} />
+            <GlassBackground />
           </div>
 
           <div className={styles.heroInner}>
-            <div className={styles.heroCopy}>
+            <div className={styles.heroCopy} data-glass-anchor>
               <h1 className={styles.heroTitle}>
                 Unsubscribe from
                 <br />

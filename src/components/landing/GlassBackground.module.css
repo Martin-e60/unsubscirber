@@ -1,0 +1,32 @@
+/* The glass background of the hero. It fills the hero's paper and is only ever
+   a picture: it takes no pointer events and cannot be selected or focused. It
+   stays invisible until its first frame is drawn, so the paper under it is
+   what loads with the page. */
+.canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  opacity: 0;
+  pointer-events: none;
+  user-select: none;
+  transition: opacity 700ms var(--lp-ease);
+}
+
+.canvas[data-ready="true"] {
+  opacity: 1;
+}
+
+/* Below the desktop layout the page keeps its paper. */
+@media (max-width: 63.99rem) {
+  .canvas {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .canvas {
+    transition: none;
+  }
+}

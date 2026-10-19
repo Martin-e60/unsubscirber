@@ -57,6 +57,19 @@
     drop-shadow(0 18px 30px rgb(0 0 0 / 55%));
 }
 
+/* Once the glass canvas is drawing it covers the matte sheets; they are then
+   left out, after its fade-in, so they cost nothing behind it. */
+.paperLeft,
+.paperRight {
+  transition: none;
+}
+
+.paper:has(> [data-ready="true"]) > .paperLeft,
+.paper:has(> [data-ready="true"]) > .paperRight {
+  visibility: hidden;
+  transition: visibility 0s linear 700ms;
+}
+
 .paperLeft::before,
 .paperRight::before {
   content: "";
