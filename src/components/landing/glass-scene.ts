@@ -1,6 +1,6 @@
 /**
- * The hero's background: six thin, curved, double-sided glass sheets drawn in
- * WebGL 2, drifting round a clear black reading zone.
+ * The landing page's background: six thin, curved, double-sided glass sheets
+ * drawn in WebGL 2, drifting round the window.
  *
  * Each sheet is an indexed mesh bent in the vertex shader (perspective, camber,
  * torsion, four elastic modes computed in glass-view.ts). The fragment shader
@@ -9,9 +9,11 @@
  * The scene is drawn with 4x MSAA into an offscreen target, a light bloom is
  * taken at a third of the size, and a last pass lays both over the black.
  *
- * It only paints the background. The copy, the buttons and the header are the
- * page's own elements, above the canvas. Nothing here reads the pointer or the
- * scroll position.
+ * It only paints the glass, bright on black. The copy, the buttons and the
+ * header are the page's own elements, above the canvas, and each section keeps
+ * the glass off its text itself, or turns it into smoke (see page.module.css,
+ * FeatureTour.module.css). Nothing here reads the pointer or the scroll
+ * position.
  */
 
 import {
@@ -37,7 +39,7 @@ uniform float uTime;
 uniform vec4 uSheet;
 uniform vec4 uShape;
 uniform vec4 uMode;
-uniform vec3 uView;
+uniform vec2 uView;
 out vec3 world;
 out vec3 normal;
 out vec2 param;
@@ -70,9 +72,9 @@ vec3 du=surface(aPosition+vec2(.0008,0))-surface(aPosition-vec2(.0008,0));
 vec3 dv=surface(aPosition+vec2(0,.0012))-surface(aPosition-vec2(0,.0012));
 normal=normalize(cross(du,dv));
 float perspective=(6.-world.z)/6.;
-// The approved frame is fitted over the hero (see glassView): scale and
-// offset are applied after the perspective divide, so depth is unchanged.
-gl_Position=vec4(world.xy*uView.xy+vec2(0,uView.z)*perspective,.1,perspective);
+// The approved frame is fitted over the window (see glassView): the scale is
+// applied after the perspective divide, so depth is unchanged.
+gl_Position=vec4(world.xy*uView,.1,perspective);
 }`;
 
 const SHEET_FRAGMENT = `#version 300 es
@@ -81,8 +83,6 @@ in vec3 world;
 in vec3 normal;
 in vec2 param;
 uniform float uOpacity;
-// xy: centre of the reading zone in backbuffer pixels, z: its scale.
-uniform vec3 uQuiet;
 out vec4 color;
 float softbox(vec3 r,vec3 axis,float c,float w){return exp(-pow((dot(r,axis)-c)/w,2.));}
 float studio(vec3 r){
@@ -110,9 +110,7 @@ float rim=edge*(.55+.45*fresnel)*(.55+.45*min(1.,L*2.2));
 float body=.004+.030*fresnel;
 float radiance=body+front+back+rim*1.05;
 float ends=smoothstep(0.,.07,param.x)*(1.-smoothstep(.93,1.,param.x));
-vec2 d=(gl_FragCoord.xy-uQuiet.xy)/(uQuiet.z*vec2(1672.,941.));
-float quiet=1.-exp(-pow(length(d*vec2(2.0,2.8))/.63,6.));
-float opacity=ends*uOpacity*quiet;
+float opacity=ends*uOpacity;
 float grain=fract(sin(dot(world.xy,vec2(127.1,311.7)))*43758.5453);
 vec3 tint=mix(vec3(.93,.95,.98),vec3(1),clamp(front*1.2,0.,1.));
 vec3 transmission=tint*radiance*opacity*(.996+.008*grain);
@@ -160,7 +158,7 @@ export interface GlassSceneEvents {
 }
 
 export interface GlassScene {
-  /** Fits the scene to the hero. Resizing the backbuffer redraws nothing. */
+  /** Fits the scene to the window. Resizing the backbuffer redraws nothing. */
   layout(layout: GlassLayout): void;
   /** Draws the scene at `time` seconds. Does nothing while the context is lost. */
   render(time: number): void;
@@ -291,7 +289,6 @@ export function createGlassScene(
         mode: uniform(sheet, "uMode"),
         view: uniform(sheet, "uView"),
         opacity: uniform(sheet, "uOpacity"),
-        quiet: uniform(sheet, "uQuiet"),
       },
       blurUniforms: {
         image: uniform(blur, "image"),
@@ -436,8 +433,7 @@ export function createGlassScene(
     gl.bindVertexArray(r.mesh);
     const u = r.sheetUniforms;
     gl.uniform1f(u.time, time);
-    gl.uniform3f(u.view, view.scaleX, view.scaleY, view.offsetY);
-    gl.uniform3f(u.quiet, view.quietX, view.quietY, view.quietScale);
+    gl.uniform2f(u.view, view.scaleX, view.scaleY);
     for (const sheet of SHEETS) {
       gl.uniform4f(u.sheet, sheetTurn(sheet, time), sheet.rate, sheet.span, sheet.width);
       gl.uniform4f(u.shape, sheet.ph, sheet.rx, sheet.ry, sheet.z);

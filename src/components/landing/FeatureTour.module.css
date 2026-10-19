@@ -19,6 +19,7 @@
   --tour-hold: clamp(5rem, 24svh, 15rem);
   --tour-pad: clamp(3rem, 10svh, 7rem);
 
+  position: relative;
   border-radius: var(--lp-tour-radius);
   background: var(--lp-bg);
   color: var(--lp-text);
@@ -138,6 +139,96 @@
     align-self: start;
     margin-block-start: calc(var(--tour-hold) - var(--tour-pad));
   }
+}
+
+/* --- The glass behind the white -------------------------------------------
+   While the page's glass canvas is drawing (the stage says so with
+   data-glass), the white is no longer a background of its own: it is laid
+   over the canvas in layers, so the glass shows through it as smoked grey.
+   The canvas is bright glass on black; with c the canvas, the layers make
+   max(floor, 1 - (c - black)), the page white darkened by the glass and never
+   darker than the floor. In order, lowest first, each blending with what is
+   beneath it, which is the canvas (the stage is one stacking context, and
+   nothing between it and these layers is another):
+
+     -4  white, difference         1 - c
+     -3  the canvas's black, added back     1 - c + black = 1 - glass
+     -2  the floor, lighten                 max(floor, 1 - glass)
+     -1  (the left column only) white, soft, over the lot
+
+   Where there is no glass the result is the white it was. The previews and
+   the text are in front of all of it, as before. */
+[data-glass="on"] .tour {
+  background: none;
+}
+
+[data-glass="on"] .tour::before,
+[data-glass="on"] .tour::after,
+[data-glass="on"] .inner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--lp-tour-radius);
+  pointer-events: none;
+}
+
+[data-glass="on"] .tour::before {
+  z-index: -4;
+  background: #ffffff;
+  mix-blend-mode: difference;
+}
+
+/* The canvas's own black (#080809, see glass-scene.ts). */
+[data-glass="on"] .tour::after {
+  z-index: -3;
+  background: #080809;
+  mix-blend-mode: plus-lighter;
+}
+
+[data-glass="on"] .inner::before {
+  z-index: -2;
+  background: #6b6b6e;
+  mix-blend-mode: lighten;
+}
+
+/* The names stay easy to read: round the left column, the glass is washed out
+   in a soft ellipse that has no edge (it is white in the middle and nothing at
+   its rim) and holds still with the column as it sticks. */
+[data-glass="on"] .side::before {
+  content: "";
+  position: absolute;
+  inset: -6rem -5rem -6rem -12rem;
+  z-index: -1;
+  background: radial-gradient(
+    closest-side,
+    rgb(255 255 255 / 95%) 0%,
+    rgb(255 255 255 / 92%) 50%,
+    rgb(255 255 255 / 70%) 72%,
+    rgb(255 255 255 / 28%) 88%,
+    rgb(255 255 255 / 0%) 100%
+  );
+  pointer-events: none;
+}
+
+/* The same for the captions under the previews: a soft white wash, blurred so
+   it has no edge, behind each of the three lines. */
+[data-glass="on"] .title,
+[data-glass="on"] .text,
+[data-glass="on"] .note {
+  position: relative;
+}
+
+[data-glass="on"] .title::before,
+[data-glass="on"] .text::before,
+[data-glass="on"] .note::before {
+  content: "";
+  position: absolute;
+  inset: -0.25rem -1rem;
+  z-index: -1;
+  background: #ffffff;
+  opacity: 0.92;
+  filter: blur(0.875rem);
+  pointer-events: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

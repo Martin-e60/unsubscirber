@@ -1,38 +1,22 @@
 /**
- * The maths behind the hero's glass background that needs no browser: how the
- * approved 1672 × 941 composition is fitted into whatever box the hero is, and
- * the elastic modes that bend each sheet. Kept apart from the WebGL code so it
- * can be tested on its own.
+ * The maths behind the page's glass background that needs no browser: how the
+ * approved 1672 × 941 composition is fitted into whatever box the window is,
+ * and the elastic modes that bend each sheet. Kept apart from the WebGL code so
+ * it can be tested on its own.
  */
 
 /** The size, in pixels, of the frame the approved composition was built in. */
 export const FRAME_WIDTH = 1672;
 export const FRAME_HEIGHT = 941;
 
-/**
- * Page units (`--u`, see theme.module.css) per pixel in that frame: the
- * approved text was laid out at min(1672, 1.6 × 941) / 1440. A window whose
- * text is this scale wants the reading zone left clear at the frame's size.
- */
-const REFERENCE_TEXT_SCALE = Math.min(FRAME_WIDTH, 1.6 * FRAME_HEIGHT) / 1440;
-
 /** How wide the glass box is allowed to be as a backbuffer, in device pixels. */
 const MAX_BACKBUFFER_WIDTH = 1920;
 const MAX_PIXEL_RATIO = 1.5;
 
-/** The box the background fills, and where the text sits in it (CSS pixels). */
+/** The box the background fills: the window, in CSS pixels. */
 export interface GlassLayout {
-  /** The size of the whole canvas box. */
   width: number;
   height: number;
-  /** The height of the first screen. The box is taller than it by the tour's
-   *  rounded-corner strip, which carries the scene on without a seam. */
-  screenHeight: number;
-  /** The centre of the copy, measured from the top left of the box. */
-  anchorX: number;
-  anchorY: number;
-  /** The page's `--u` unit, in CSS pixels: how big the copy is. */
-  unit: number;
   devicePixelRatio: number;
 }
 
@@ -41,23 +25,15 @@ export interface GlassView {
   /** The backbuffer, in device pixels. */
   pixelWidth: number;
   pixelHeight: number;
-  /** clip = world.xy * scale / perspective + offset */
+  /** clip = world.xy * scale / perspective */
   scaleX: number;
   scaleY: number;
-  offsetY: number;
-  /** The reading zone: centre in backbuffer pixels (y up) and its scale
-   *  relative to the reference frame. */
-  quietX: number;
-  quietY: number;
-  quietScale: number;
 }
 
 /**
- * Fits the frame over the first screen the way `object-fit: cover` would: the
- * same composition, uniformly scaled, never stretched, with the overflow
- * cropped. The reading zone does not follow that scale; it follows the copy,
- * which has a size of its own (`unit`), so the text stays in clear glass-free
- * black at every window shape.
+ * Fits the frame over the window the way `object-fit: cover` would: the same
+ * composition, uniformly scaled and centred, never stretched, with the overflow
+ * cropped.
  */
 export function glassView(layout: GlassLayout): GlassView {
   const ratio = Math.min(layout.devicePixelRatio || 1, MAX_PIXEL_RATIO);
@@ -67,29 +43,14 @@ export function glassView(layout: GlassLayout): GlassView {
   );
   const k = pixelWidth / layout.width;
   const pixelHeight = Math.max(1, Math.round(layout.height * k));
-
-  const screenHeight = Math.min(layout.screenHeight, layout.height) * k;
-  const cover = Math.max(
-    pixelWidth / FRAME_WIDTH,
-    screenHeight / FRAME_HEIGHT,
-  );
+  const cover = Math.max(pixelWidth / FRAME_WIDTH, pixelHeight / FRAME_HEIGHT);
 
   return {
     pixelWidth,
     pixelHeight,
     scaleX: (FRAME_HEIGHT * cover) / pixelWidth,
     scaleY: (FRAME_HEIGHT * cover) / pixelHeight,
-    // The frame is centred on the first screen, not on the taller box.
-    offsetY: 1 - screenHeight / pixelHeight,
-    quietX: layout.anchorX * k,
-    quietY: pixelHeight - layout.anchorY * k,
-    quietScale: (layout.unit / REFERENCE_TEXT_SCALE) * k,
   };
-}
-
-/** The page's `--u`: min(100vw, 160svh) / 1440. */
-export function pageUnit(viewportWidth: number, viewportHeight: number) {
-  return Math.min(viewportWidth, 1.6 * viewportHeight) / 1440;
 }
 
 /**

@@ -1,27 +1,33 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { pageUnit, START_TIME, type GlassLayout } from "./glass-view";
+import { START_TIME, type GlassLayout } from "./glass-view";
 import styles from "./GlassBackground.module.css";
 
 /**
- * The animated background of the landing hero: thin glass sheets drifting
- * round the copy. See glass-scene.ts for the picture; this decides when it
- * runs.
+ * The animated background of the landing page: thin glass sheets drifting
+ * round a clear reading zone. See glass-scene.ts for the picture; this decides
+ * when it runs.
  *
- * It is purely decorative and only an enhancement. The page's own background
- * (the paper this canvas sits on) is what shows until the first frame is
- * ready, on a narrow screen, and whenever WebGL 2 is unavailable or lost, and
- * nothing is reported to the visitor in any of those cases.
+ * One canvas, fixed to the window, is the first child of the page's stage. The
+ * sections scroll in front of it and the glass stays where it is; each section
+ * decides what shows through (see page.module.css, FeatureTour.module.css and
+ * Faq.module.css). It is clipped to the stage, so it never reaches the footer.
+ *
+ * It is purely decorative and only an enhancement. The page's own backgrounds
+ * are what shows until the first frame is ready, on a narrow screen, and
+ * whenever WebGL 2 is unavailable or lost, and nothing is reported to the
+ * visitor in any of those cases. While the glass is drawing, the stage carries
+ * `data-glass="on"`, which is what lets the sections let it through.
  *
  * - Desktop only (the same breakpoint the hero's desktop layout starts at).
- * - Runs only while the tab is visible and the hero is on screen.
+ * - Runs only while the tab is visible and the stage is on screen.
  * - With reduced motion it draws one still frame of the same scene.
  * - It never reads the pointer or the scroll position.
  *
- * The canvas is the hero's whole paper. The copy, whose centre and size the
- * scene keeps clear, is found through the nearest `[data-glass-anchor]` in the
- * hero section.
+ * It paints nothing but glass. Keeping the glass off the text is each
+ * section's own business, in the section's own coordinates, so it moves with
+ * the section as the page scrolls.
  */
 
 const DESKTOP = "(min-width: 64rem)";
@@ -33,7 +39,8 @@ export function GlassBackground() {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const hero = canvas.closest("section");
+    // The stage: the canvas's parent, which also holds the hero's copy.
+    const stage = canvas.parentElement;
     const desktop = window.matchMedia(DESKTOP);
     const reduced = window.matchMedia(REDUCED_MOTION);
 
@@ -48,24 +55,18 @@ export function GlassBackground() {
 
     const setShown = (shown: boolean) => {
       canvas.dataset.ready = shown ? "true" : "false";
+      if (!stage) return;
+      if (shown) stage.dataset.glass = "on";
+      else delete stage.dataset.glass;
     };
 
     function measure(): GlassLayout | null {
-      if (!canvas || !hero) return null;
+      if (!canvas || !stage) return null;
       const box = canvas.getBoundingClientRect();
       if (box.width < 1 || box.height < 1) return null;
-      const anchor = hero.querySelector<HTMLElement>("[data-glass-anchor]");
-      const copy = anchor?.getBoundingClientRect();
-      // The hero is padded below its first screen by the tour's corner radius;
-      // the scene is fitted to the screen, and carries on into that strip.
-      const strip = parseFloat(getComputedStyle(hero).paddingBlockEnd) || 0;
       return {
         width: box.width,
         height: box.height,
-        screenHeight: box.height - strip,
-        anchorX: copy ? copy.left + copy.width / 2 - box.left : box.width / 2,
-        anchorY: copy ? copy.top + copy.height / 2 - box.top : box.height / 2,
-        unit: pageUnit(window.innerWidth, window.innerHeight),
         devicePixelRatio: window.devicePixelRatio,
       };
     }
@@ -159,16 +160,13 @@ export function GlassBackground() {
     const resizeObserver = new ResizeObserver(relayout);
     resizeObserver.observe(canvas);
 
-    // Off screen: nothing to draw. This is only an optimisation.
+    // The stage off screen (only the footer in view): nothing to draw. This is
+    // only an optimisation.
     const intersection = new IntersectionObserver((entries) => {
       onScreen = entries[entries.length - 1].isIntersecting;
       update();
     });
-    intersection.observe(canvas);
-
-    // The copy fades up when the page loads; its centre is final afterwards.
-    const anchor = hero?.querySelector("[data-glass-anchor]");
-    anchor?.addEventListener("animationend", relayout);
+    if (stage) intersection.observe(stage);
 
     const onVisibility = () => update();
     const onMotionChange = () => {
@@ -186,7 +184,6 @@ export function GlassBackground() {
       disposed = true;
       resizeObserver.disconnect();
       intersection.disconnect();
-      anchor?.removeEventListener("animationend", relayout);
       document.removeEventListener("visibilitychange", onVisibility);
       desktop.removeEventListener("change", onDesktopChange);
       reduced.removeEventListener("change", onMotionChange);

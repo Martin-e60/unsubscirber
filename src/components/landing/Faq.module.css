@@ -169,6 +169,31 @@
   }
 }
 
+/* --- The glass on the left ------------------------------------------------
+   While the page's glass canvas is drawing (the stage says so with
+   data-glass), the near-black is no longer the section's opaque background but
+   a veil over the canvas, clear at the left edge and solid before the rows, so
+   the glass is seen on the left side only. The fade runs along the window, in
+   smoothstep steps so it has no visible start or edge: clear up to
+   --glass-from, solid from --glass-to, the rows' left edge (a row is at most
+   47.5rem wide, centred). */
+[data-glass="on"] .faq {
+  --glass-to: calc(50% - 23.75rem);
+  --glass-from: calc(var(--glass-to) * 0.3);
+
+  background: linear-gradient(
+    90deg,
+    rgb(9 9 9 / 0%) calc(var(--glass-from) + (var(--glass-to) - var(--glass-from)) * 0),
+    rgb(9 9 9 / 6.1%) calc(var(--glass-from) + (var(--glass-to) - var(--glass-from)) * 0.15),
+    rgb(9 9 9 / 21.6%) calc(var(--glass-from) + (var(--glass-to) - var(--glass-from)) * 0.3),
+    rgb(9 9 9 / 50%) calc(var(--glass-from) + (var(--glass-to) - var(--glass-from)) * 0.5),
+    rgb(9 9 9 / 78.4%) calc(var(--glass-from) + (var(--glass-to) - var(--glass-from)) * 0.7),
+    rgb(9 9 9 / 93.9%) calc(var(--glass-from) + (var(--glass-to) - var(--glass-from)) * 0.85),
+    rgb(9 9 9 / 100%) calc(var(--glass-from) + (var(--glass-to) - var(--glass-from)) * 1),
+    var(--lp-bg) var(--glass-to)
+  );
+}
+
 @media (prefers-reduced-motion: reduce) {
   .trigger,
   .icon,

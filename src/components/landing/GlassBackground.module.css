@@ -1,10 +1,13 @@
-/* The glass background of the hero. It fills the hero's paper and is only ever
-   a picture: it takes no pointer events and cannot be selected or focused. It
-   stays invisible until its first frame is drawn, so the paper under it is
-   what loads with the page. */
+/* The glass background of the landing page. One canvas, fixed to the window and
+   the lowest layer of the stage: the sections scroll in front of it and each
+   decides what shows through. The stage clips it, so it never reaches the
+   footer. It is only ever a picture: it takes no pointer events and cannot be
+   selected or focused. It stays invisible until its first frame is drawn, so
+   the page's own backgrounds are what loads with it. */
 .canvas {
-  position: absolute;
+  position: fixed;
   inset: 0;
+  z-index: -5;
   display: block;
   inline-size: 100%;
   block-size: 100%;
@@ -18,7 +21,7 @@
   opacity: 1;
 }
 
-/* Below the desktop layout the page keeps its paper. */
+/* Below the desktop layout the page keeps its own backgrounds. */
 @media (max-width: 63.99rem) {
   .canvas {
     display: none;

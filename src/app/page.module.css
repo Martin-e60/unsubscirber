@@ -57,17 +57,21 @@
     drop-shadow(0 18px 30px rgb(0 0 0 / 55%));
 }
 
-/* Once the glass canvas is drawing it covers the matte sheets; they are then
-   left out, after its fade-in, so they cost nothing behind it. */
-.paperLeft,
-.paperRight {
-  transition: none;
+/* Once the glass canvas is drawing, the paper gives way to it: the canvas is
+   the lowest layer of the stage, so the paper, which is in front of it, fades
+   out as it fades in, and is then left out so it costs nothing. */
+.paper {
+  transition:
+    opacity 700ms var(--lp-ease),
+    visibility 0s linear 0s;
 }
 
-.paper:has(> [data-ready="true"]) > .paperLeft,
-.paper:has(> [data-ready="true"]) > .paperRight {
+.stage[data-glass="on"] .paper {
+  opacity: 0;
   visibility: hidden;
-  transition: visibility 0s linear 700ms;
+  transition:
+    opacity 700ms var(--lp-ease),
+    visibility 0s linear 700ms;
 }
 
 .paperLeft::before,
@@ -127,6 +131,42 @@
   max-inline-size: 100%;
   text-align: center;
   animation: heroIn 520ms var(--lp-ease) both;
+}
+
+/* The glass is kept off the headline and the buttons by a veil of the canvas's
+   own black behind them: solid in the middle, falling away to nothing in a
+   soft ellipse, the same profile the glass has always had round the copy
+   (exp(-r^6) over an ellipse 454u x 182u, in the page unit --u). It is part
+   of the copy, so it goes with it when the page scrolls; and it only exists
+   while the glass does, so the dark paper without WebGL is as it was. */
+.stage[data-glass="on"] .heroCopy {
+  position: relative;
+}
+
+.stage[data-glass="on"] .heroCopy::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset-block-start: 50%;
+  inset-inline-start: 50%;
+  inline-size: calc(1272 * var(--u));
+  block-size: calc(510 * var(--u));
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    ellipse calc(454 * var(--u)) calc(182 * var(--u)) at center,
+    rgb(8 8 9 / 100.0%) 0%,
+    rgb(8 8 9 / 99.6%) 40%,
+    rgb(8 8 9 / 95.4%) 60%,
+    rgb(8 8 9 / 88.9%) 70%,
+    rgb(8 8 9 / 76.9%) 80%,
+    rgb(8 8 9 / 58.8%) 90%,
+    rgb(8 8 9 / 36.8%) 100%,
+    rgb(8 8 9 / 17.0%) 110%,
+    rgb(8 8 9 / 5.0%) 120%,
+    rgb(8 8 9 / 0.8%) 130%,
+    rgb(8 8 9 / 0.1%) 140%
+  );
+  pointer-events: none;
 }
 
 .heroTitle {
@@ -497,15 +537,29 @@ a.secondary:focus-visible {
   );
 }
 
+/* With the glass drawing, the dark under the tour's bottom corners lets the
+   glass through as well, as the hero's strip above does. */
+.stage[data-glass="on"] .tourFrame {
+  background: none;
+}
+
 /* --- The stage ------------------------------------------------------------
    Everything above the footer. It is its own stacking layer, above the
    footer's, and opaque all the way down, so the footer pinned behind it only
    shows as this layer scrolls up. The header (z-index 3, before it in the
-   page) still sits over the hero. */
+   page) still sits over the hero.
+
+   The glass canvas is the lowest layer in here (z-index -5, fixed to the
+   window). The clip keeps it, and everything else in the stage, off the
+   footer: it reaches up by the header's height, because the dark of the hero
+   goes up behind the transparent header, and not at all downwards. The
+   sections that show the glass lay their own layers over it at -4 to -1
+   (FeatureTour.module.css); everything else is in front. */
 .stage {
   position: relative;
   z-index: 2;
   background: #090909;
+  clip-path: inset(calc(-1 * var(--nav-h)) 0 0 0);
 }
 
 /* --- Load-in ------------------------------------------------------------- */

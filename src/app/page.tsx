@@ -56,20 +56,22 @@ export default async function HomePage({
       <LandingNav />
 
       <main className={styles.stage}>
+        {/* The glass: one canvas fixed to the window, behind every section. */}
+        <GlassBackground />
+
         {/* --- Hero -------------------------------------------------------- */}
         <section className={styles.hero}>
           {/* The dark paper. It reaches up behind the transparent header, so
-              the two share one surface. On a desktop the glass canvas covers
-              it once WebGL is ready; until then, and without WebGL, the
+              the two share one surface. On a desktop it gives way to the
+              glass once WebGL is ready; until then, and without WebGL, the
               matte sheets are the background. */}
           <div className={styles.paper} aria-hidden="true">
             <span className={styles.paperLeft} />
             <span className={styles.paperRight} />
-            <GlassBackground />
           </div>
 
           <div className={styles.heroInner}>
-            <div className={styles.heroCopy} data-glass-anchor>
+            <div className={styles.heroCopy}>
               <h1 className={styles.heroTitle}>
                 Unsubscribe from
                 <br />
