@@ -11,9 +11,8 @@ import {
 /**
  * Database schema.
  *
- * This file IS the schema — there is no code generation step. Change a column
- * here, run `npm run db:push`, and both the database and the TypeScript types
- * update together.
+ * Change a column here, run `npm run db:generate`, review the SQL, then apply
+ * it with `npm run db:migrate`. Commit the migration with the schema change.
  *
  * SQLite has no enum type, so status columns are text. The allowed values live
  * in src/lib/constants.ts and are enforced by the `$type<>()` annotations below.

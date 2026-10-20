@@ -1,12 +1,9 @@
 /**
  * The mailbox interface.
  *
- * Everything above this file — the scan engine, the unsubscribe engine, the
- * API routes, the entire UI — talks only to `MailProvider`. Nothing outside
- * src/lib/mail/gmail.ts knows Gmail exists.
- *
- * Adding Outlook later means writing one new file that implements this
- * interface and one line in `getProviderForAccount()`. No other code changes.
+ * Scan and unsubscribe operations depend on MailProvider; Clear out uses
+ * MailOrganiser below. Provider-specific requests live in gmail.ts. Another
+ * provider also needs its own consent, token and permission handling.
  */
 
 /** The headers we care about, pulled from one message. */

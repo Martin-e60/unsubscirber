@@ -174,6 +174,9 @@ async function oneClick(url: string): Promise<AttemptResult> {
   try {
     const response = await safeFetch(url, {
       method: "POST",
+      // RFC 8058 requires the endpoint itself to accept the POST. A redirect
+      // to a generic 200 page is not a confirmed unsubscribe.
+      redirect: "manual",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: "List-Unsubscribe=One-Click",
     });
@@ -214,7 +217,7 @@ async function visitLink(
   try {
     const response = await safeFetch(url, { method: "GET" });
 
-    if (response.status < 200 || response.status >= 400) {
+    if (response.status < 200 || response.status >= 300) {
       return {
         method,
         status: ATTEMPT_STATUS.MANUAL_REQUIRED,

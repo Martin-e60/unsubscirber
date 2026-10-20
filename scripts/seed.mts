@@ -13,11 +13,14 @@
  * Running it again replaces the seeded data rather than duplicating it.
  */
 
-import fs from "node:fs";
-import path from "node:path";
+import "./env.ts";
+import type { SenderStatus } from "../src/lib/constants.ts";
 
-// A standalone script does not get Next's automatic .env loading.
-loadEnvFile(path.resolve(process.cwd(), ".env"));
+// This fixture replaces a development user's data. Never seed a hosted DB.
+if (process.env.NODE_ENV === "production" ||
+    !(process.env.DATABASE_URL ?? "file:./local.db").startsWith("file:")) {
+  throw new Error("Sample data can only be seeded into a local development database.");
+}
 
 const { db } = await import("../src/db/index.ts");
 const schema = await import("../src/db/schema.ts");
@@ -29,7 +32,7 @@ const SEED_EMAIL = DEV_USER_EMAIL;
 const DAY = 86_400_000;
 
 /** name, address, emails, days since last email, subject, status, has https link */
-const SENDERS: [string, string, number, number, string, string, boolean][] = [
+const SENDERS: [string, string, number, number, string, SenderStatus, boolean][] = [
   ["AliExpress", "news@aliexpress.com", 93, 210, "Your 11.11 deals end tonight", "ACTIVE", true],
   ["LinkedIn", "notify@linkedin.com", 72, 12, "You appeared in 9 searches", "ACTIVE", true],
   ["Notion", "team@makenotion.com", 36, 40, "What's new in Notion this month", "ACTIVE", true],
@@ -85,7 +88,7 @@ for (const [name, address, count, daysAgo, subject, status, hasLink] of SENDERS)
       unsubscribeHttp: hasLink ? `https://example.com/u/${address}` : null,
       unsubscribeMailto: `unsubscribe@${address.split("@")[1]}`,
       oneClick: hasLink,
-      status: status as never,
+      status,
       decidedAt: decided.has(status) ? new Date(Date.now() - 5 * DAY) : null,
     })
     .returning();
@@ -118,21 +121,6 @@ await db.insert(schema.unsubscribeAttempts).values([
 
 console.log(
   `Seeded ${SENDERS.length} senders for ${SEED_EMAIL}.\n` +
-    "Run `npm run dev`, then use \"Skip sign-in\" on the landing page.",
+    "Run `npm run dev`, then open /api/auth/dev to use the local development account.",
 );
-
-/** Minimal .env reader: KEY="value" per line, # for comments. */
-function loadEnvFile(file: string): void {
-  if (!fs.existsSync(file)) {
-    throw new Error(`No .env found at ${file}. Copy .env.example to .env first.`);
-  }
-  for (const line of fs.readFileSync(file, "utf8").split("\n")) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
-    const eq = trimmed.indexOf("=");
-    if (eq === -1) continue;
-    const key = trimmed.slice(0, eq).trim();
-    const value = trimmed.slice(eq + 1).trim().replace(/^["']|["']$/g, "");
-    process.env[key] ??= value;
-  }
-}
+db.$client.close();

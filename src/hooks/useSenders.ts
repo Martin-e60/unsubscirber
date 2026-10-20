@@ -166,27 +166,6 @@ export function useSenders(options: UseSendersOptions = {}) {
     [api, patchSender, refresh],
   );
 
-  /** "Roll up" — bundle this sender into a digest instead of unsubscribing. */
-  const rollUpSender = useCallback(
-    async (id: string) => {
-      patchSender(id, { status: SENDER_STATUS.ROLLED_UP });
-      try {
-        await api.patch<SenderDto>(`/api/senders/${id}`, {
-          status: SENDER_STATUS.ROLLED_UP,
-        });
-        setCounts((c) => ({
-          ...c,
-          ACTIVE: Math.max(0, c.ACTIVE - 1),
-          ROLLED_UP: c.ROLLED_UP + 1,
-        }));
-      } catch (cause) {
-        await refresh();
-        setError(cause instanceof Error ? cause.message : "Could not roll up sender");
-      }
-    },
-    [api, patchSender, refresh],
-  );
-
   /** Undo a "keep", putting the sender back in the active list. */
   const restoreSender = useCallback(
     async (id: string) => {
@@ -238,7 +217,6 @@ export function useSenders(options: UseSendersOptions = {}) {
     refresh,
     patchSender,
     keepSender,
-    rollUpSender,
     restoreSender,
   };
 }

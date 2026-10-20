@@ -31,30 +31,49 @@ export async function safeFetch(
   init: RequestInit = {},
 ): Promise<SafeFetchResult> {
   let url = rawUrl;
+  // One deadline for the entire redirect chain, including response bodies.
+  const timeout = AbortSignal.timeout(TIMEOUT_MS);
+  const signal = init.signal ? AbortSignal.any([init.signal, timeout]) : timeout;
 
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
-    await assertPublicUrl(url);
+    signal.throwIfAborted();
+    await assertPublicUrl(url, signal);
+
+    const headers = new Headers(init.headers);
+    if (!headers.has("User-Agent")) headers.set("User-Agent", "Mozilla/5.0 (compatible; Tidely/1.0)");
+    if (!headers.has("Accept")) headers.set("Accept", "text/html,application/xhtml+xml,*/*;q=0.8");
 
     const response = await fetch(url, {
       ...init,
       redirect: "manual",
-      signal: AbortSignal.timeout(TIMEOUT_MS),
-      headers: {
-        // Some senders serve a different page to obvious bots.
-        "User-Agent":
-          "Mozilla/5.0 (compatible; UnsubscriberBot/1.0; +https://example.com/bot)",
-        Accept: "text/html,application/xhtml+xml,*/*;q=0.8",
-        ...(init.headers ?? {}),
-      },
+      signal,
+      headers,
     });
 
-    const isRedirect = response.status >= 300 && response.status < 400;
+    const isRedirect = [301, 302, 303, 307, 308].includes(response.status);
     const location = response.headers.get("location");
 
-    if (isRedirect && location && hop < MAX_REDIRECTS) {
-      url = new URL(location, url).toString();
-      // A redirected POST becomes a GET, matching normal browser behaviour.
-      init = { ...init, method: "GET", body: undefined };
+    if (isRedirect && location && init.redirect !== "manual") {
+      // Release each response before following it, including rejected hops.
+      await response.body?.cancel();
+      if (init.redirect === "error") throw new Error("Redirects are not allowed");
+      if (hop === MAX_REDIRECTS) throw new Error("Too many redirects");
+
+      const next = new URL(location, url);
+      if (next.origin !== new URL(url).origin) {
+        headers.delete("Authorization");
+        headers.delete("Cookie");
+      }
+      const method = (init.method ?? "GET").toUpperCase();
+      const switchToGet =
+        ((response.status === 301 || response.status === 302) && method === "POST") ||
+        (response.status === 303 && method !== "GET" && method !== "HEAD");
+      if (switchToGet) {
+        headers.delete("Content-Type");
+        headers.delete("Content-Length");
+      }
+      init = { ...init, headers, ...(switchToGet ? { method: "GET", body: undefined } : {}) };
+      url = next.toString();
       continue;
     }
 
@@ -75,19 +94,24 @@ async function readCapped(response: Response): Promise<string> {
   const chunks: Uint8Array[] = [];
   let total = 0;
 
-  while (total < MAX_BODY_BYTES) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    chunks.push(value);
-    total += value.byteLength;
+  try {
+    while (total < MAX_BODY_BYTES) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = value.subarray(0, MAX_BODY_BYTES - total);
+      chunks.push(chunk);
+      total += chunk.byteLength;
+    }
+    return Buffer.concat(chunks, total).toString("utf8");
+  } finally {
+    await reader.cancel().catch(() => {});
+    reader.releaseLock();
   }
-  await reader.cancel().catch(() => {});
-
-  return Buffer.concat(chunks).toString("utf8").slice(0, MAX_BODY_BYTES);
 }
 
 /** Throws unless the URL is http(s) and resolves to a public IP address. */
-export async function assertPublicUrl(rawUrl: string): Promise<void> {
+export async function assertPublicUrl(rawUrl: string, signal?: AbortSignal): Promise<void> {
+  signal?.throwIfAborted();
   let url: URL;
   try {
     url = new URL(rawUrl);
@@ -98,6 +122,7 @@ export async function assertPublicUrl(rawUrl: string): Promise<void> {
   if (url.protocol !== "http:" && url.protocol !== "https:") {
     throw new Error(`Refusing to open a ${url.protocol} URL`);
   }
+  if (url.username || url.password) throw new Error("Refusing to open a URL with credentials");
 
   const hostname = url.hostname.replace(/^\[|\]$/g, "");
 
@@ -112,7 +137,7 @@ export async function assertPublicUrl(rawUrl: string): Promise<void> {
 
   const addresses = net.isIP(hostname)
     ? [hostname]
-    : (await dns.lookup(hostname, { all: true })).map((a) => a.address);
+    : (await lookup(hostname, signal)).map((a) => a.address);
 
   if (addresses.length === 0) throw new Error("Hostname did not resolve");
 
@@ -120,5 +145,23 @@ export async function assertPublicUrl(rawUrl: string): Promise<void> {
     if (isPrivateAddress(address)) {
       throw new Error("Refusing to open a private network address");
     }
+  }
+}
+
+/** Stop waiting for DNS too when the request's shared deadline is reached. */
+async function lookup(hostname: string, signal?: AbortSignal) {
+  if (!signal) return dns.lookup(hostname, { all: true });
+  signal.throwIfAborted();
+  let onAbort: (() => void) | undefined;
+  try {
+    return await Promise.race([
+      dns.lookup(hostname, { all: true }),
+      new Promise<never>((_resolve, reject) => {
+        onAbort = () => reject(signal.reason);
+        signal.addEventListener("abort", onAbort, { once: true });
+      }),
+    ]);
+  } finally {
+    if (onAbort) signal.removeEventListener("abort", onAbort);
   }
 }

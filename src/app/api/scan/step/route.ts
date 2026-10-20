@@ -5,7 +5,7 @@ import { db } from "@/db";
 import { scans } from "@/db/schema";
 import { requireUserAndMailbox } from "@/lib/api/auth";
 import { HttpError, json, readJson, route } from "@/lib/api/respond";
-import { runScanStep, toProgress } from "@/lib/scan/engine";
+import { runScanStep } from "@/lib/scan/engine";
 import type { ScanProgressDto } from "@/lib/api/types";
 
 /**

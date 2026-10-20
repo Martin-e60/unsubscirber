@@ -1,14 +1,18 @@
+import "./scripts/env";
 import type { Config } from "drizzle-kit";
 
 /**
- * drizzle-kit reads this to know where the schema lives and how to reach the
- * database. `npm run db:push` uses it to create/update tables.
+ * Shared configuration for migration generation and database inspection.
  */
-export default {
+const shared = {
   schema: "./src/db/schema.ts",
   out: "./drizzle",
-  dialect: "sqlite",
-  dbCredentials: {
-    url: process.env.DATABASE_URL ?? "file:./local.db",
-  },
+};
+const url = process.env.DATABASE_URL ?? "file:./local.db";
+
+export default {
+  ...shared,
+  ...(url.startsWith("file:")
+    ? { dialect: "sqlite", dbCredentials: { url } }
+    : { dialect: "turso", dbCredentials: { url, authToken: process.env.DATABASE_AUTH_TOKEN } }),
 } satisfies Config;

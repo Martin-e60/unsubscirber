@@ -8,15 +8,16 @@ build/
 
 # Secrets — never commit these. .env holds your Google credentials and the
 # keys that encrypt stored OAuth tokens.
-.env
-.env.local
-.env.*.local
+.env*
+!.env.example
 
 # Local database. Contains real sender data once you scan a mailbox.
 local.db
 local.db-journal
 *.db
 *.db-journal
+*.db-shm
+*.db-wal
 
 # TypeScript
 next-env.d.ts

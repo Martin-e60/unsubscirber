@@ -575,6 +575,27 @@ test("simultaneous scan starts leave only one running scan for the mailbox", asy
   assert.equal(running.length, 1);
 });
 
+test("a redirected one-click endpoint cannot record a confirmed unsubscribe", async (t) => {
+  const [sender] = await mod.db.insert(mod.schema.senders).values({
+    mailAccountId: account.id,
+    address: "redirect@example.com",
+    unsubscribeHttp: "https://93.184.216.34/unsubscribe",
+    oneClick: true,
+  }).returning();
+  t.mock.method(globalThis, "fetch", async (_input: string | URL | Request, init?: RequestInit) =>
+    init?.method === "POST"
+      ? new Response("", { status: 302, headers: { Location: "/welcome" } })
+      : new Response("<p>Welcome</p>"));
+  const result = await mod.unsubEngine.unsubscribeSender(account, sender, fakeMailbox([]).provider);
+  assert.equal(result.status, "MANUAL");
+  const { and, eq } = await import("drizzle-orm");
+  const successes = await mod.db.select().from(mod.schema.unsubscribeAttempts).where(and(
+    eq(mod.schema.unsubscribeAttempts.senderId, sender.id),
+    eq(mod.schema.unsubscribeAttempts.status, "SUCCESS"),
+  ));
+  assert.equal(successes.length, 0);
+});
+
 test("two unsubscribes at once email the sender only once", async () => {
   const { eq } = await import("drizzle-orm");
   const mailbox = fakeMailbox([]);

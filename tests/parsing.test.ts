@@ -148,11 +148,17 @@ test("isPrivateAddress blocks internal networks and cloud metadata", () => {
     "fd00::1",
     "fe80::1",
     "::ffff:127.0.0.1",
+    "::ffff:7f00:1",
+    "0:0:0:0:0:0:0:1",
+    "0:0:0:0:0:ffff:a00:1",
+    "fea0::1",
+    "ff02::1",
+    "198.19.0.1",
   ]) {
     assert.equal(isPrivateAddress(address), true, `${address} should be private`);
   }
 
-  for (const address of ["8.8.8.8", "1.1.1.1", "172.32.0.1", "2606:4700::1111"]) {
+  for (const address of ["8.8.8.8", "1.1.1.1", "172.32.0.1", "2606:4700::1111", "::ffff:8.8.8.8"]) {
     assert.equal(isPrivateAddress(address), false, `${address} should be public`);
   }
 });

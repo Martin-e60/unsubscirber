@@ -1,35 +1,36 @@
 import net from "node:net";
 
-/**
- * Is this IP address on a private or otherwise non-routable network?
- *
- * Used by safeFetch to refuse unsubscribe URLs that point back at our own
- * infrastructure. Pure, so it can be tested exhaustively.
- */
+const blocked = new net.BlockList();
+
+for (const [address, prefix] of [
+  ["0.0.0.0", 8],
+  ["10.0.0.0", 8],
+  ["100.64.0.0", 10],
+  ["127.0.0.0", 8],
+  ["169.254.0.0", 16],
+  ["172.16.0.0", 12],
+  ["192.0.0.0", 24],
+  ["192.0.2.0", 24],
+  ["192.168.0.0", 16],
+  ["198.18.0.0", 15],
+  ["198.51.100.0", 24],
+  ["203.0.113.0", 24],
+  ["224.0.0.0", 4],
+  ["240.0.0.0", 4],
+] as const) blocked.addSubnet(address, prefix, "ipv4");
+
+blocked.addAddress("::", "ipv6");
+blocked.addAddress("::1", "ipv6");
+blocked.addSubnet("fc00::", 7, "ipv6");
+blocked.addSubnet("fe80::", 10, "ipv6");
+blocked.addSubnet("fec0::", 10, "ipv6");
+blocked.addSubnet("ff00::", 8, "ipv6");
+blocked.addSubnet("2001:db8::", 32, "ipv6");
+
+/** Reject private/reserved IPs, including expanded and IPv4-mapped IPv6. */
 export function isPrivateAddress(address: string): boolean {
-  if (net.isIPv4(address)) {
-    const [a, b] = address.split(".").map(Number);
-    if (a === 10) return true;
-    if (a === 127) return true;
-    if (a === 0) return true;
-    if (a === 172 && b >= 16 && b <= 31) return true;
-    if (a === 192 && b === 168) return true;
-    if (a === 169 && b === 254) return true; // link-local / cloud metadata
-    if (a === 100 && b >= 64 && b <= 127) return true; // carrier-grade NAT
-    if (a >= 224) return true; // multicast and reserved
-    return false;
-  }
-
-  if (net.isIPv6(address)) {
-    const lower = address.toLowerCase();
-    if (lower === "::1" || lower === "::") return true;
-    if (lower.startsWith("fe80")) return true; // link-local
-    if (lower.startsWith("fc") || lower.startsWith("fd")) return true; // unique local
-    // IPv4-mapped addresses such as ::ffff:127.0.0.1
-    const mapped = lower.match(/::ffff:(\d+\.\d+\.\d+\.\d+)$/);
-    if (mapped) return isPrivateAddress(mapped[1]);
-    return false;
-  }
-
-  return true;
+  const family = net.isIP(address);
+  if (!family) return true;
+  // BlockList also matches IPv4 rules against IPv4-mapped IPv6 addresses.
+  return blocked.check(address, family === 4 ? "ipv4" : "ipv6");
 }

@@ -25,6 +25,7 @@ import { SCAN_CONCURRENCY } from "@/lib/constants";
  */
 
 const API = "https://gmail.googleapis.com/gmail/v1/users/me";
+const REQUEST_TIMEOUT_MS = 15_000;
 
 /** Headers we ask Gmail for. Fetching metadata only is far cheaper than full. */
 const METADATA_HEADERS = [
@@ -99,9 +100,11 @@ export class GmailProvider implements MailProvider, MailOrganiser {
         listId: headers.get("list-id") ?? null,
         precedence: headers.get("precedence") ?? null,
       };
-    } catch {
-      // One unreadable message must never abort a scan of thousands.
-      return null;
+    } catch (error) {
+      // Deleted mail can disappear between list and get. A failed request
+      // must stop the page so a scan never reports incomplete data as done.
+      if (error instanceof GmailApiError && error.status === 404) return null;
+      throw error;
     }
   }
 
@@ -112,8 +115,9 @@ export class GmailProvider implements MailProvider, MailOrganiser {
       );
       if (!message.payload) return null;
       return findHtmlPart(message.payload);
-    } catch {
-      return null;
+    } catch (error) {
+      if (error instanceof GmailApiError && error.status === 404) return null;
+      throw error;
     }
   }
 
@@ -195,9 +199,8 @@ export class GmailProvider implements MailProvider, MailOrganiser {
           headers: found,
         };
       } catch (error) {
-        // A permission problem is not one unreadable message; let it surface.
-        if (error instanceof GmailApiError && error.isPermission) throw error;
-        return null;
+        if (error instanceof GmailApiError && error.status === 404) return null;
+        throw error;
       }
     });
   }
@@ -254,6 +257,7 @@ export class GmailProvider implements MailProvider, MailOrganiser {
           ...(init.headers ?? {}),
         },
         cache: "no-store",
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       });
 
       if (response.ok) {
@@ -263,10 +267,12 @@ export class GmailProvider implements MailProvider, MailOrganiser {
 
       const body = await response.text().catch(() => "");
       // Gmail reports per-user rate limits as 403 as well as 429.
-      const retryable =
+      // Sending an email is not idempotent: Google may have accepted it
+      // before returning an error, so retrying could send it twice.
+      const retryable = path !== "/messages/send" && (
         response.status === 429 ||
         (response.status === 403 && /rateLimitExceeded/i.test(body)) ||
-        (response.status >= 500 && response.status < 600);
+        (response.status >= 500 && response.status < 600));
 
       if (!retryable || attempt === maxAttempts) {
         throw new GmailApiError(
@@ -328,16 +334,14 @@ type GmailPart = {
 
 /** Walks a MIME tree and returns the first text/html body it finds. */
 function findHtmlPart(part: GmailPart): string | null {
-  if (part.mimeType === "text/html" && part.body?.data) {
-    return base64UrlDecode(part.body.data);
-  }
+  return findBodyPart(part, "text/html") ?? findBodyPart(part, "text/plain");
+}
+
+function findBodyPart(part: GmailPart, mimeType: string): string | null {
+  if (part.mimeType === mimeType && part.body?.data) return base64UrlDecode(part.body.data);
   for (const child of part.parts ?? []) {
-    const found = findHtmlPart(child);
-    if (found) return found;
-  }
-  // No HTML alternative — fall back to plain text, which may still hold a link.
-  if (part.mimeType === "text/plain" && part.body?.data) {
-    return base64UrlDecode(part.body.data);
+    const found = findBodyPart(child, mimeType);
+    if (found !== null) return found;
   }
   return null;
 }

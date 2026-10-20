@@ -11,8 +11,7 @@ import * as schema from "./schema";
  *
  * Local development uses a SQLite file. To deploy, point DATABASE_URL at a
  * Turso database (libsql://... plus DATABASE_AUTH_TOKEN) and nothing else
- * changes. To move to Postgres, swap this file's driver for
- * `drizzle-orm/node-postgres` — the schema and every query stay as they are.
+ * changes. The schema and migrations use SQLite-specific definitions.
  */
 
 const globalForDb = globalThis as unknown as {

@@ -1,9 +1,6 @@
 /**
- * Environment variables, read and validated once.
- *
- * Importing `env` anywhere guarantees the value exists and is the right shape.
- * A missing variable fails loudly at startup instead of producing a confusing
- * error deep inside an OAuth callback.
+ * Server environment variables, validated when accessed. Public pages and the
+ * sample demo can render without OAuth credentials or encryption keys.
  */
 
 function required(name: string): string {
