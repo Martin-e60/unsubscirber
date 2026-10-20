@@ -268,7 +268,8 @@ export function Impact({ stats }: { stats: StatsDto | null }) {
         </li>
       </ul>
 
-      <p className={styles.basis}>Based on confirmed removals</p>
+      <p className={styles.basis}> 
+      </p>
     </section>
   );
 }
