@@ -7,6 +7,7 @@ import { ChevronDown, LogOut, SlidersHorizontal, User } from "lucide-react";
 import { MailboxSwitcher } from "@/components/layout/MailboxSwitcher";
 import { NAV, navHref, type NavItem } from "@/lib/navigation";
 import type { SidebarAccount } from "@/components/layout/Sidebar";
+import glass from "@/components/home/glass.module.css";
 import styles from "./HomeHeader.module.css";
 
 /**
@@ -17,6 +18,8 @@ import styles from "./HomeHeader.module.css";
  * live somewhere. The destinations are the nav; the mailbox switcher, Settings
  * and the way out sit in the account menu. Nothing is new — they are the same
  * links and the same switcher, moved.
+ * Keep the glass header free of backdrop-filter: it would change the
+ * containing block of the fixed-position mailbox dropdown.
  */
 
 export function HomeHeader({
@@ -33,7 +36,7 @@ export function HomeHeader({
   const settings = items.find((item) => item.id === "settings");
 
   return (
-    <header className={styles.header}>
+    <header className={`${styles.header} ${glass.header}`}>
       <div className={styles.inner}>
         <Link href={navHref(NAV[0], basePath)} className={styles.brand} aria-label="Tidely home">
           Tidely

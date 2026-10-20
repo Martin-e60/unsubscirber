@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FlaskConical, Info, RefreshCw, RotateCcw } from "lucide-react";
 import { resetDemo } from "@/lib/demo/client";
+import glass from "@/components/home/glass.module.css";
 import styles from "./DemoBanner.module.css";
 
 /**
@@ -21,7 +22,7 @@ export function DemoBanner() {
 
   if (home) {
     return (
-      <div className={styles.homeBanner} role="region" aria-label="Demo mode">
+      <div className={`${styles.homeBanner} ${glass.card}`} role="region" aria-label="Demo mode">
         <p className={styles.homeLabel}>
           <Info className={styles.homeIcon} size={24} strokeWidth={1.75} aria-hidden />
           <span className={styles.homeText}>
@@ -34,7 +35,7 @@ export function DemoBanner() {
         </p>
 
         <div className={styles.homeActions}>
-          <button type="button" className={styles.homeReset} onClick={resetDemo}>
+          <button type="button" className={`${styles.homeReset} ${glass.button}`} onClick={resetDemo}>
             <RefreshCw size={22} strokeWidth={2.2} aria-hidden />
             Reset demo
           </button>

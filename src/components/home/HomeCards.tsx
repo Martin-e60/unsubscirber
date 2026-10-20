@@ -6,6 +6,7 @@ import { relativeTime } from "@/lib/home/format";
 import type { ActivityItem } from "@/lib/home/activity";
 import type { StatsDto } from "@/lib/api/types";
 import styles from "./HomeCards.module.css";
+import glass from "./glass.module.css";
 
 /**
  * The two cards at the foot of Home.
@@ -30,7 +31,7 @@ export function Attention({
   const results = `${basePath}/unsubscribed`;
 
   return (
-    <section className={styles.card} aria-labelledby="attention-title">
+    <section className={`${styles.card} ${glass.card}`} aria-labelledby="attention-title">
       <header className={styles.head}>
         <h2 className={styles.title} id="attention-title">
           Needs your attention
@@ -59,7 +60,7 @@ export function Attention({
         <ul className={`${styles.list} ${styles.rows}`}>
           {needsClick > 0 ? (
             <li>
-              <Link href={`${basePath}/cleanup?status=MANUAL`} className={styles.row}>
+              <Link href={`${basePath}/cleanup?status=MANUAL`} className={`${styles.row} ${glass.row}`}>
                 <span className={styles.rowText}>
                   <span className={styles.rowTitle}>
                     {needsClick} {needsClick === 1 ? "needs" : "need"} one more click
@@ -72,7 +73,7 @@ export function Attention({
           ) : null}
           {failed > 0 ? (
             <li>
-              <Link href={`${basePath}/cleanup?status=FAILED`} className={styles.row}>
+              <Link href={`${basePath}/cleanup?status=FAILED`} className={`${styles.row} ${glass.row}`}>
                 <span className={styles.rowText}>
                   <span className={styles.rowTitle}>
                     {failed} {failed === 1 ? "attempt needs" : "attempts need"} a review
@@ -106,7 +107,7 @@ export function Activity({
   basePath: string;
 }) {
   return (
-    <section className={styles.card} aria-labelledby="activity-title">
+    <section className={`${styles.card} ${glass.card}`} aria-labelledby="activity-title">
       <header className={styles.head}>
         <h2 className={styles.title} id="activity-title">
           Recent activity

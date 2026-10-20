@@ -159,9 +159,6 @@ a.connect:focus-visible {
   block-size: 1.75rem;
 }
 
-/* Wide: pinned to the bottom of the window, behind the stage (z-index 2 in
-   page.module.css), so it is uncovered rather than faded in. It is never
-   taller than the window: 810 u is at most 90svh (see --u). */
 @media (min-width: 64rem) {
   .footer {
     position: sticky;

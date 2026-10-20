@@ -2,7 +2,6 @@
   position: relative;
   z-index: 20;
   border-block-end: var(--border-width) solid var(--color-border);
-  background: var(--color-surface);
 }
 
 /* Brand left, destinations centred on the page, account right. */

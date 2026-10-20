@@ -6,6 +6,7 @@ import { DEFAULT_LOOKBACK_DAYS, SCAN_STATUS } from "@/lib/constants";
 import { periodLabel, relativeTime, scanWhen } from "@/lib/home/format";
 import type { ScanProgressDto, StatsDto } from "@/lib/api/types";
 import styles from "./ScanOverview.module.css";
+import glass from "./glass.module.css";
 
 /**
  * The scan overview at the top of Home: when the mailbox was last scanned, how
@@ -106,7 +107,7 @@ export function ScanOverview({
   const scanAgain = (
     <button
       type="button"
-      className={styles.action}
+      className={`${styles.action} ${glass.button}`}
       onClick={() => scan.start(lookback)}
     >
       <RefreshCw size={28} strokeWidth={2.2} aria-hidden />
@@ -120,7 +121,7 @@ export function ScanOverview({
     case "noGmail":
       when1 = "Not yet";
       action = (
-        <Link href="/connect" className={styles.action}>
+        <Link href="/connect" className={`${styles.action} ${glass.button}`}>
           Connect Gmail
         </Link>
       );
@@ -130,7 +131,7 @@ export function ScanOverview({
       action = (
         <button
           type="button"
-          className={styles.action}
+          className={`${styles.action} ${glass.button}`}
           onClick={() => scan.start(DEFAULT_LOOKBACK_DAYS)}
         >
           <RefreshCw size={28} strokeWidth={2.2} aria-hidden />
@@ -145,7 +146,7 @@ export function ScanOverview({
         ? `Started ${relativeTime(progress.startedAt).toLowerCase()}`
         : "Starting…";
       action = (
-        <button type="button" className={styles.action} onClick={scan.cancel}>
+        <button type="button" className={`${styles.action} ${glass.button}`} onClick={scan.cancel}>
           <Square size={20} strokeWidth={1.75} aria-hidden />
           Stop scan
         </button>
@@ -255,7 +256,7 @@ export function ScanOverview({
   }
 
   return (
-    <section className={styles.card} aria-labelledby="scan-title" aria-busy={mode === "loading"}>
+    <section className={`${styles.card} ${glass.card}`} aria-labelledby="scan-title" aria-busy={mode === "loading"}>
       <div className={styles.top}>
         <h2 className={styles.title} id="scan-title" aria-live="polite">
           {title}

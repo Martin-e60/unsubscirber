@@ -8,6 +8,7 @@ import { rulerEnd } from "@/lib/home/ruler";
 import { trendPath } from "@/lib/home/trend";
 import type { StatsDto, TrendPoint } from "@/lib/api/types";
 import styles from "./Impact.module.css";
+import glass from "./glass.module.css";
 
 /**
  * The impact cards: three figures, all derived from confirmed removals only.
@@ -227,17 +228,17 @@ export function Impact({ stats }: { stats: StatsDto | null }) {
       </h2>
 
       <ul className={styles.cards} aria-busy={stats === null}>
-        <li className={`${styles.card} ${styles.withRing}`}>
+        <li className={`${styles.card} ${styles.withRing} ${glass.card}`}>
           {stats === null ? null : <Ring fraction={ringFraction} />}
           <Figure label="Subscriptions removed" text={confirmedNow} final={confirmedFinal} />
         </li>
 
-        <li className={styles.card}>
+        <li className={`${styles.card} ${glass.card}`}>
           <Figure label="Fewer emails / month" text={fewerNow} final={fewerFinal} about />
           {stats === null ? null : <Trend points={trend} progress={progress} />}
         </li>
 
-        <li className={styles.card}>
+        <li className={`${styles.card} ${glass.card}`}>
           <Figure label="Time saved / month" text={savedNow} final={savedFinal} about />
           <div className={styles.ruler} aria-hidden="true">
             <div className={styles.track}>

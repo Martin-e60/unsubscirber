@@ -41,6 +41,7 @@ import {
 } from "@/lib/mailbox/shared";
 import { NAV, navHref, type NavItem } from "@/lib/navigation";
 import theme from "./appTheme.module.css";
+import glass from "@/components/home/glass.module.css";
 import homeTheme from "./homeTheme.module.css";
 import styles from "./AppShell.module.css";
 
@@ -423,7 +424,7 @@ function Frame({
   // sidebar and the app's warm theme.
   if (pathname === navHref(NAV[0], basePath)) {
     return (
-      <div className={`${homeTheme.theme} ${styles.homeShell}`}>
+      <div className={`${homeTheme.theme} ${styles.homeShell} ${glass.page}`}>
         <HomeHeader basePath={basePath} items={navItems} account={account} />
         <div className={styles.homeFrame}>
           {banner}

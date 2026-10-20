@@ -5,19 +5,11 @@ import { REPO_URL, SOCIAL_LINKS } from "@/lib/site";
 import { TourLink } from "./TourLink";
 import styles from "./LandingFooter.module.css";
 
-/**
- * The landing page's footer: a closing line and a Connect Gmail button, then
- * the logo, two short columns of links and the author's profiles.
- *
- * Light, on the dark page above it. On a wide screen it is pinned to the
- * bottom of the window behind the page and uncovered as the FAQ scrolls away
- * (see the stage in page.module.css); below that it is an ordinary footer.
- *
- * The three profile icons are monochrome and open in a new tab. They are not
- * the Source link, which points at the repository.
- */
-
-type Social = { name: string; href: string; icon: ReactNode };
+type Social = {
+  name: string;
+  href: string;
+  icon: ReactNode;
+};
 
 const SOCIALS: Social[] = [
   {
@@ -42,8 +34,24 @@ const SOCIALS: Social[] = [
     href: SOCIAL_LINKS.instagram,
     icon: (
       <>
-        <rect x="2.5" y="2.5" width="19" height="19" rx="5.5" fill="none" stroke="currentColor" strokeWidth="2.2" />
-        <circle cx="12" cy="12" r="4.4" fill="none" stroke="currentColor" strokeWidth="2.2" />
+        <rect
+          x="2.5"
+          y="2.5"
+          width="19"
+          height="19"
+          rx="5.5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.2"
+        />
+        <circle
+          cx="12"
+          cy="12"
+          r="4.4"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.2"
+        />
         <circle cx="17.4" cy="6.6" r="1.3" />
       </>
     ),
@@ -68,6 +76,7 @@ export function LandingFooter() {
         <div className={styles.row}>
           <div className={styles.about}>
             <p className={styles.word}>tidely.</p>
+
             <p className={styles.blurb}>
               A free tool for finding
               <br />
@@ -78,6 +87,7 @@ export function LandingFooter() {
           <nav className={styles.columns} aria-label="Footer">
             <div>
               <h3 className={styles.label}>Explore</h3>
+
               <ul className={styles.links}>
                 <li>
                   <Link href="/demo">Demo</Link>
@@ -93,6 +103,7 @@ export function LandingFooter() {
 
             <div>
               <h3 className={styles.label}>Resources</h3>
+
               <ul className={styles.links}>
                 <li>
                   <Link href="/privacy">Privacy</Link>
@@ -100,11 +111,18 @@ export function LandingFooter() {
                 <li>
                   <Link href="/terms">Terms</Link>
                 </li>
+
                 {REPO_URL ? (
                   <li>
-                    <a href={REPO_URL} target="_blank" rel="noreferrer noopener">
+                    <a
+                      href={REPO_URL}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                    >
                       Source
-                      <span className="srOnly"> (opens GitHub in a new tab)</span>
+                      <span className="srOnly">
+                        {" "}(opens GitHub in a new tab)
+                      </span>
                     </a>
                   </li>
                 ) : null}
@@ -116,11 +134,22 @@ export function LandingFooter() {
         <ul className={styles.social} aria-label="Profiles">
           {SOCIALS.map(({ name, href, icon }) => (
             <li key={name}>
-              <a href={href} target="_blank" rel="noreferrer noopener">
-                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <a
+                href={href}
+                target="_blank"
+                rel="noreferrer noopener"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
                   {icon}
                 </svg>
-                <span className="srOnly">{name} (opens in a new tab)</span>
+
+                <span className="srOnly">
+                  {name} (opens in a new tab)
+                </span>
               </a>
             </li>
           ))}
