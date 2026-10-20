@@ -3,9 +3,10 @@
    limits, so nothing is scaled as a whole. */
 
 .card {
-  border: var(--border-width) solid var(--color-border);
+  border: var(--border-width) solid var(--glass-edge);
   border-radius: 0.875rem;
-  background: var(--color-surface);
+  background: var(--glass-panel-fill);
+  box-shadow: var(--glass-panel-rim), var(--glass-panel-shadow);
 }
 
 /* --- Upper row ---------------------------------------------------------------- */
@@ -63,9 +64,10 @@
   gap: 1.0625rem;
   min-block-size: 3.25rem;
   padding-inline: 1.53rem 1.22rem;
-  border: var(--border-width) solid var(--color-border-strong);
+  border: var(--border-width) solid var(--glass-edge-strong);
   border-radius: 0.625rem;
-  background: var(--color-surface);
+  background: var(--glass-control-fill);
+  box-shadow: var(--glass-control-rim), var(--glass-control-shadow);
   color: var(--color-text);
   font-size: clamp(1rem, 1.2vw, 1.25rem);
   font-weight: var(--weight-medium);
@@ -81,7 +83,7 @@
 
 .action:hover {
   border-color: var(--color-text-subtle);
-  background: var(--color-surface-sunken);
+  background: var(--glass-control-fill-hover);
 }
 
 .rule {
