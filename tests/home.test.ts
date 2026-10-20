@@ -266,3 +266,32 @@ test("figures count up in whole minutes and settle on the real wording", async (
   assert.equal(formatMinutesCounting(10, 0), "0 min", "'<1 min' is kept for the end");
   assert.equal(formatMinutesCounting(10, 1), "<1 min");
 });
+
+test("the time ruler ends at the next round step and never stops growing", async () => {
+  const { rulerEnd } = await import("../src/lib/home/ruler");
+  const { formatMinutes } = await import("../src/lib/home/format");
+  const end = (minutes: number) => formatMinutes(rulerEnd(minutes * 60));
+
+  assert.equal(end(0), "10 min", "nothing saved still gets a ruler");
+  assert.equal(end(0.2), "10 min");
+  assert.equal(end(8), "10 min");
+  assert.equal(end(9), "10 min");
+  assert.equal(end(10), "30 min", "a figure never sits at the end of its own ruler");
+  assert.equal(end(11), "30 min");
+  assert.equal(end(29), "30 min");
+  assert.equal(end(30), "1 h");
+  assert.equal(end(60), "2 h");
+  assert.equal(end(200), "5 h", "3 h 20 min");
+  assert.equal(end(5 * 60), "10 h");
+  assert.equal(end(10 * 60), "20 h");
+  assert.equal(end(52 * 60), "100 h");
+  assert.equal(end(24 * 60), "50 h", "a day is read in hours, like everywhere else");
+  assert.equal(end(100 * 60), "200 h");
+  assert.equal(end(999 * 60), "1000 h");
+  assert.equal(end(1234 * 60), "2000 h");
+
+  // Read the way it is printed: 9 min 40 s shows as "10 min", so the ruler has moved on.
+  assert.equal(formatMinutes(580), "10 min");
+  assert.equal(formatMinutes(rulerEnd(580)), "30 min");
+  assert.equal(formatMinutes(rulerEnd(569)), "10 min");
+});

@@ -4,6 +4,7 @@ import { useId, useMemo } from "react";
 import { useCountTo } from "@/hooks/useCountTo";
 import { useEntrance } from "@/hooks/useEntrance";
 import { formatEstimate, formatMinutes, formatMinutesCounting } from "@/lib/home/format";
+import { rulerEnd } from "@/lib/home/ruler";
 import { trendPath } from "@/lib/home/trend";
 import type { StatsDto, TrendPoint } from "@/lib/api/types";
 import styles from "./Impact.module.css";
@@ -17,14 +18,17 @@ import styles from "./Impact.module.css";
  * are based on. Requests still waiting, attempts that need a click, and
  * failures never feed them.
  *
- * The ring and the bar are decoration that comes with the figures: neither is
- * a percentage, a goal or one segment per removal. The line is the one graphic
- * that carries data — how the monthly estimate built up as removals were
- * confirmed — and is drawn only when there is a history to draw.
+ * Each graphic follows its figure. The ring fills with the share of the senders
+ * found that were removed. The line shows how the monthly estimate built up as
+ * removals were confirmed, and is drawn only when there is a history to draw.
+ * The bar is a ruler with no fixed end: it runs to the next round step above
+ * the time saved (see `rulerEnd`), and when the figure outgrows that step the
+ * end moves on and the bar shortens to fit the new one.
  *
  * On each opening of Home, once its figures are loaded, the numbers count up
  * from zero and the three graphics draw, all driven by one clock for the same
- * two seconds. A figure that is not available is shown as "—", never as zero.
+ * two seconds; the ring and the bar fill as far as the number has counted. A
+ * figure that is not available is shown as "—", never as zero.
  */
 
 /** The trend's drawing box; the SVG stretches to fill its card. */
@@ -81,41 +85,51 @@ function Figure({
   );
 }
 
-/** Three rounded arcs that draw clockwise from the top. */
-function Ring({ progress, drawn }: { progress: number; drawn: boolean }) {
-  const mask = useId();
-  const reveal = drawn ? progress * RING_LENGTH : 0;
+/**
+ * Three rounded arcs. The light ones are always there; the dark fill runs over
+ * them clockwise from the top, `fraction` of the way round the arcs, and ends
+ * in a round cap part-way into an arc where the share falls there.
+ */
+function Ring({ fraction }: { fraction: number }) {
+  let left = Math.min(Math.max(fraction, 0), 1) * 3 * RING_DASH;
+
+  const fills = Array.from({ length: 3 }, () => {
+    const length = Math.min(left, RING_DASH);
+    left -= length;
+    return length;
+  });
 
   return (
     <svg className={styles.ring} viewBox="0 0 100 100" aria-hidden="true" focusable="false">
-      <defs>
-        <mask id={mask} maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
+      <circle
+        className={styles.arcsIdle}
+        cx="50"
+        cy="50"
+        r={RING_RADIUS}
+        fill="none"
+        strokeWidth="10"
+        strokeLinecap="round"
+        strokeDasharray={`${RING_DASH} ${RING_GAP}`}
+        strokeDashoffset={-RING_GAP / 2}
+        transform="rotate(-90 50 50)"
+      />
+      {fills.map((length, arc) =>
+        length > 0 ? (
           <circle
+            key={arc}
+            className={styles.arcs}
             cx="50"
             cy="50"
             r={RING_RADIUS}
             fill="none"
-            stroke="#fff"
-            strokeWidth="16"
-            strokeDasharray={`${reveal} ${RING_LENGTH}`}
+            strokeWidth="10"
+            strokeLinecap="round"
+            strokeDasharray={`${length} ${RING_LENGTH}`}
+            strokeDashoffset={-(arc * (RING_DASH + RING_GAP) + RING_GAP / 2)}
             transform="rotate(-90 50 50)"
           />
-        </mask>
-      </defs>
-      <g mask={drawn ? `url(#${mask})` : undefined}>
-        <circle
-          className={drawn ? styles.arcs : styles.arcsIdle}
-          cx="50"
-          cy="50"
-          r={RING_RADIUS}
-          fill="none"
-          strokeWidth="10"
-          strokeLinecap="round"
-          strokeDasharray={`${RING_DASH} ${RING_GAP}`}
-          strokeDashoffset={-RING_GAP / 2}
-          transform="rotate(-90 50 50)"
-        />
-      </g>
+        ) : null,
+      )}
     </svg>
   );
 }
@@ -171,6 +185,13 @@ export function Impact({ stats }: { stats: StatsDto | null }) {
   const fewerTarget = stats?.fewerEmailsPerMonth ?? null;
   const savedTarget = stats?.timeSavedPerMonthSeconds ?? null;
 
+  // The ruler's end follows the figure it settles at, never the count on the
+  // way there, so it does not jump while the numbers climb. When a later change
+  // moves it to the next step it eases over, together with the figure, and the
+  // bar shortens with it.
+  const rulerTarget = savedTarget === null ? null : rulerEnd(savedTarget);
+  const rulerShown = useCountTo(rulerTarget);
+
   const count = (n: number) => Math.round(n).toLocaleString("en");
   // Counting towards the figure as shown, rounded down, so it arrives exactly
   // when the two seconds end and not a frame before.
@@ -187,7 +208,17 @@ export function Impact({ stats }: { stats: StatsDto | null }) {
     done || savedTarget === null ? savedFinal : formatMinutesCounting(savedTarget, progress);
 
   const trend = stats?.fewerEmailsTrend ?? [];
-  const hasSaved = savedTarget !== null && savedTarget > 0;
+
+  // How far each figure has counted: the ring and the bar fill as far as the
+  // number on screen. They follow it continuously rather than in the whole
+  // steps the digits take, and arrive at the real share when the count does.
+  const counted = done ? 1 : progress;
+  const found = stats?.totalSenders ?? 0;
+  const ringFraction = found > 0 && confirmed !== null ? (confirmed * counted) / found : 0;
+  const rulerFraction =
+    saved !== null && rulerTarget !== null
+      ? (saved * counted) / (rulerShown ?? rulerTarget)
+      : 0;
 
   return (
     <section className={styles.impact} aria-labelledby="impact-title">
@@ -197,9 +228,7 @@ export function Impact({ stats }: { stats: StatsDto | null }) {
 
       <ul className={styles.cards} aria-busy={stats === null}>
         <li className={`${styles.card} ${styles.withRing}`}>
-          {stats === null ? null : (
-            <Ring progress={progress} drawn={(confirmedTarget ?? 0) > 0} />
-          )}
+          {stats === null ? null : <Ring fraction={ringFraction} />}
           <Figure label="Subscriptions removed" text={confirmedNow} final={confirmedFinal} />
         </li>
 
@@ -210,13 +239,30 @@ export function Impact({ stats }: { stats: StatsDto | null }) {
 
         <li className={styles.card}>
           <Figure label="Time saved / month" text={savedNow} final={savedFinal} about />
-          <div className={styles.track} aria-hidden="true">
-            {hasSaved ? (
-              <span
-                className={styles.bar}
-                style={{ clipPath: `inset(0 ${(1 - progress) * 100}% 0 0)` }}
-              />
-            ) : null}
+          <div className={styles.ruler} aria-hidden="true">
+            <div className={styles.track}>
+              {rulerTarget === null ? null : (
+                <span
+                  className={styles.bar}
+                  style={{ inlineSize: `${Math.min(Math.max(rulerFraction, 0), 1) * 100}%` }}
+                />
+              )}
+            </div>
+            {rulerTarget === null ? null : (
+              <>
+                <div className={styles.ticks}>
+                  <span />
+                  <span />
+                  <span />
+                  <span />
+                  <span />
+                </div>
+                <div className={styles.scale}>
+                  <span>0</span>
+                  <span>{formatMinutes(rulerTarget)}</span>
+                </div>
+              </>
+            )}
           </div>
         </li>
       </ul>

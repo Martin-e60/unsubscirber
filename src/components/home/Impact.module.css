@@ -80,6 +80,7 @@
   stroke: #46474c;
 }
 
+/* The track of the three arcs, there whether or not anything fills it. */
 .arcsIdle {
   stroke: #e3e3e6;
 }
@@ -101,24 +102,55 @@
   stroke-linecap: round;
 }
 
-/* --- Bar ----------------------------------------------------------------- */
+/* --- Ruler -------------------------------------------------------------- */
 
-.track {
+.ruler {
   position: absolute;
   inset-inline: 1.75rem;
-  inset-block-end: 1.625rem;
-  block-size: 0.875rem;
+  inset-block-end: 0.9rem;
+}
+
+.track {
+  block-size: 0.75rem;
   border-radius: var(--radius-full);
   background: #ececed;
 }
 
-/* The fade runs across the whole bar and is uncovered from the left, so the
-   finished bar is the same as the one at rest. */
+/* The bar is as long as the figure's share of the ruler; its shade runs
+   across that length, lighter at the start and darkest where it ends. */
 .bar {
-  position: absolute;
-  inset: 0;
+  display: block;
+  block-size: 100%;
   border-radius: var(--radius-full);
-  background: linear-gradient(90deg, #6b6e78 0%, #b9bbc2 45%, #e6e6e8 100%);
+  background: linear-gradient(90deg, #6a6d77 0%, #46474c 100%);
+}
+
+/* Five ticks across the ruler: the ends and the middle taller than the quarters. */
+.ticks {
+  display: flex;
+  justify-content: space-between;
+  margin-block-start: 0.3rem;
+  block-size: 0.45rem;
+}
+
+.ticks span {
+  inline-size: 1px;
+  background: #c4c4c9;
+}
+
+.ticks span:nth-child(2n) {
+  align-self: flex-start;
+  block-size: 0.28rem;
+}
+
+.scale {
+  display: flex;
+  justify-content: space-between;
+  margin-block-start: 0.1rem;
+  color: #9a9aa1;
+  font-size: 0.6875rem;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
 }
 
 /* --- Caption --------------------------------------------------------------- */
