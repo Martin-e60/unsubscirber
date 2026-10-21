@@ -1,0 +1,296 @@
+/* The selected sender: avatar, name, address and frequency on the left, the
+   subscription decision on the right. */
+
+.header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(0, auto);
+  align-items: start;
+  column-gap: 1.5rem;
+  row-gap: var(--space-4);
+  padding: 1.125rem 1.25rem 1rem;
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  inline-size: 4.5625rem;
+  block-size: 4.5625rem;
+  border-radius: 14px;
+  background: #eceef1;
+  color: var(--color-text);
+  font-size: 1.75rem;
+  font-weight: var(--weight-medium);
+  letter-spacing: -0.02em;
+}
+
+.allIcon {
+  background: linear-gradient(180deg, #ffffff 0%, #f1f3f6 100%);
+  box-shadow:
+    0 0 0 1px rgba(200, 206, 217, 0.92),
+    inset 0 1px 0 #fff;
+}
+
+.identity {
+  align-self: center;
+  min-inline-size: 0;
+}
+
+.name {
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: 1.75rem;
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.035em;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-block-start: 0.375rem;
+}
+
+.address {
+  min-inline-size: 0;
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: 1rem;
+  letter-spacing: -0.015em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* All emails has a sentence where a sender has an address. */
+.identity > .address {
+  margin-block-start: 0.375rem;
+  white-space: normal;
+}
+
+.rate {
+  margin-inline-start: 1.5rem;
+  padding-inline-start: 1.5rem;
+  border-inline-start: var(--border-width) solid var(--color-border-strong);
+  color: var(--color-text-muted);
+  font-size: 1rem;
+  letter-spacing: -0.015em;
+  white-space: nowrap;
+}
+
+/* --- The decision ----------------------------------------------------------- */
+
+.decide {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.75rem;
+  max-inline-size: 21rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.8125rem;
+}
+
+.keep,
+.unsubscribe {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-block-size: 2.9375rem;
+  padding-inline: 1.375rem;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: var(--weight-medium);
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    transform var(--duration-fast) var(--ease),
+    background-color var(--duration-fast) var(--ease);
+}
+
+.keep {
+  justify-content: center;
+  border: 0;
+  color: var(--color-text);
+}
+
+.keep svg {
+  color: var(--color-text);
+}
+
+.unsubscribe {
+  border: var(--border-width) solid var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  box-shadow: 0 6px 12px -8px rgba(5, 5, 6, 0.6);
+}
+
+.unsubscribe:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.keep:active:not(:disabled),
+.unsubscribe:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.keep:disabled,
+.unsubscribe:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.keep[data-loading],
+.unsubscribe[data-loading] {
+  cursor: progress;
+  opacity: 0.85;
+}
+
+.spinner {
+  inline-size: 1rem;
+  block-size: 1rem;
+  border: 2px solid currentColor;
+  border-inline-end-color: transparent;
+  border-radius: 50%;
+  animation: spin 700ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.note {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.625rem;
+  color: var(--color-text-subtle);
+  font-size: 0.875rem;
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+  text-align: start;
+}
+
+.note svg {
+  margin-block-start: 0.1rem;
+  color: var(--color-text-muted);
+}
+
+.note strong {
+  color: var(--color-text);
+  font-weight: var(--weight-semibold);
+}
+
+.note[data-tone="danger"] svg,
+.note[data-tone="danger"] strong {
+  color: var(--color-danger-text);
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--color-text);
+  font-weight: var(--weight-medium);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* --- Loading ----------------------------------------------------------------- */
+
+.skeleton {
+  display: block;
+  background: linear-gradient(90deg, #eceef1, #f4f5f7, #eceef1);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+.skeletonName {
+  inline-size: 14rem;
+  block-size: 1.75rem;
+  border-radius: var(--radius-full);
+}
+
+.skeletonLine {
+  inline-size: 18rem;
+  block-size: 1rem;
+  margin-block-start: 0.75rem;
+  border-radius: var(--radius-full);
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* The header answers to the width of its own pane, not the window: the pane is
+   narrower than the window by the sender list. */
+@container detail (max-width: 58rem) {
+  .rate {
+    margin-inline-start: 0;
+    padding-inline-start: 0;
+    border-inline-start: 0;
+    inline-size: 100%;
+  }
+}
+
+@container detail (max-width: 44rem) {
+  .header {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .decide {
+    grid-column: 1 / -1;
+    align-items: flex-start;
+    max-inline-size: none;
+  }
+
+  .actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 36rem) {
+  .avatar {
+    inline-size: 3.25rem;
+    block-size: 3.25rem;
+    font-size: 1.25rem;
+  }
+
+  .name {
+    font-size: 1.375rem;
+  }
+
+  .header {
+    column-gap: 1rem;
+    padding: 1rem;
+  }
+
+  .actions,
+  .keep,
+  .unsubscribe {
+    flex: 1 1 auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton,
+  .spinner {
+    animation-duration: 2s;
+  }
+
+  .keep,
+  .unsubscribe {
+    transition: none;
+  }
+}

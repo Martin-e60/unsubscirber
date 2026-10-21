@@ -1,7 +1,10 @@
+/* Cleanup's heading row, right side: last scan, mailbox, period, rescan, History. */
+
 .block {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  align-items: flex-end;
+  gap: var(--space-2);
   min-inline-size: 0;
 }
 
@@ -10,71 +13,57 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
-  gap: var(--space-3) var(--space-5);
+  gap: var(--space-3) 1.5rem;
 }
 
 .facts {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: var(--space-1);
+  min-inline-size: 0;
   color: var(--color-text-muted);
-  font-size: var(--text-base);
-  text-align: end;
-}
-
-.facts p {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-}
-
-.primaryFact {
-  color: var(--color-text-muted);
-}
-
-.check {
-  color: var(--color-primary);
+  font-size: 1rem;
+  letter-spacing: -0.015em;
+  white-space: nowrap;
 }
 
 .warn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-inline-start: 0.75rem;
   color: var(--color-warning-text);
+  font-size: 0.9375rem;
 }
 
 .skeleton {
-  inline-size: 10rem;
-  block-size: 2.5rem;
-  border-radius: 8px;
-  background: var(--color-primary-soft);
-  opacity: 0.5;
+  display: block;
+  inline-size: 11rem;
+  block-size: 0.875rem;
+  border-radius: var(--radius-full);
+  background: #eceef1;
 }
 
 .controls {
   display: flex;
-  align-items: stretch;
-  gap: var(--space-2);
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .period {
   position: relative;
   display: inline-flex;
+  align-items: center;
 }
 
 .select {
   appearance: none;
-  min-block-size: 3rem;
-  padding: 0 var(--space-8) 0 var(--space-4);
-  border: var(--border-width) solid var(--color-border);
+  min-block-size: 2.625rem;
+  padding: 0 2.5rem 0 1.0625rem;
+  border: 0;
   border-radius: 10px;
-  background: var(--color-surface);
   color: var(--color-text);
-  font-size: var(--text-base);
-  font-weight: var(--weight-medium);
+  font-size: 0.9375rem;
+  letter-spacing: -0.02em;
   cursor: pointer;
-}
-
-.select:hover:not(:disabled) {
-  border-color: var(--color-primary);
 }
 
 .select:disabled {
@@ -84,30 +73,44 @@
 
 .chevron {
   position: absolute;
-  inset-inline-end: var(--space-3);
-  inset-block-start: 50%;
-  translate: 0 -50%;
-  color: var(--color-text-muted);
+  inset-inline-end: 0.875rem;
+  color: var(--color-text);
   pointer-events: none;
 }
 
 .action {
-  min-inline-size: 11rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-block-size: 2.625rem;
+  padding-inline: 1.0625rem 1.25rem;
+  border: 0;
+  border-radius: 10px;
+  color: var(--color-text);
+  font-size: 0.9375rem;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  cursor: pointer;
 }
 
-.spin {
-  transition: transform 300ms var(--ease);
+.action:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
-.action:hover .spin {
-  transform: rotate(90deg);
+.primary {
+  border: var(--border-width) solid var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
 }
 
 .progress {
-  block-size: 6px;
+  inline-size: 100%;
+  min-inline-size: 12rem;
+  block-size: 4px;
   overflow: hidden;
   border-radius: var(--radius-full);
-  background: var(--color-primary-soft);
+  background: #dfe2e7;
 }
 
 .fill {
@@ -115,59 +118,29 @@
   block-size: 100%;
   border-radius: inherit;
   background: var(--color-primary);
-  transition: inline-size var(--duration-normal) var(--ease);
+  transition: inline-size 300ms var(--ease);
 }
 
 .error {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--space-2);
   color: var(--color-danger-text);
-  font-size: var(--text-sm);
+  font-size: 0.875rem;
 }
 
-.error svg {
-  flex-shrink: 0;
-  margin-block-start: 0.125rem;
-}
+@media (max-width: 60rem) {
+  .block {
+    align-items: flex-start;
+  }
 
-@media (max-width: 44rem) {
   .row {
     justify-content: flex-start;
-  }
-
-  .facts {
-    align-items: flex-start;
-    text-align: start;
-    flex-basis: 100%;
-  }
-
-  .controls {
-    inline-size: 100%;
-  }
-
-  .period {
-    flex: 1 1 0;
-    min-inline-size: 0;
-  }
-
-  .select {
-    inline-size: 100%;
-  }
-
-  .action {
-    flex: 1 1 0;
-    min-inline-size: 0;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .spin,
   .fill {
     transition: none;
-  }
-
-  .action:hover .spin {
-    transform: none;
   }
 }

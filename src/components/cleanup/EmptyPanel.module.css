@@ -1,0 +1,33 @@
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-block-size: 12rem;
+  padding: var(--space-8) var(--space-6);
+  text-align: center;
+}
+
+.title {
+  color: var(--color-text);
+  font-size: 1.125rem;
+  font-weight: var(--weight-semibold);
+  letter-spacing: -0.02em;
+}
+
+.body {
+  max-inline-size: 28rem;
+  color: var(--color-text-muted);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.action {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-block-start: var(--space-3);
+}

@@ -1,28 +1,16 @@
-import { Suspense } from "react";
-import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { AppShell } from "@/components/layout/AppShell";
-import { ClearOutView } from "@/components/clearout/ClearOutView";
-import { getCurrentUser, hasMailbox } from "@/lib/api/auth";
-import { loginHref } from "@/lib/auth/next";
-
-export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "Clear out — Tidely" };
+import { clearOutRedirect } from "@/lib/navigation";
 
 /**
- * Clear out: find, organise and clear mail already in the mailbox. Filters
- * live in the URL (?from=…&older=6m&unread=1) and are read on the client.
+ * Clear out was folded into Cleanup: selecting a sender there shows its
+ * messages, and "All emails" shows the whole mailbox. Old links and bookmarks
+ * land in the unified workspace with their filters, and so does the return
+ * trip from Google's permission screen. No data is touched.
  */
-export default async function ClearOutPage() {
-  const user = await getCurrentUser();
-  if (!user) redirect(loginHref("/clear-out"));
-  if (!(await hasMailbox(user.id))) redirect("/connect");
-
-  return (
-    <AppShell>
-      <Suspense>
-        <ClearOutView />
-      </Suspense>
-    </AppShell>
-  );
+export default async function ClearOutPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  redirect(clearOutRedirect("", await searchParams));
 }

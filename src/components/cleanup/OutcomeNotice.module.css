@@ -6,10 +6,10 @@
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: start;
   gap: var(--space-3);
-  padding: var(--space-4) var(--space-4) var(--space-4) var(--space-5);
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
   border: var(--border-width) solid var(--color-border);
   border-inline-start: 3px solid var(--tone);
-  border-radius: 14px;
+  border-radius: 12px;
   background: var(--color-surface);
   animation: noticeIn 220ms var(--ease) both;
 }
@@ -39,10 +39,14 @@
   color: var(--tone);
 }
 
+/* Wide, the title, the detail and the way on read as one line, so an outcome
+   costs the workspace as little height as it can. A list of outcomes takes
+   a line each. */
 .body {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.125rem var(--space-4);
   min-inline-size: 0;
   padding-block-start: 0.3rem;
 }
@@ -65,9 +69,10 @@
 
 .items {
   display: flex;
+  flex: 1 1 100%;
   flex-direction: column;
   gap: var(--space-2);
-  margin: var(--space-2) 0 0;
+  margin: var(--space-1) 0 0;
   padding: 0;
   list-style: none;
 }
@@ -109,7 +114,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-4);
-  margin-block-start: var(--space-2);
 }
 
 .link {

@@ -163,6 +163,16 @@ export function hasFilters(filter: ClearOutFilter): boolean {
   );
 }
 
+/**
+ * The filter for one sender's mail: the person's own filters, narrowed to that
+ * sender's exact address. Never a name, a domain or a company — two senders
+ * can share a display name or a domain, and an action on the wrong one's mail
+ * is not something a person can see coming.
+ */
+export function filterForSender(filter: ClearOutFilter, address: string): ClearOutFilter {
+  return { ...filter, senders: [address.trim().toLowerCase()] };
+}
+
 /** Removes every filter, keeping the mailbox scope and the search. */
 export function clearFilters(filter: ClearOutFilter): ClearOutFilter {
   return { ...EMPTY_FILTER, scope: filter.scope, search: filter.search };

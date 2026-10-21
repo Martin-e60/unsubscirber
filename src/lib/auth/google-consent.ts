@@ -78,7 +78,7 @@ export async function mailboxFailure(
   reason: MailboxError,
 ): Promise<ConsentOutcome> {
   if (context.access === "organise") {
-    // Clear out's permission request reports on the Clear out page, as before.
+    // Clear out's permission request reports on Cleanup, where organising lives.
     const outcome =
       reason === "cancelled" ? "cancelled" : reason === "wrong_account" ? "wrong_account" : "failed";
     return organiseOutcome(context, outcome);
@@ -162,7 +162,7 @@ function organiseOutcome(
   outcome: "granted" | "declined" | "cancelled" | "wrong_account" | "failed",
 ): ConsentOutcome {
   return {
-    path: context.next ?? "/clear-out",
+    path: context.next ?? "/cleanup",
     params: {
       access: outcome,
       ...(context.mailboxId ? { [MAILBOX_PARAM]: context.mailboxId } : {}),

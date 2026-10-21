@@ -456,7 +456,7 @@ test("Clear out's organise reconnect reports granted or declined on Clear out, f
     tokens: gmailTokens(),
     profile: profile("google-org", "org@gmail.com"),
   });
-  assert.deepEqual(declined, { path: "/clear-out", params: { access: "declined", [shared.MAILBOX_PARAM]: box.id } });
+  assert.deepEqual(declined, { path: "/cleanup", params: { access: "declined", [shared.MAILBOX_PARAM]: box.id } });
 
   const granted = await consent.completeMailboxConsent({
     context: reconnectContext(user.id, box.id, true),
@@ -620,5 +620,5 @@ test("links for reconnecting and adding carry the mailbox and a return path", ()
     "/api/auth/google/start?mode=reconnect&mailbox=m-1&next=%2Fsettings",
   );
   assert.equal(shared.addMailboxHref("/cleanup"), "/connect?add=1&next=%2Fcleanup");
-  assert.equal(clearout.grantUrlFor({ id: "m-2" }), "/api/auth/google/start?mode=reconnect&mailbox=m-2&access=organise&next=%2Fclear-out");
+  assert.equal(clearout.grantUrlFor({ id: "m-2" }), "/api/auth/google/start?mode=reconnect&mailbox=m-2&access=organise&next=%2Fcleanup");
 });

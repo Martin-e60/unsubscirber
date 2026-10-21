@@ -322,6 +322,47 @@
   block-size: 18px;
 }
 
+/* --- Cleanup's toolbar: a compact glass button among its controls ----------- */
+
+.root[data-placement="toolbar"] {
+  flex: 0 0 auto;
+}
+
+.root[data-placement="toolbar"] .trigger {
+  display: inline-flex;
+  inline-size: auto;
+  gap: var(--space-3);
+  min-block-size: 2.625rem;
+  padding: 0 var(--space-3) 0 var(--space-4);
+  border: 0;
+  border-radius: 10px;
+}
+
+.root[data-placement="toolbar"] .trigger:hover {
+  border: 0;
+}
+
+.root[data-placement="toolbar"] .trigger[aria-expanded="true"] {
+  box-shadow:
+    0 0 0 1px var(--color-text-subtle),
+    inset 0 1px 0 #fff;
+}
+
+.root[data-placement="toolbar"] .trigger .sub {
+  display: none;
+}
+
+.root[data-placement="toolbar"] .icon {
+  color: var(--color-text);
+}
+
+.root[data-placement="toolbar"] .title {
+  max-inline-size: 11rem;
+  font-size: 0.9375rem;
+  font-weight: var(--weight-normal);
+  letter-spacing: -0.02em;
+}
+
 @keyframes menuIn {
   from {
     opacity: 0;

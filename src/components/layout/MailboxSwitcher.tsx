@@ -16,6 +16,7 @@ import { Check, ChevronDown, CircleAlert, Mail, Plus, Settings } from "lucide-re
 import { useMailboxes } from "@/components/layout/MailboxContext";
 import type { MailboxDto } from "@/lib/api/types";
 import { addMailboxHref, mailboxTitle } from "@/lib/mailbox/shared";
+import glass from "@/components/home/glass.module.css";
 import styles from "./MailboxSwitcher.module.css";
 
 /**
@@ -35,11 +36,17 @@ import styles from "./MailboxSwitcher.module.css";
  */
 
 /** Which switcher started a switch, so the new one can take focus back. */
-let focusAfterSwitch: "sidebar" | "bar" | null = null;
+let focusAfterSwitch: Placement | null = null;
+
+/**
+ * Where the switcher sits: the sidebar, a one-line bar (phones, the account
+ * menu), or Cleanup's toolbar, as a compact glass button among its controls.
+ */
+type Placement = "sidebar" | "bar" | "toolbar";
 
 const GUTTER = 16;
 
-export function MailboxSwitcher({ placement }: { placement: "sidebar" | "bar" }) {
+export function MailboxSwitcher({ placement }: { placement: Placement }) {
   const { mailboxes, active, loading, demo, switchTo, isBusy } = useMailboxes();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -73,7 +80,7 @@ export function MailboxSwitcher({ placement }: { placement: "sidebar" | "bar" })
       left = rect.right + 8;
       top = rect.top;
       width = Math.min(300, vw - left - GUTTER);
-    } else if (placement === "bar") {
+    } else if (placement === "bar" || placement === "toolbar") {
       width = Math.min(340, vw - GUTTER * 2);
       left = Math.max(GUTTER, Math.min(rect.left, vw - width - GUTTER));
       top = rect.bottom + 8;
@@ -230,7 +237,7 @@ export function MailboxSwitcher({ placement }: { placement: "sidebar" | "bar" })
       <button
         ref={trigger}
         type="button"
-        className={styles.trigger}
+        className={placement === "toolbar" ? `${styles.trigger} ${glass.button}` : styles.trigger}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}

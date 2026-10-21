@@ -138,38 +138,6 @@
   }
 }
 
-/* --- Clear out's workspace -------------------------------------------------
-   Only when the page marks itself with data-clearout-workspace; every other
-   page keeps the layout above. Wide screens use the full width beside the
-   sidebar. When the window is also tall enough (FIT_QUERY in ClearOutView),
-   the body is exactly the window's height so the workspace can fill it
-   without the document scrolling. */
-
-@media (min-width: 60rem) {
-  .main:has(> [data-clearout-workspace]) {
-    max-inline-size: none;
-    padding: var(--space-4) 1.75rem var(--space-4);
-  }
-}
-
-@media (min-width: 60rem) and (min-height: 36rem) {
-  .body:has(> .main > [data-clearout-workspace]) {
-    block-size: 100dvh;
-  }
-
-  .main:has(> [data-clearout-workspace]) {
-    display: flex;
-    flex-direction: column;
-    min-block-size: 0;
-  }
-}
-
-@media (min-width: 60rem) and (min-height: 36rem) and (max-height: 60rem) {
-  .main:has(> [data-clearout-workspace]) {
-    padding-block: var(--space-2);
-  }
-}
-
 /* Narrow phones: the logo mark alone leaves the mailbox readable. */
 @media (max-width: 22.5rem) {
   .mobileWord {
@@ -189,6 +157,16 @@
   inline-size: var(--home-width);
   margin-inline: auto;
   padding-block: var(--space-5) var(--space-12);
+}
+
+/* Cleanup's workspace: two panes need more room than Home's cards. */
+.homeFrame[data-wide] {
+  inline-size: min(100% - 2 * clamp(1rem, 4.8vw, 6rem), 100rem);
+  padding-block-end: 1.25rem;
+}
+
+.homeFrame[data-wide] .homeMain {
+  margin-block-start: 1.125rem;
 }
 
 .homeFrame > .notice {

@@ -13,12 +13,18 @@
  * unsubscribe outcomes that still need something are filters inside To review.
  * The old /senders links redirect there — see `sendersRedirect`.
  *
+ * Clear out is absent as well: organising mail is part of Cleanup now, where
+ * selecting a sender shows its messages. The old /clear-out links redirect
+ * there — see `clearOutRedirect`.
+ *
  * Each page has one job: Home is the overview, Cleanup decides which mailing
- * lists to keep or leave, Clear out organises mail already in the mailbox,
- * and Unsubscribed reviews what happened after leaving a list.
+ * lists to keep or leave and organises the mail in the mailbox, and
+ * Unsubscribed reviews what happened after leaving a list.
  */
 
-export type NavId = "home" | "cleanup" | "clearout" | "unsubscribed" | "settings";
+import { filterParams, type ClearOutFilter } from "@/lib/clearout/filters";
+
+export type NavId = "home" | "cleanup" | "unsubscribed" | "settings";
 
 export type NavItem = {
   id: NavId;
@@ -30,7 +36,6 @@ export type NavItem = {
 export const NAV: NavItem[] = [
   { id: "home", href: "/dashboard", label: "Home" },
   { id: "cleanup", href: "/cleanup", label: "Cleanup" },
-  { id: "clearout", href: "/clear-out", label: "Clear out" },
   { id: "unsubscribed", href: "/unsubscribed", label: "Unsubscribed" },
   { id: "settings", href: "/settings", label: "Settings" },
 ];
@@ -61,22 +66,84 @@ export function cleanupView(value: string | null | undefined): CleanupView {
 }
 
 /**
+ * Where a sender lives in Cleanup — the list, and the follow-up filter that
+ * shows it — or null when neither list holds it (already unsubscribed, or
+ * retired). Used to open a sender named by an old Clear out link.
+ */
+export function senderPlace(status: string): { view: CleanupView; status: UnconfirmedStatus | null } | null {
+  if (status === "KEPT") return { view: "keeping", status: null };
+  if (status === "ACTIVE") return { view: "review", status: null };
+  const outcome = unconfirmedStatus(status);
+  return outcome ? { view: "review", status: outcome } : null;
+}
+
+/**
  * A link into Cleanup.
  *
  *   /cleanup                     To review, senders waiting for a decision
  *   /cleanup?status=MANUAL       To review, filtered to one unconfirmed outcome
  *   /cleanup?view=keeping        Keeping
+ *   /cleanup?mail=all            All emails: the whole mailbox, not one sender
+ *   /cleanup?review=<sender id>  Review one confirmed unsubscribe (from Unsubscribed)
+ *   /cleanup?unread=1&older=6m   The message filters (see clearout/filters.ts)
+ *
+ * The message filters ride along in the same query, so changing the list of
+ * senders never throws away what the message pane was narrowed to.
  */
 export function cleanupHref(
   basePath: string,
-  options: { view?: CleanupView; status?: UnconfirmedStatus | null; search?: string | null } = {},
+  options: {
+    view?: CleanupView;
+    status?: UnconfirmedStatus | null;
+    search?: string | null;
+    /** Show every email in the mailbox instead of one sender's. */
+    all?: boolean;
+    /** A confirmed unsubscribe to review, from "Review in Cleanup". */
+    review?: string | null;
+    filter?: ClearOutFilter;
+  } = {},
 ): string {
   const params = new URLSearchParams();
   if (options.view === "keeping") params.set("view", "keeping");
   else if (options.status) params.set("status", options.status);
   if (options.search) params.set("search", options.search);
+  if (options.all) params.set("mail", "all");
+  if (options.review) params.set("review", options.review);
+  if (options.filter) {
+    for (const [key, value] of filterParams(options.filter)) params.append(key, value);
+  }
   const query = params.toString();
   return `${basePath}/cleanup${query ? `?${query}` : ""}`;
+}
+
+/** What Cleanup itself keeps in the query; everything else belongs to the message filters. */
+const CLEANUP_PARAMS = ["view", "status", "search", "review", "mail"];
+
+/**
+ * Where an old /clear-out link now goes.
+ *
+ * Clear out's filters (?from=…&older=6m&unread=1&q=…&scope=…&label=…) are the
+ * message filters of the unified Cleanup, under the same names, so they carry
+ * over as they are — and so do the parameters a returning Google permission
+ * trip adds (?access=…&mailbox=…). Cleanup's own parameters are dropped: an
+ * old link never had them, and a stray one must not choose a different list.
+ *
+ * Clear out showed the whole mailbox, so a link without exactly one sender
+ * opens All emails. A link naming one sender opens that sender when Cleanup
+ * knows it, and falls back to All emails filtered to that address.
+ */
+export function clearOutRedirect(
+  basePath: string,
+  params: Record<string, string | string[] | undefined>,
+): string {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (CLEANUP_PARAMS.includes(key) || value === undefined) continue;
+    for (const entry of Array.isArray(value) ? value : [value]) query.append(key, entry);
+  }
+  if (query.getAll("from").length !== 1) query.set("mail", "all");
+  const text = query.toString();
+  return `${basePath}/cleanup${text ? `?${text}` : ""}`;
 }
 
 /**
@@ -95,6 +162,14 @@ export function sendersRedirect(
   if (params.status === "ACTIVE") return cleanupHref(basePath, { search: params.search });
   if (params.status === "UNSUBSCRIBED") return `${basePath}/unsubscribed`;
   return cleanupHref(basePath, { view: "keeping", search: params.search });
+}
+
+/**
+ * Home and Cleanup share the header layout — no sidebar, white glass surfaces.
+ * Every other screen keeps the sidebar.
+ */
+export function usesHomeShell(pathname: string, basePath = ""): boolean {
+  return pathname === navHref(NAV[0], basePath) || pathname === navHref(NAV[1], basePath);
 }
 
 /** Where a nav item points, given the base the screens are mounted under. */

@@ -8,6 +8,8 @@
  * deterministically, so every visitor starts with the same mailbox.
  */
 
+import { DEMO_SENDERS, type DemoSenderSeed } from "@/lib/demo/data";
+
 export type DemoMessageSeed = {
   id: string;
   threadId: string;
@@ -234,6 +236,63 @@ const STREAMS: {
   },
 ];
 
+/**
+ * Mail for every sender Cleanup lists.
+ *
+ * Cleanup shows a sender's messages beside their Keep and Unsubscribe choice,
+ * so a sender with no mail in the sample mailbox would show an empty list —
+ * which the real app never does for a sender it found in a scan. Senders that
+ * already have hand-written or streamed mail (matched by exact address) are
+ * left alone; the others get a short, plausible run built from what the
+ * sample already knows about them.
+ */
+export function demoSenderMail(
+  senders: DemoSenderSeed[],
+  existing: DemoMessageSeed[],
+  recipient: string,
+  seed: number,
+): DemoMessageSeed[] {
+  const random = seeded(seed);
+  const have = new Set(existing.map((message) => message.fromAddress.toLowerCase()));
+  const made: DemoMessageSeed[] = [];
+
+  for (const sender of senders) {
+    if (have.has(sender.address.toLowerCase())) continue;
+    const count = Math.min(8, Math.max(3, Math.round(sender.messageCount / 18)));
+    const span = Math.max(count, sender.firstSeenDaysAgo - sender.lastSeenDaysAgo);
+    const every = Math.max(2, Math.min(21, span / count));
+    const domain = sender.address.split("@")[1] ?? "example.com";
+    const subjects = [sender.sampleSubject, `News from ${sender.name}`, `${sender.name}: this month’s update`];
+    const snippets = [
+      "A short update from a list you subscribed to.",
+      "Open this email to read the full message.",
+      "You are receiving this because you signed up.",
+    ];
+
+    for (let i = 0; i < count; i++) {
+      const daysAgo = sender.lastSeenDaysAgo + 0.3 + i * every + random() * 0.8;
+      const labelIds: string[] = [];
+      if (daysAgo <= 25) labelIds.push("INBOX");
+      if (i === 0 && daysAgo <= 10) labelIds.push("UNREAD");
+      made.push({
+        id: `m-fill-${sender.id}-${String(i + 1).padStart(2, "0")}`,
+        threadId: `t-fill-${sender.id}-${i + 1}`,
+        fromName: sender.name,
+        fromAddress: sender.address,
+        to: recipient,
+        subject: subjects[i % subjects.length],
+        snippet: snippets[i % snippets.length],
+        daysAgo,
+        labelIds,
+        sizeBytes: Math.round(70 * KB * (0.7 + random() * 0.6)),
+        listId: `news.${domain}`,
+      });
+    }
+  }
+
+  return made;
+}
+
 /** A tiny deterministic generator, so every visitor gets the same mailbox. */
 function seeded(seed: number) {
   let state = seed >>> 0;
@@ -270,7 +329,7 @@ export function demoMailboxSeeds(): DemoMessageSeed[] {
     }
   }
 
-  return messages;
+  return [...messages, ...demoSenderMail(DEMO_SENDERS, messages, ME, 20261003)];
 }
 
 export const DEMO_ME = { name: ME, address: ME_ADDRESS };

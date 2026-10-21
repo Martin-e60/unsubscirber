@@ -1,6 +1,6 @@
 import { SENDER_STATUS, UNSUBSCRIBE_METHOD } from "@/lib/constants";
 import type { DemoSenderSeed } from "@/lib/demo/data";
-import type { DemoMessageSeed } from "@/lib/demo/mailbox";
+import { demoSenderMail, type DemoMessageSeed } from "@/lib/demo/mailbox";
 
 /**
  * The demo's second mailbox: Sam's invented work Gmail.
@@ -132,7 +132,7 @@ const MB = 1024 * 1024;
 
 /** The work mailbox in Clear out: colleagues, tools and a few newsletters. */
 export function demoWorkMailboxSeeds(): DemoMessageSeed[] {
-  return [
+  const written: DemoMessageSeed[] = [
     {
       id: "w-m-priya-1", threadId: "w-t-priya", fromName: "Priya Natarajan", fromAddress: "priya@northwind.example.com",
       to: ME, subject: "Roadmap review moved to Wednesday", snippet: "Same room, 2pm. I’ve added the draft to the shared folder.",
@@ -197,4 +197,6 @@ export function demoWorkMailboxSeeds(): DemoMessageSeed[] {
       daysAgo: 40.2, labelIds: ["Label_travel", "Label_work"], hasAttachment: true, sizeBytes: 420 * KB,
     },
   ];
+
+  return [...written, ...demoSenderMail(DEMO_WORK_SENDERS, written, ME, 20261004)];
 }

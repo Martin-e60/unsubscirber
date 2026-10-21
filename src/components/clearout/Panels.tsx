@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   Archive,
   ArrowUpRight,
@@ -155,18 +156,23 @@ export function PreviewSheet({
 
 const ICONS = { mark_read: MailOpen, label: Tag, archive: Archive, trash: Trash2 } as const;
 
-/** What Clear out has done, newest first. Counts only — never which emails. */
+/**
+ * What has been done to emails, newest first. Counts only — never which
+ * emails. Unsubscribe attempts have their own record, linked from here.
+ */
 export function HistorySheet({
   open,
   runs,
   error,
   demo,
+  basePath,
   onClose,
 }: {
   open: boolean;
   runs: ClearOutRunDto[] | null;
   error: string | null;
   demo: boolean;
+  basePath: string;
   onClose: () => void;
 }) {
   return (
@@ -177,8 +183,14 @@ export function HistorySheet({
       title="History"
       description={
         demo
-          ? "What you’ve done in Clear out during this demo. Kept in your browser only."
-          : "What you’ve done in Clear out. Only the action and counts are kept — not which emails."
+          ? "What you’ve done to emails during this demo. Kept in your browser only."
+          : "What you’ve done to emails. Only the action and counts are kept — not which emails."
+      }
+      footer={
+        <Link href={`${basePath}/history`} className={styles.historyLink}>
+          See every unsubscribe attempt
+          <ArrowUpRight size={15} strokeWidth={2} aria-hidden />
+        </Link>
       }
     >
       {error ? (
@@ -186,7 +198,7 @@ export function HistorySheet({
       ) : runs === null ? (
         <p className={styles.empty}>Loading…</p>
       ) : runs.length === 0 ? (
-        <p className={styles.empty}>Nothing yet. Actions you take in Clear out will appear here.</p>
+        <p className={styles.empty}>Nothing yet. Actions you take on emails will appear here.</p>
       ) : (
         <ul className={styles.history}>
           {runs.map((run) => {

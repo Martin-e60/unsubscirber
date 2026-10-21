@@ -97,3 +97,12 @@
 }
 
 .header{ background:rgba(255,255,255,.72); }
+
+/* A glass card used as a reading surface (Cleanup's panes): the same rim,
+   reflections and shadows as .card, with a lighter, calmer face so lists of
+   text stay easy to read. Add it next to .card. */
+.pane {
+  background:
+    radial-gradient(ellipse 80% 40% at 50% 0%, rgba(255, 255, 255, .9), transparent 75%),
+    linear-gradient(180deg, #f8fafc 0%, #fafbfd 55%, #f0f3f7 100%);
+}

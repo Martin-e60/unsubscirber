@@ -1,26 +1,29 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Archive, Check, ChevronDown, MailOpen, Tag, Trash2 } from "lucide-react";
+import { Archive, ChevronDown, MailOpen, Tag, Trash2 } from "lucide-react";
 import type { ClearOutLabelDto } from "@/lib/api/types";
 import { emails } from "@/lib/clearout/actions";
 import type { Resolving, RunProgress } from "@/hooks/useClearOut";
 import { Popover, menuKeys } from "./Popover";
+import glass from "@/components/home/glass.module.css";
 import pickers from "./Pickers.module.css";
 import styles from "./SelectionBar.module.css";
 
 /**
- * The selected-emails toolbar: the exact count, a way out, "select all
- * matching", and the four actions. Archive and Move to Trash only open a
- * review; Mark as read and Label act straight away, since both are undone
- * just as easily in Gmail.
+ * The selected-emails toolbar: the exact count and what it covers, a way out,
+ * "select all", and the four actions on those emails — Mark as read, Label,
+ * Archive and Move to Trash. Archive and Move to Trash only open a review of
+ * the exact emails; Mark as read and Label act straight away, since both are
+ * undone just as easily in Gmail.
  *
- * It lives in a slot the page always reserves, so appearing never moves the
- * list. Its menus open upwards, into the space the list leaves above it.
+ * It lives in a slot the pane always reserves, so appearing never moves the
+ * list. None of these actions touches a sender's subscription.
  */
 export function SelectionBar({
   count,
   scopeNote,
+  pageState,
   labels,
   progress,
   resolving,
@@ -33,14 +36,16 @@ export function SelectionBar({
   onStop,
 }: {
   count: number;
-  /** "on this page" · "all matching your filters". */
-  scopeNote: string | null;
+  /** What the count covers: "on this page", "across pages", "all matching". */
+  scopeNote: { short: string; long: string } | null;
+  /** How much of the visible page is selected, for the master checkbox. */
+  pageState: "none" | "some" | "all";
   labels: ClearOutLabelDto[] | null;
   progress: RunProgress | null;
   /** Gathering every matching email, with how many so far. */
   resolving: Resolving | null;
-  /** Offered once the whole page is selected and there is more. */
-  selectAll: { label: string; onClick: () => void } | null;
+  /** Offered while there are matching emails not yet selected. */
+  selectAll: { label: string; title: string; onClick: () => void } | null;
   onCancelResolve: () => void;
   onClear: () => void;
   onMarkRead: () => void;
@@ -48,9 +53,8 @@ export function SelectionBar({
   onOrganise: (action: "archive" | "trash") => void;
   onStop: () => void;
 }) {
-  const [menu, setMenu] = useState<"label" | "organise" | null>(null);
+  const [menu, setMenu] = useState(false);
   const labelRef = useRef<HTMLButtonElement>(null);
-  const organiseRef = useRef<HTMLButtonElement>(null);
   const busy = progress !== null || resolving !== null;
   // Archive and Trash report their progress in the review dialog instead.
   const inlineProgress = progress && (progress.action === "mark_read" || progress.action === "label");
@@ -58,16 +62,33 @@ export function SelectionBar({
   return (
     <div className={styles.bar} role="region" aria-label="Selected emails">
       <div className={styles.summary}>
+        <label className={styles.master}>
+          <input
+            type="checkbox"
+            className={styles.box}
+            checked={pageState === "all"}
+            ref={(node) => {
+              if (node) node.indeterminate = pageState === "some";
+            }}
+            disabled={progress !== null}
+            onChange={onClear}
+            aria-label="Clear the selection"
+          />
+        </label>
         <p className={styles.count} aria-live="polite">
-          <strong>{emails(count)} selected</strong>
-          {scopeNote ? <span className={styles.scope}>{scopeNote}</span> : null}
+          <strong>{count.toLocaleString("en")} selected</strong>
+          {scopeNote ? (
+            <span className={styles.scope} title={scopeNote.long}>
+              {scopeNote.short}
+              <span className="srOnly">: {scopeNote.long}</span>
+            </span>
+          ) : null}
         </p>
-        <span className={styles.rule} aria-hidden="true" />
-        <button type="button" className={styles.clear} onClick={onClear} disabled={progress !== null}>
+        <button type="button" className={styles.link} onClick={onClear} disabled={progress !== null}>
           Clear selection
         </button>
         {selectAll && !busy ? (
-          <button type="button" className={styles.selectAll} onClick={selectAll.onClick} title={selectAll.label}>
+          <button type="button" className={styles.link} onClick={selectAll.onClick} title={selectAll.title}>
             {selectAll.label}
           </button>
         ) : null}
@@ -98,31 +119,31 @@ export function SelectionBar({
           ) : null}
         </div>
       ) : (
-        <div className={styles.actions}>
-          <button type="button" className={styles.outline} onClick={onMarkRead} disabled={busy}>
-            <MailOpen size={18} strokeWidth={1.8} aria-hidden />
-            Mark as read
+        <div className={styles.actions} role="group" aria-label={`Actions for ${emails(count)}`}>
+          <button type="button" className={`${styles.action} ${glass.button}`} onClick={onMarkRead} disabled={busy}>
+            <MailOpen size={19} strokeWidth={1.6} aria-hidden />
+            <span className={styles.text}>Mark as read</span>
           </button>
 
           <div className={styles.anchor}>
             <button
               ref={labelRef}
               type="button"
-              className={styles.outline}
+              className={`${styles.action} ${glass.button}`}
               aria-haspopup="dialog"
-              aria-expanded={menu === "label"}
-              onClick={() => setMenu(menu === "label" ? null : "label")}
+              aria-expanded={menu}
+              onClick={() => setMenu((open) => !open)}
               disabled={busy}
             >
-              <Tag size={18} strokeWidth={1.8} aria-hidden />
-              Label
+              <Tag size={19} strokeWidth={1.6} aria-hidden />
+              <span className={styles.text}>Label</span>
+              <ChevronDown size={17} strokeWidth={1.75} aria-hidden />
             </button>
             <Popover
-              open={menu === "label"}
-              onClose={() => setMenu(null)}
+              open={menu}
+              onClose={() => setMenu(false)}
               triggerRef={labelRef}
               label="Add a label"
-              placement="above"
               align="end"
               width="17rem"
             >
@@ -141,7 +162,7 @@ export function SelectionBar({
                       role="menuitem"
                       className={pickers.option}
                       onClick={() => {
-                        setMenu(null);
+                        setMenu(false);
                         onLabel(label);
                       }}
                     >
@@ -157,67 +178,26 @@ export function SelectionBar({
             </Popover>
           </div>
 
-          <div className={styles.anchor}>
-            <button
-              ref={organiseRef}
-              type="button"
-              className={styles.primary}
-              aria-haspopup="menu"
-              aria-expanded={menu === "organise"}
-              onClick={() => setMenu(menu === "organise" ? null : "organise")}
-              disabled={busy}
-            >
-              <span className={styles.long}>Organise selected</span>
-              <span className={styles.short}>Organise</span>
-              <ChevronDown size={18} strokeWidth={2} aria-hidden />
-            </button>
-            <Popover
-              open={menu === "organise"}
-              onClose={() => setMenu(null)}
-              triggerRef={organiseRef}
-              label="Organise selected"
-              placement="above"
-              align="end"
-              width="20rem"
-            >
-              <div role="menu" aria-label="Organise selected" className={pickers.menuList} onKeyDown={menuKeys}>
-                <button
-                  type="button"
-                  role="menuitem"
-                  className={pickers.option}
-                  onClick={() => {
-                    setMenu(null);
-                    onOrganise("archive");
-                  }}
-                >
-                  <Archive size={18} strokeWidth={1.8} aria-hidden />
-                  <span className={pickers.optionText}>
-                    <span className={pickers.optionName}>Archive</span>
-                    <span className={pickers.optionAddress}>Remove from Inbox. Still in All mail.</span>
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  role="menuitem"
-                  className={pickers.option}
-                  onClick={() => {
-                    setMenu(null);
-                    onOrganise("trash");
-                  }}
-                >
-                  <Trash2 size={18} strokeWidth={1.8} aria-hidden />
-                  <span className={pickers.optionText}>
-                    <span className={pickers.optionName}>Move to Trash</span>
-                    <span className={pickers.optionAddress}>Gmail empties Trash after 30 days.</span>
-                  </span>
-                </button>
-              </div>
-              <p className={pickers.explain}>
-                <Check size={13} strokeWidth={2.2} aria-hidden style={{ display: "inline", verticalAlign: "-2px" }} />{" "}
-                You’ll review the emails before anything changes.
-              </p>
-            </Popover>
-          </div>
+          <button
+            type="button"
+            className={`${styles.action} ${glass.button}`}
+            onClick={() => onOrganise("archive")}
+            disabled={busy}
+            title="Remove from Inbox. Still in All mail. You’ll review the emails first."
+          >
+            <Archive size={19} strokeWidth={1.6} aria-hidden />
+            <span className={styles.text}>Archive</span>
+          </button>
+          <button
+            type="button"
+            className={`${styles.action} ${glass.button}`}
+            onClick={() => onOrganise("trash")}
+            disabled={busy}
+            title="Gmail empties Trash after 30 days. You’ll review the emails first."
+          >
+            <Trash2 size={19} strokeWidth={1.6} aria-hidden />
+            <span className={styles.text}>Move to Trash</span>
+          </button>
         </div>
       )}
     </div>

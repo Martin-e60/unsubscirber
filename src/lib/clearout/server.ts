@@ -31,7 +31,7 @@ import { QueryError, readQuery, type UnsubscribedList } from "./filters";
  * the permission is added to the mailbox on screen and no other.
  */
 export function grantUrlFor(account: Pick<MailAccount, "id">): string {
-  return reconnectHref(account.id, { organise: true, next: "/clear-out" });
+  return reconnectHref(account.id, { organise: true, next: "/cleanup" });
 }
 
 export function accessFor(account: MailAccount): ClearOutAccessDto {

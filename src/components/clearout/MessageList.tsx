@@ -1,22 +1,21 @@
 "use client";
 
-import { useRef, type KeyboardEvent, type ReactNode, type Ref } from "react";
+import { useRef, type KeyboardEvent, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight, Paperclip } from "lucide-react";
-import { toInitials } from "@/components/ui/Avatar";
 import type { ClearOutMessageDto } from "@/lib/api/types";
 import { listDate } from "./format";
 import styles from "./MessageList.module.css";
 
 /**
- * Clear out's list: one row per message.
+ * The message list: one row per message.
  *
- * As in Cleanup, the checkbox and the row are separate controls: the
- * checkbox selects, the row opens a preview. Ticking never opens anything,
- * and opening never marks anything as read.
+ * The checkbox and the row are separate controls: the checkbox selects, the
+ * row opens a preview. Ticking never opens anything, and opening never marks
+ * anything as read.
  *
- * The header row, the row area and the footer are always rendered, whatever
- * the state, so the row area keeps one height: on wide screens the page
- * measures it to decide how many emails a page holds.
+ * When the list is one sender's mail the sender is already named above it, so
+ * rows show subject and excerpt only. In All emails each row also names who
+ * it is from.
  */
 
 export function senderLabel(message: ClearOutMessageDto): string {
@@ -30,7 +29,7 @@ export function MessageList({
   selected,
   locked,
   skeletonRows,
-  areaRef,
+  showSender,
   onToggle,
   onTogglePage,
   onOpen,
@@ -43,8 +42,8 @@ export function MessageList({
   locked: boolean;
   /** How many placeholder rows fill the area while loading. */
   skeletonRows: number;
-  /** The row area, measured by the page to size each page of results. */
-  areaRef?: Ref<HTMLDivElement>;
+  /** All emails: name the sender on each row. */
+  showSender: boolean;
   onToggle: (message: ClearOutMessageDto) => void;
   onTogglePage: () => void;
   onOpen: (message: ClearOutMessageDto) => void;
@@ -102,12 +101,7 @@ export function MessageList({
           const extraLabels = message.labels.length - 1;
 
           return (
-            <li
-              key={message.id}
-              className={styles.row}
-              data-checked={checked || undefined}
-              data-unread={message.unread || undefined}
-            >
+            <li key={message.id} className={styles.row} data-checked={checked || undefined} data-unread={message.unread || undefined}>
               <label className={styles.check}>
                 <input
                   type="checkbox"
@@ -129,13 +123,8 @@ export function MessageList({
                   message.hasAttachment ? " Has attachments." : ""
                 }${message.labels.length ? ` Labels: ${message.labels.map((l) => l.name).join(", ")}.` : ""} Open preview.`}
               >
-                <span className={styles.sender}>
-                  <span className={styles.avatar} aria-hidden="true">
-                    {toInitials(message.sentByMe ? (message.to ?? "Me") : sender)}
-                  </span>
-                  <span className={styles.senderName}>{sender}</span>
-                  <span className={styles.dot} aria-hidden="true" />
-                </span>
+                <span className={styles.dot} aria-hidden="true" />
+                {showSender ? <span className={styles.sender}>{sender}</span> : null}
 
                 <span className={styles.email}>
                   <span className={styles.subject}>{subject}</span>
@@ -149,10 +138,11 @@ export function MessageList({
                       {extraLabels > 0 ? ` +${extraLabels}` : ""}
                     </span>
                   ) : null}
-                  {message.hasAttachment ? <Paperclip size={17} strokeWidth={1.8} className={styles.clip} /> : null}
+                  {message.hasAttachment ? <Paperclip size={16} strokeWidth={1.8} className={styles.clip} /> : null}
                 </span>
 
                 <span className={styles.date}>{date}</span>
+                <ChevronRight size={17} strokeWidth={1.75} className={styles.go} aria-hidden />
               </button>
             </li>
           );
@@ -162,11 +152,16 @@ export function MessageList({
   }
 
   return (
-    <div className={styles.table} aria-busy={loading || undefined} data-refreshing={(loading && !firstLoad) || undefined}>
+    <div
+      className={styles.table}
+      data-sender={showSender || undefined}
+      aria-busy={loading || undefined}
+      data-refreshing={(loading && !firstLoad) || undefined}
+    >
       <div className={styles.head}>
         <label className={styles.check}>
           <input
-            id="clear-out-select-page"
+            id="cleanup-select-page"
             type="checkbox"
             className={styles.box}
             checked={pageChecked}
@@ -178,14 +173,17 @@ export function MessageList({
             aria-label={`Select the ${messages.length} ${messages.length === 1 ? "email" : "emails"} on this page`}
           />
         </label>
-        <span className={styles.headLabel}>Sender</span>
-        <span className={`${styles.headLabel} ${styles.headEmail}`}>Email</span>
-        <span className={`${styles.headLabel} ${styles.headDate}`}>Date</span>
+        <div className={styles.headCols} aria-hidden="true">
+          <span />
+          {showSender ? <span className={styles.headLabel}>Sender</span> : null}
+          <span className={styles.headLabel}>Email</span>
+          <span />
+          <span className={`${styles.headLabel} ${styles.headDate}`}>Date</span>
+          <span />
+        </div>
       </div>
 
-      <div className={styles.area} ref={areaRef}>
-        {body}
-      </div>
+      <div className={styles.area}>{body}</div>
 
       {footer}
     </div>
@@ -194,8 +192,9 @@ export function MessageList({
 
 /**
  * Previous and Next over Gmail's page tokens. Gmail can only move one page at
- * a time, so there are no page numbers to jump to; the range says where you
- * are, and "about" marks a total Gmail only estimated.
+ * a time, so there is no way to jump; the range says where you are, and
+ * "about" marks a total Gmail only estimated. When the total is exact the
+ * page count is shown too.
  */
 export function Pagination({
   page,
@@ -221,17 +220,19 @@ export function Pagination({
 }) {
   const first = page * pageSize + 1;
   const last = page * pageSize + shown;
+  const pages = Math.max(1, Math.ceil(total / pageSize));
+  const multiple = hasNext || page > 0;
 
   return (
-    <nav className={styles.foot} aria-label="Pages">
+    <nav className={styles.foot} aria-label="Email pages">
       <p className={styles.showing}>
         {shown > 0 ? (
           <>
-            Showing {first.toLocaleString("en")}–{last.toLocaleString("en")} of {totalExact ? "" : "about "}
-            {total.toLocaleString("en")}
+            {first.toLocaleString("en")}–{last.toLocaleString("en")} of {totalExact ? "" : "about "}
+            {total.toLocaleString("en")} {total === 1 ? "email" : "emails"}
           </>
         ) : (
-          " "
+          " "
         )}
         {note ? (
           <span className={styles.footNote} title={note}>
@@ -240,26 +241,32 @@ export function Pagination({
           </span>
         ) : null}
       </p>
-      <div className={styles.pages}>
-        <button
-          type="button"
-          className={styles.pageButton}
-          onClick={() => onPage(page - 1)}
-          disabled={page === 0 || loading}
-        >
-          <ChevronLeft size={17} strokeWidth={1.9} aria-hidden />
-          Previous
-        </button>
-        <button
-          type="button"
-          className={styles.pageButton}
-          onClick={() => onPage(page + 1)}
-          disabled={!hasNext || loading}
-        >
-          Next
-          <ChevronRight size={17} strokeWidth={1.9} aria-hidden />
-        </button>
-      </div>
+      {multiple ? (
+        <div className={styles.pages}>
+          <button
+            type="button"
+            className={styles.pageButton}
+            onClick={() => onPage(page - 1)}
+            disabled={page === 0 || loading}
+            aria-label="Previous page"
+          >
+            <ChevronLeft size={18} strokeWidth={1.75} aria-hidden />
+          </button>
+          <span className={styles.pageOf}>{totalExact ? `${page + 1} / ${Math.max(pages, page + 1)}` : `Page ${page + 1}`}</span>
+          <button
+            type="button"
+            className={styles.pageButton}
+            onClick={() => onPage(page + 1)}
+            disabled={!hasNext || loading}
+            aria-label="Next page"
+          >
+            <ChevronRight size={18} strokeWidth={1.75} aria-hidden />
+          </button>
+        </div>
+      ) : (
+        <span />
+      )}
+      <span />
     </nav>
   );
 }

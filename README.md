@@ -38,8 +38,9 @@ and `DATABASE_AUTH_TOKEN` for Turso in the hosting environment, then apply the
 committed migrations to that database. Database commands load `.env*` with the
 same precedence as Next.js. Existing process variables take priority.
 
-Reading mail and organising it use different Gmail permissions. Clear out asks
-for the additional modify grant when needed. Password recovery uses Resend when
+Reading mail and organising it use different Gmail permissions. Cleanup asks
+for the additional modify grant the first time you archive, trash, label or mark
+emails as read. Password recovery uses Resend when
 `RESEND_API_KEY` and `EMAIL_FROM` are configured; development reset emails go to
 the server log.
 

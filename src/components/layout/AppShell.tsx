@@ -39,7 +39,7 @@ import {
   mailboxTitle,
   pickActiveMailbox,
 } from "@/lib/mailbox/shared";
-import { NAV, navHref, type NavItem } from "@/lib/navigation";
+import { NAV, navHref, usesHomeShell, type NavItem } from "@/lib/navigation";
 import theme from "./appTheme.module.css";
 import glass from "@/components/home/glass.module.css";
 import homeTheme from "./homeTheme.module.css";
@@ -47,6 +47,7 @@ import styles from "./AppShell.module.css";
 
 /**
  * The signed-in layout: sidebar and page content, in the app's warm theme.
+ * Home and Cleanup use a header instead of the sidebar (see Frame below).
  *
  * It owns the session and which mailbox this tab is using, and shares the
  * per-mailbox data every page needs — the stats — through a context, so
@@ -419,14 +420,15 @@ function Frame({
     </div>
   ) : null;
 
-  // Home is the one page without a sidebar: a header with the destinations,
-  // in a white and gray palette of its own. Every other page keeps the
-  // sidebar and the app's warm theme.
-  if (pathname === navHref(NAV[0], basePath)) {
+  // Home and Cleanup are the pages without a sidebar: a header with the
+  // destinations, in a white and gray palette of their own. Cleanup's
+  // workspace takes a little more width than Home's cards. Every other page
+  // keeps the sidebar and the app's warm theme.
+  if (usesHomeShell(pathname, basePath)) {
     return (
       <div className={`${homeTheme.theme} ${styles.homeShell} ${glass.page}`}>
         <HomeHeader basePath={basePath} items={navItems} account={account} />
-        <div className={styles.homeFrame}>
+        <div className={styles.homeFrame} data-wide={pathname !== navHref(NAV[0], basePath) || undefined}>
           {banner}
           {notices}
           <main className={styles.homeMain}>{children}</main>

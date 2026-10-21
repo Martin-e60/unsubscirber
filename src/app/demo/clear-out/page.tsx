@@ -1,13 +1,11 @@
-import { Suspense } from "react";
-import type { Metadata } from "next";
-import { ClearOutView } from "@/components/clearout/ClearOutView";
+import { redirect } from "next/navigation";
+import { clearOutRedirect } from "@/lib/navigation";
 
-export const metadata: Metadata = { title: "Clear out (demo) — Tidely" };
-
-export default function DemoClearOutPage() {
-  return (
-    <Suspense>
-      <ClearOutView />
-    </Suspense>
-  );
+/** As in the real app: Clear out now lives in Cleanup. */
+export default async function DemoClearOutPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  redirect(clearOutRedirect("/demo", await searchParams));
 }

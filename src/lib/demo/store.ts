@@ -73,10 +73,11 @@ const SEEDS: Record<
 /**
  * Bumped when the stored shape changes. Version 2 added scan timestamps for
  * the Home screen; version 3 added mail received after an unsubscribe;
- * version 4 added Clear out's mailbox and its History. A visitor holding an
- * older version simply starts the demo afresh.
+ * version 4 added Clear out's mailbox and its History; version 5 gave every
+ * sender mail in it, since Cleanup now shows a sender's messages. A visitor
+ * holding an older version simply starts the demo afresh.
  */
-const STATE_VERSION = 4;
+const STATE_VERSION = 5;
 
 /** The default window for a first scan, matching the real app. */
 export const DEMO_DEFAULT_LOOKBACK_DAYS = 30;
